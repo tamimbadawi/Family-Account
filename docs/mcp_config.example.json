@@ -1,0 +1,17 @@
+{
+  "_comment": "Reference only. Prefer adding servers from Antigravity's MCP Store. Raw config lives at ~/.gemini/antigravity/mcp_config.json. Never commit real tokens.",
+  "mcpServers": {
+    "supabase": {
+      "serverUrl": "https://mcp.supabase.com/mcp?project_ref=<YOUR_PROJECT_REF>"
+    },
+    "github": {
+      "serverUrl": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer <FINE_GRAINED_PAT_FOR_THIS_REPO>"
+      }
+    },
+    "vercel": {
+      "serverUrl": "https://mcp.vercel.com"
+    }
+  }
+}

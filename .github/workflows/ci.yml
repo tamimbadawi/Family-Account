@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: App scaffolded yet?
+        id: app
+        run: |
+          if [ -f package.json ]; then echo "exists=true" >> "$GITHUB_OUTPUT"; else echo "exists=false" >> "$GITHUB_OUTPUT"; echo "No package.json yet (before step A0) — skipping app checks."; fi
+
+      - uses: actions/setup-node@v4
+        if: steps.app.outputs.exists == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - if: steps.app.outputs.exists == 'true'
+        run: npm ci
+      - if: steps.app.outputs.exists == 'true'
+        run: npm run lint
+      - if: steps.app.outputs.exists == 'true'
+        run: npm run typecheck --if-present
+      - if: steps.app.outputs.exists == 'true'
+        run: npm test --if-present
+      - if: steps.app.outputs.exists == 'true'
+        run: npm run build
+        env:
+          NEXT_PUBLIC_DATA_MODE: mock
+
+      - name: Forbid non-logical (RTL-breaking) Tailwind classes
+        if: steps.app.outputs.exists == 'true'
+        run: |
+          if grep -rEn --include='*.tsx' '(^|[" ])(ml|mr|pl|pr)-[0-9a-z]|(^|[" ])text-(left|right)([" ]|$)' src/; then
+            echo "::error::Use logical utilities (ms/me/ps/pe/text-start/text-end) — see .agents/rules/02-rtl-i18n.md"
+            exit 1
+          fi
+
+  schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply migration and run smoke test
+        env:
+          PGPASSWORD: postgres
+        run: |
+          P="psql -h localhost -U postgres -v ON_ERROR_STOP=1 -q"
+          $P -f supabase/tests/local_auth_stub.sql
+          $P -f supabase/migrations/0001_schema.sql
+          out=$(psql -h localhost -U postgres -q -f supabase/tests/rls_smoke_test.sql 2>&1 || true)
+          echo "$out"
+          echo "$out" | grep -q "SMOKE TEST RESULTS" || { echo "::error::Smoke test did not run"; exit 1; }
+          if echo "$out" | grep -q "^FAIL"; then echo "::error::Smoke test has failures"; exit 1; fi

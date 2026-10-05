@@ -1,0 +1,154 @@
+{
+  "app": {
+    "name": "Family Accounts",
+    "tagline": "Household money, made simple"
+  },
+  "nav": {
+    "home": "Home",
+    "history": "History",
+    "reports": "Reports",
+    "settings": "Settings"
+  },
+  "common": {
+    "add": "Add",
+    "new": "New",
+    "save": "Save",
+    "cancel": "Cancel",
+    "undo": "Undo",
+    "delete": "Delete",
+    "restore": "Restore",
+    "edit": "Edit",
+    "back": "Back",
+    "done": "Done",
+    "seeAll": "See all",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "pickDate": "Pick a day",
+    "currency": "EGP",
+    "loading": "Loading…",
+    "share": "Share"
+  },
+  "sync": {
+    "synced": "Saved",
+    "pending": "Saved on phone ({count})",
+    "offline": "No internet — saving on your phone",
+    "asOf": "as of {time}"
+  },
+  "home": {
+    "greetingMorning": "Good morning, {name}",
+    "greetingEvening": "Good evening, {name}",
+    "spentThisMonth": "Spent this month",
+    "incomeShort": "Money in {amount}",
+    "leftShort": "Left {amount}",
+    "topCategories": "Where most of it went",
+    "recent": "Latest entries",
+    "emptyTitle": "Log your first expense",
+    "emptyBody": "Add anything you spent today and we'll keep it tidy."
+  },
+  "entry": {
+    "addTitle": "New entry",
+    "editTitle": "Edit",
+    "expense": "Money out",
+    "income": "Money in",
+    "transfer": "Move",
+    "amount": "Amount",
+    "recents": "Used often",
+    "chooseCategory": "Choose a category",
+    "chooseSubcategory": "Choose a group",
+    "chooseItem": "Choose an item",
+    "from": "From",
+    "to": "To",
+    "wallet": "Wallet",
+    "note": "Note (optional)",
+    "saved": "Saved",
+    "updated": "Updated",
+    "deleted": "Deleted",
+    "sameWallet": "Pick two different wallets"
+  },
+  "history": {
+    "title": "History",
+    "all": "All",
+    "expenses": "Money out",
+    "incomes": "Money in",
+    "dayTotal": "Day total",
+    "emptyMonth": "Nothing logged this month"
+  },
+  "reports": {
+    "title": "Reports",
+    "overview": "Overview",
+    "breakdown": "Breakdown",
+    "spent": "Spent",
+    "income": "Money in",
+    "net": "Left over",
+    "byCategory": "By category",
+    "lastSixMonths": "Last 6 months",
+    "walletBalances": "Wallet balances",
+    "show": "Show",
+    "splitBy": "Split by",
+    "across": "Across",
+    "period": "Period",
+    "total": "Total",
+    "dim": {
+      "category": "Category",
+      "subcategory": "Group",
+      "item": "Item",
+      "wallet": "Wallet",
+      "person": "Person",
+      "month": "Months",
+      "week": "Weeks",
+      "none": "Nothing"
+    },
+    "periods": {
+      "thisMonth": "This month",
+      "last3": "Last 3 months",
+      "last6": "Last 6 months",
+      "thisYear": "This year",
+      "custom": "Custom"
+    },
+    "presets": {
+      "whereDidItGo": "Where did our money go?",
+      "monthByMonth": "Month by month",
+      "bills": "Bills tracker",
+      "whichWallet": "Which wallet?",
+      "whoSpent": "Who spent what"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "categories": "Categories",
+    "wallets": "Wallets",
+    "family": "Family",
+    "language": "Language",
+    "digits": "Number style",
+    "download": "Download my data",
+    "recentlyDeleted": "Recently deleted",
+    "needsAttention": "Needs attention",
+    "signOut": "Sign out",
+    "archive": "Hide",
+    "archiveHint": "It disappears from the choices; past entries stay exactly as they are.",
+    "showArchived": "Show hidden",
+    "reorder": "Reorder",
+    "addFamilyMember": "Add a family member"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "wrongPassword": "That email or password isn't right",
+    "noConnection": "You need internet the first time only",
+    "howToInstall": "How do I put the app on my phone?",
+    "welcomeTitle": "Welcome",
+    "householdName": "Name your household",
+    "yourName": "Your name"
+  },
+  "install": {
+    "title": "Put the app on your phone",
+    "step1": "Tap the Share button at the bottom",
+    "step2": "Choose “Add to Home Screen”",
+    "step3": "Tap “Add” — that's it!"
+  },
+  "offline": {
+    "title": "No internet right now",
+    "body": "Keep logging as usual — everything saves when you're back online."
+  }
+}

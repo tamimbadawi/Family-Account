@@ -1,0 +1,34 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# next.js
+.next/
+out/
+build/
+next-env.d.ts
+
+# service worker build output (Serwist)
+public/sw.js
+public/sw.js.map
+public/swe-worker-*.js
+
+# env
+.env
+.env*.local
+.env.production
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+.vercel
+*.tsbuildinfo
+coverage/
+.scaffold/
+
+# database dumps (never commit — they contain personal finances)
+*.dump
+schema.sql
+data.sql

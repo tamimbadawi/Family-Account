@@ -1,0 +1,50 @@
+name: Weekly database backup
+
+# Dumps schema + data to a private workflow artifact kept for 90 days.
+# Needs repo secret SUPABASE_DB_URL = the "Session pooler" connection string
+# (GitHub runners are IPv4-only; the direct connection is IPv6). Skips until set.
+# The repository MUST stay private.
+
+on:
+  schedule:
+    - cron: '30 2 * * 0'   # Sundays 02:30 UTC
+  workflow_dispatch:
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check secret
+        id: check
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "SUPABASE_DB_URL not set yet — skipping (expected before step B5)."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: supabase/setup-cli@v1
+        if: steps.check.outputs.run == 'true'
+        with:
+          version: latest
+
+      - name: Dump schema and data
+        if: steps.check.outputs.run == 'true'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          mkdir -p backup
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/schema.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" --data-only -f backup/data.sql
+          ls -la backup
+
+      - uses: actions/upload-artifact@v4
+        if: steps.check.outputs.run == 'true'
+        with:
+          name: db-backup-${{ github.run_number }}
+          path: backup/
+          retention-days: 90

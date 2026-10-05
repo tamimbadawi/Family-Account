@@ -1,0 +1,154 @@
+{
+  "app": {
+    "name": "حساباتنا",
+    "tagline": "مصاريف البيت ببساطة"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "history": "السجل",
+    "reports": "التقارير",
+    "settings": "الإعدادات"
+  },
+  "common": {
+    "add": "إضافة",
+    "new": "جديد",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "undo": "تراجع",
+    "delete": "حذف",
+    "restore": "استرجاع",
+    "edit": "تعديل",
+    "back": "رجوع",
+    "done": "تم",
+    "seeAll": "عرض الكل",
+    "today": "النهارده",
+    "yesterday": "امبارح",
+    "pickDate": "اختار يوم",
+    "currency": "ج.م",
+    "loading": "جاري التحميل…",
+    "share": "مشاركة"
+  },
+  "sync": {
+    "synced": "تم الحفظ",
+    "pending": "محفوظ على التليفون ({count})",
+    "offline": "مفيش إنترنت — بنحفظ على التليفون",
+    "asOf": "حتى {time}"
+  },
+  "home": {
+    "greetingMorning": "صباح الخير، {name}",
+    "greetingEvening": "مساء الخير، {name}",
+    "spentThisMonth": "صرفنا الشهر ده",
+    "incomeShort": "دخل {amount}",
+    "leftShort": "باقي {amount}",
+    "topCategories": "أكتر حاجات صرفنا عليها",
+    "recent": "آخر المصاريف",
+    "emptyTitle": "ابدأ بتسجيل أول مصروف",
+    "emptyBody": "سجّل أي مبلغ صرفته النهارده، وهنرتّبه لك."
+  },
+  "entry": {
+    "addTitle": "تسجيل جديد",
+    "editTitle": "تعديل",
+    "expense": "مصروف",
+    "income": "دخل",
+    "transfer": "تحويل",
+    "amount": "المبلغ",
+    "recents": "بتستخدمهم كتير",
+    "chooseCategory": "اختار القسم",
+    "chooseSubcategory": "اختار الفرع",
+    "chooseItem": "اختار البند",
+    "from": "من",
+    "to": "إلى",
+    "wallet": "المحفظة",
+    "note": "ملاحظة (اختياري)",
+    "saved": "اتسجل",
+    "updated": "اتعدّل",
+    "deleted": "اتحذف",
+    "sameWallet": "اختار محفظتين مختلفتين"
+  },
+  "history": {
+    "title": "السجل",
+    "all": "الكل",
+    "expenses": "مصروفات",
+    "incomes": "دخل",
+    "dayTotal": "إجمالي اليوم",
+    "emptyMonth": "مفيش مصاريف الشهر ده"
+  },
+  "reports": {
+    "title": "التقارير",
+    "overview": "نظرة عامة",
+    "breakdown": "تفصيل",
+    "spent": "مصروفات",
+    "income": "دخل",
+    "net": "الصافي",
+    "byCategory": "حسب القسم",
+    "lastSixMonths": "آخر ٦ شهور",
+    "walletBalances": "رصيد المحافظ",
+    "show": "اعرض",
+    "splitBy": "قسّم حسب",
+    "across": "على",
+    "period": "الفترة",
+    "total": "الإجمالي",
+    "dim": {
+      "category": "القسم",
+      "subcategory": "الفرع",
+      "item": "البند",
+      "wallet": "المحفظة",
+      "person": "الشخص",
+      "month": "الشهور",
+      "week": "الأسابيع",
+      "none": "بدون"
+    },
+    "periods": {
+      "thisMonth": "الشهر ده",
+      "last3": "آخر ٣ شهور",
+      "last6": "آخر ٦ شهور",
+      "thisYear": "السنة دي",
+      "custom": "اختار"
+    },
+    "presets": {
+      "whereDidItGo": "فلوسنا راحت فين؟",
+      "monthByMonth": "شهر بشهر",
+      "bills": "متابعة الفواتير",
+      "whichWallet": "أي محفظة؟",
+      "whoSpent": "مين صرف إيه"
+    }
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "categories": "الأقسام",
+    "wallets": "المحافظ",
+    "family": "العائلة",
+    "language": "اللغة",
+    "digits": "شكل الأرقام",
+    "download": "تنزيل بياناتي",
+    "recentlyDeleted": "المحذوفات",
+    "needsAttention": "محتاج انتباه",
+    "signOut": "تسجيل الخروج",
+    "archive": "إخفاء",
+    "archiveHint": "هيختفي من الاختيارات، والمصاريف القديمة هتفضل زي ما هي.",
+    "showArchived": "عرض المخفي",
+    "reorder": "ترتيب",
+    "addFamilyMember": "إضافة فرد من العيلة"
+  },
+  "auth": {
+    "email": "الإيميل",
+    "password": "كلمة السر",
+    "signIn": "دخول",
+    "wrongPassword": "الإيميل أو كلمة السر مش مظبوطين",
+    "noConnection": "محتاجين إنترنت أول مرة بس",
+    "howToInstall": "إزاي أنزّل التطبيق على الموبايل؟",
+    "welcomeTitle": "أهلاً بيكم",
+    "householdName": "سمّوا بيتكم",
+    "yourName": "اسمك"
+  },
+  "install": {
+    "title": "نزّل التطبيق على الموبايل",
+    "step1": "دوس على زرار المشاركة تحت",
+    "step2": "اختار «إضافة إلى الشاشة الرئيسية»",
+    "step3": "دوس «إضافة» — وخلاص!"
+  },
+  "offline": {
+    "title": "مفيش إنترنت دلوقتي",
+    "body": "تقدر تكمّل تسجيل المصاريف عادي، وهتتحفظ أول ما النت يرجع."
+  }
+}
