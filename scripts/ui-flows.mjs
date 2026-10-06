@@ -46,6 +46,15 @@ async function openSheet(page) {
   await tap(page, 'Add entry');
   await page.getByText('New entry').first().waitFor({ timeout: 8000 });
 }
+/** One popup: the typed amount is shown and Save is on screen, no Next step, no scrolling. */
+async function assertOnePopup(page, amountText) {
+  const amount = page.locator("[data-amount]").first();
+  await assertUsable(page, amount, "amount display");
+  const shown = (await amount.innerText()).trim();
+  if (shown !== amountText) throw new Error(`amount shows "${shown}" (should be "${amountText}")`);
+  if (await btn(page, "Next").count()) throw new Error("a Next step is back; everything should be in one popup");
+  await assertUsable(page, page.getByRole("button", { name: /^(Save|Saved)$/ }).last(), "Save button without scrolling");
+}
 async function saveButton(page) {
   return page.getByRole('button', { name: /^(Save|Saved)$/ }).last();
 }
@@ -56,6 +65,7 @@ const FLOWS = {
     await openSheet(page);
     await tap(page, 'Money in');
     await typeAmount(page, ['5', '0', '0', '0']);
+    await assertOnePopup(page, '5,000');
     await tap(page, 'Income');
     await tap(page, 'Regular');
     await tap(page, 'Pension');
@@ -73,6 +83,7 @@ const FLOWS = {
     const before = await homeNumbers(page);
     await openSheet(page);
     await typeAmount(page, ['2', '5', '0']);
+    await assertOnePopup(page, '250');
     await tap(page, 'Food');
     await tap(page, 'Groceries');
     await tap(page, 'Supermarket');
@@ -87,17 +98,29 @@ const FLOWS = {
     await openSheet(page);
     await tap(page, 'Money in');
     await typeAmount(page, ['1', '0', '0']);
+    await assertOnePopup(page, '100');
     await assertUsable(page, btn(page, 'Income'), 'income category after choosing Money in');
     if (await btn(page, 'Food').isVisible().catch(() => false)) throw new Error('expense category "Food" shown for Money in');
     await tap(page, 'Money out');
+    await assertOnePopup(page, '100'); // switching type keeps the amount
     await assertUsable(page, btn(page, 'Food'), 'expense category after switching back to Money out');
     if (await btn(page, 'Income').isVisible().catch(() => false)) throw new Error('income category still shown after switching to Money out');
   },
   async newgroup(page) {
+    // The keyboard only opens when the name field does: type the amount at full height first
+    const keyboard = page.viewportSize();
+    if (keyboard.height < 600) await page.setViewportSize({ width: keyboard.width, height: 844 });
     await openSheet(page);
     await typeAmount(page, ['5', '0']);
+    await assertOnePopup(page, '50');
     await tap(page, 'Food');
+    // "+ New Group" is the last chip of a sideways-swiping row
+    await btn(page, '+ New Group').scrollIntoViewIfNeeded();
     await tap(page, '+ New Group');
+    if (keyboard.height < 600) {
+      await page.setViewportSize(keyboard);
+      await sleep(400);
+    }
     const input = page.getByRole('textbox').first();
     await assertUsable(page, input, 'new group name field');
     await input.fill('Bakery test');
