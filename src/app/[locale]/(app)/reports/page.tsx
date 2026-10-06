@@ -2,15 +2,15 @@
 
 import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { SlidersHorizontal } from 'lucide-react';
-import { useMonthSummary } from '@/lib/data/provider';
-import type { CategoryTotal } from '@/lib/data/types';
 import { MonthSwitcher } from '@/components/reports/MonthSwitcher';
 import { HeroTotalsCard } from '@/components/reports/HeroTotalsCard';
 import { CategoryDonut } from '@/components/reports/CategoryDonut';
 import { RankedCategories } from '@/components/reports/RankedCategories';
 import { SixMonthTrends } from '@/components/reports/SixMonthTrends';
 import { WalletBalancesCard } from '@/components/reports/WalletBalancesCard';
+import { BreakdownTab } from '@/components/reports/BreakdownTab';
+import { useMonthSummary } from '@/lib/data/provider';
+import type { CategoryTotal } from '@/lib/data/types';
 import { Card } from '@/components/ui/card';
 
 export default function ReportsPage() {
@@ -18,7 +18,15 @@ export default function ReportsPage() {
   const t = useTranslations('reports');
   const isRtl = locale.startsWith('ar');
 
-  const [activeTab, setActiveTab] = React.useState<'overview' | 'breakdown'>('overview');
+  const [activeTab, setActiveTab] = React.useState<'overview' | 'breakdown'>(() => {
+    if (typeof window !== 'undefined') {
+      const search = new URLSearchParams(window.location.search);
+      if (search.get('tab') === 'breakdown') {
+        return 'breakdown';
+      }
+    }
+    return 'overview';
+  });
   const [selectedMonth, setSelectedMonth] = React.useState(() => {
     return new Date().toISOString().slice(0, 7);
   });
@@ -97,35 +105,17 @@ export default function ReportsPage() {
         </div>
 
         {activeTab === 'breakdown' ? (
-          /* Breakdown Placeholder (for A5b) */
-          <Card className="rounded-card bg-surface p-8 text-center shadow-card space-y-3 mt-4">
-            <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-accent-soft text-accent">
-              <SlidersHorizontal className="size-7" />
-            </div>
-            <h2 className="text-heading font-bold text-ink">
-              {t('breakdownTitle')}
-            </h2>
-            <p className="text-body text-ink-muted max-w-sm mx-auto">
-              {t('breakdownComingSoon')}
-            </p>
-          </Card>
+          <BreakdownTab />
         ) : (
-          /* Overview Content: 2-Page Carousel */
+          /* Overview Content: 2-Page View */
           <div
             className="relative overflow-hidden -mx-1 px-1 -my-0.5 py-0.5"
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
-            <div
-              className="flex w-[200%] transition-transform duration-300 ease-out"
-              style={{
-                transform: isRtl
-                  ? `translateX(${pageIndex * 50}%)`
-                  : `translateX(-${pageIndex * 50}%)`,
-              }}
-            >
-              {/* PAGE 1: MonthSwitcher, HeroCard, Donut, Top 3 Categories + See All */}
-              <div className="w-1/2 shrink-0 pe-2 ps-1 space-y-1">
+            {pageIndex === 0 ? (
+              /* PAGE 1: MonthSwitcher, HeroCard, Donut, Top 3 Categories + See All */
+              <div className="w-full space-y-1">
                 {/* Month Switcher */}
                 <MonthSwitcher
                   month={selectedMonth}
@@ -162,9 +152,9 @@ export default function ReportsPage() {
                   onDataLoaded={handleCategoryDataLoaded}
                 />
               </div>
-
-              {/* PAGE 2: 6-Month Trends and Wallet Balances */}
-              <div className="w-1/2 shrink-0 ps-2 pe-1 space-y-2">
+            ) : (
+              /* PAGE 2: 6-Month Trends and Wallet Balances */
+              <div className="w-full space-y-2">
                 <div className="flex items-center justify-between px-1">
                   <span className="text-heading font-semibold text-ink">
                     {t('trendsAndWallets')}
@@ -181,7 +171,7 @@ export default function ReportsPage() {
 
                 <WalletBalancesCard />
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>

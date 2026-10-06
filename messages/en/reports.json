@@ -52,5 +52,14 @@
     "bills": "Bills tracker",
     "whichWallet": "Which wallet?",
     "whoSpent": "Who spent what"
-  }
+  },
+  "share": "Share",
+  "shareCsv": "Export CSV",
+  "sharePng": "Share image",
+  "shareSuccess": "Shared successfully",
+  "cellEntries": "Entries",
+  "emptyEntries": "No entries found",
+  "all": "All",
+  "custom": "Custom",
+  "tapRowToDrill": "Tap a row to drill down"
 }
