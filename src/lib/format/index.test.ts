@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDay, money, normalizeDigits, pickName } from './index';
+import { formatDay, formatMonth, money, normalizeDigits, pickName, shiftMonth } from './index';
 
 describe('normalizeDigits', () => {
   it('converts Arabic-Indic digits to ASCII', () => {
@@ -115,3 +115,22 @@ describe('formatDay', () => {
     expect(formattedAr).toContain('5');
   });
 });
+
+describe('formatMonth & shiftMonth', () => {
+  it('formats month in English and Arabic with Western digits', () => {
+    const en = formatMonth('2026-10', 'en');
+    const ar = formatMonth('2026-10', 'ar');
+
+    expect(en).toBe('October 2026');
+    expect(ar).toContain('2026');
+    expect(ar).toContain('أكتوبر');
+  });
+
+  it('shifts month forward and backward across year boundary', () => {
+    expect(shiftMonth('2026-10', 1)).toBe('2026-11');
+    expect(shiftMonth('2026-10', -1)).toBe('2026-09');
+    expect(shiftMonth('2026-12', 1)).toBe('2027-01');
+    expect(shiftMonth('2026-01', -1)).toBe('2025-12');
+  });
+});
+

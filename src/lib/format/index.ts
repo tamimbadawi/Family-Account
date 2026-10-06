@@ -144,3 +144,43 @@ export function formatDay(
 
   return formattedDayStr;
 }
+
+/**
+ * Formats YYYY-MM as a localized month and year with Western digits.
+ * Example:
+ *   formatMonth('2026-10', 'en') => "October 2026"
+ *   formatMonth('2026-10', 'ar') => "أكتوبر 2026"
+ */
+export function formatMonth(
+  yearMonth: string,
+  locale: string = 'en'
+): string {
+  const [yearStr, monthStr] = yearMonth.split('-');
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+  const date = new Date(year, month - 1, 1);
+  const isAr = locale.startsWith('ar');
+
+  return new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-EG', {
+    month: 'long',
+    year: 'numeric',
+    numberingSystem: 'latn',
+  }).format(date);
+}
+
+/**
+ * Shifts a YYYY-MM string by delta months (+1 or -1).
+ * Example:
+ *   shiftMonth('2026-10', 1) => "2026-11"
+ *   shiftMonth('2026-01', -1) => "2025-12"
+ */
+export function shiftMonth(yearMonth: string, delta: number): string {
+  const [yearStr, monthStr] = yearMonth.split('-');
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+  const date = new Date(year, month - 1 + delta, 1);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
