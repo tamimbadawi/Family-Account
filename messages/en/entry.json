@@ -36,5 +36,21 @@
   "multiply": "Times",
   "divide": "Divided by",
   "invalidAmount": "Total must be more than 0",
-  "noteShort": "Note"
+  "noteShort": "Note",
+  "photo": "Photo",
+  "addPhoto": "Add a receipt photo",
+  "viewPhoto": "View receipt photo",
+  "replacePhoto": "Replace",
+  "removePhoto": "Remove",
+  "closePhoto": "Close",
+  "photoRemoved": "Photo removed",
+  "photoFailed": "Couldn't use that photo",
+  "hasPhoto": "Has a photo",
+  "prevMonth": "Previous month",
+  "nextMonth": "Next month",
+  "bank": "Bank",
+  "whichBank": "Which bank?",
+  "bankName": "Bank name",
+  "addBank": "Add",
+  "back": "Back"
 }

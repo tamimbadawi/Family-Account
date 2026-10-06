@@ -124,6 +124,7 @@ export class MockRepository implements Repository {
         this.db.subcategories,
         this.db.items,
         this.db.transactions,
+        this.db.photos,
         this.db.meta,
       ],
       async () => {
@@ -136,6 +137,7 @@ export class MockRepository implements Repository {
           this.db.subcategories.clear(),
           this.db.items.clear(),
           this.db.transactions.clear(),
+          this.db.photos.clear(),
         ]);
 
         // Insert household and members
@@ -746,6 +748,55 @@ export class MockRepository implements Repository {
       deleted_at: null,
       updated_at: new Date().toISOString(),
     });
+  }
+
+  // ---------- Receipt photos (kept on the phone in mock mode) ----------
+
+  async setEntryPhoto(entryId: string, blob: Blob): Promise<Entry> {
+    await this.ensureSeeded();
+    const row = await this.db.transactions.get(entryId);
+    if (!row) {
+      throw new Error(`Entry not found: ${entryId}`);
+    }
+
+    const now = new Date().toISOString();
+    const ext = blob.type === 'image/webp' ? 'webp' : 'jpg';
+    const updatedRow: TransactionRow = {
+      ...row,
+      photo_path: `${row.household_id}/${row.id}.${ext}`,
+      updated_at: now,
+    };
+
+    await this.db.transaction('rw', this.db.transactions, this.db.photos, async () => {
+      await this.db.photos.put({ id: entryId, blob, created_at: now });
+      await this.db.transactions.put(updatedRow);
+    });
+    return toEntry(updatedRow);
+  }
+
+  async getEntryPhoto(entryId: string): Promise<Blob | null> {
+    await this.ensureSeeded();
+    const row = await this.db.transactions.get(entryId);
+    if (!row?.photo_path) return null;
+    const photo = await this.db.photos.get(entryId);
+    return photo?.blob ?? null;
+  }
+
+  // Only clears the link; the stored photo stays, like everything else nothing is hard-deleted
+  async removeEntryPhoto(entryId: string): Promise<Entry> {
+    await this.ensureSeeded();
+    const row = await this.db.transactions.get(entryId);
+    if (!row) {
+      throw new Error(`Entry not found: ${entryId}`);
+    }
+
+    const updatedRow: TransactionRow = {
+      ...row,
+      photo_path: null,
+      updated_at: new Date().toISOString(),
+    };
+    await this.db.transactions.put(updatedRow);
+    return toEntry(updatedRow);
   }
 
   // ---------- Aggregations & Reports ----------

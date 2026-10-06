@@ -28,6 +28,7 @@ import { AmountDisplay } from './AmountDisplay';
 import { AmountPad } from './AmountPad';
 import { CategoryRow } from './CategoryRow';
 import { DateChip, NoteChip, WalletSelect } from './DetailsRow';
+import { ReceiptPhoto } from './ReceiptPhoto';
 import { useEntrySheet } from './EntrySheetContext';
 
 function getLocalDateString(d: Date): string {
@@ -98,6 +99,31 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
     }
   }
 
+  // Receipt photo: a new entry starts without one; an edited entry loads its stored photo
+  const [photo, setPhoto] = React.useState<Blob | null>(null);
+  const [originalPhoto, setOriginalPhoto] = React.useState<Blob | null>(null);
+  const photoTouched = React.useRef(false);
+  const editingId = editingEntry?.id;
+  const editingPhotoPath = editingEntry?.photoPath;
+
+  React.useEffect(() => {
+    if (!editingId || !editingPhotoPath) return;
+    let cancelled = false;
+    repo.getEntryPhoto(editingId).then((blob) => {
+      if (cancelled) return;
+      setOriginalPhoto(blob);
+      if (!photoTouched.current) setPhoto(blob);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [repo, editingId, editingPhotoPath]);
+
+  const handlePhotoChange = (next: Blob | null) => {
+    photoTouched.current = true;
+    setPhoto(next);
+  };
+
   const [isNoteOpen, setIsNoteOpen] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -151,6 +177,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
 
       if (mode === 'add') {
         const created = await repo.addEntry(payload);
+        if (photo) await repo.setEntryPhoto(created.id, photo);
 
         setIsSuccess(true);
         setTimeout(() => {
@@ -168,7 +195,13 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
         }, 300);
       } else if (mode === 'edit' && editingEntry) {
         const originalEntry = { ...editingEntry };
+        const photoChanged = photo !== originalPhoto;
+        const restorePhoto = originalPhoto;
         await repo.updateEntry(editingEntry.id, payload);
+        if (photoChanged) {
+          if (photo) await repo.setEntryPhoto(editingEntry.id, photo);
+          else await repo.removeEntryPhoto(editingEntry.id);
+        }
 
         setIsSuccess(true);
         setTimeout(() => {
@@ -186,6 +219,10 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
                   itemId: originalEntry.itemId,
                   note: originalEntry.note,
                 });
+                if (photoChanged) {
+                  if (restorePhoto) await repo.setEntryPhoto(originalEntry.id, restorePhoto);
+                  else await repo.removeEntryPhoto(originalEntry.id);
+                }
                 toast.info(t('updated'));
               },
             },
@@ -285,6 +322,8 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
             <Trash2 className="size-6" />
           </button>
         )}
+        {/* Receipt photo sits beside Save so the wallet/date/note labels keep their room */}
+        <ReceiptPhoto photo={photo} onChange={handlePhotoChange} />
         <Button
           onClick={handleSave}
           disabled={!canSave}
@@ -317,13 +356,22 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
   );
 }
 
+function keepOpenForToasts(e: { target: EventTarget | null; preventDefault: () => void }) {
+  if (e.target instanceof Element && e.target.closest('[data-sonner-toaster]')) e.preventDefault();
+}
+
 export function EntrySheet() {
   const t = useTranslations('entry');
   const { isOpen, mode, editingEntry, initialType, close } = useEntrySheet();
 
   return (
     <Drawer open={isOpen} onOpenChange={(open) => !open && close()} repositionInputs>
-      <DrawerContent className="max-h-[96dvh] overflow-y-auto">
+      <DrawerContent
+        className="max-h-[96dvh] overflow-y-auto"
+        // Tapping Undo on a toast must not close the sheet
+        onPointerDownOutside={keepOpenForToasts}
+        onInteractOutside={keepOpenForToasts}
+      >
         <DrawerHeader className="px-4 pt-1 pb-2">
           <DrawerTitle className="text-title font-bold text-ink">
             {mode === 'edit' ? t('editTitle') : t('addTitle')}

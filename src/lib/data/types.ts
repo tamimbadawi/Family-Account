@@ -95,6 +95,7 @@ export interface Entry {
   toAccountId: string | null;
   itemId: string | null;
   note: string | null;
+  photoPath?: string | null; // receipt photo: '<household_id>/<entry_id>.jpg' (or .webp)
   createdBy: string | null;
   updatedBy: string | null;
   createdAt: string;
@@ -265,11 +266,19 @@ export interface TransactionRow {
   to_account_id: string | null;
   item_id: string | null;
   note: string | null;
+  photo_path?: string | null;
   created_by: string | null;
   updated_by: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+}
+
+/** Receipt photo kept on the phone (mock mode); Phase B uploads it to the `receipts` bucket. */
+export interface PhotoRow {
+  id: string; // transaction id
+  blob: Blob;
+  created_at: string;
 }
 
 export interface OutboxRow {

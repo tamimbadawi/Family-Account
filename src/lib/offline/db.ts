@@ -13,6 +13,7 @@ import type {
   ItemRow,
   MetaRow,
   OutboxRow,
+  PhotoRow,
   SubcategoryRow,
   TransactionRow,
 } from '../data/types';
@@ -35,6 +36,7 @@ export class FamilyAccountsDB extends Dexie {
   transactions!: Table<TransactionRow, string>;
   outbox!: Table<OutboxRow, string>;
   meta!: Table<MetaRow, string>;
+  photos!: Table<PhotoRow, string>;
 
   constructor(dbName: string = getDbName()) {
     super(dbName);
@@ -50,6 +52,11 @@ export class FamilyAccountsDB extends Dexie {
         'id, household_id, occurred_on, account_id, to_account_id, item_id, type, deleted_at, updated_at, [household_id+occurred_on]',
       outbox: 'id, created_at, attempts',
       meta: 'key',
+    });
+
+    // v2 · receipt photos stored on the phone (A3c). v1 stays as-is so existing phones upgrade cleanly.
+    this.version(2).stores({
+      photos: 'id',
     });
   }
 }

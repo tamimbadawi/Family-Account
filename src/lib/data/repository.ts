@@ -182,6 +182,12 @@ export interface Repository {
   softDeleteEntry(id: string): Promise<void>;
   restoreEntry(id: string): Promise<void>;
 
+  // Receipt photos (one optional photo per entry)
+  setEntryPhoto(entryId: string, blob: Blob): Promise<Entry>;
+  getEntryPhoto(entryId: string): Promise<Blob | null>;
+  /** Clears the entry's photo link only; nothing is hard-deleted. */
+  removeEntryPhoto(entryId: string): Promise<Entry>;
+
   // Aggregations & Reports
   recentItems(limit?: number): Promise<RecentItem[]>;
   monthSummary(month: string): Promise<MonthSummary>;

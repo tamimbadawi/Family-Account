@@ -311,4 +311,41 @@ describe('MockRepository with fake-indexeddb', () => {
     const entries = await testRepo.listEntries();
     expect(entries.length).toBeGreaterThan(0);
   });
+  it('stores, reads, replaces and removes a receipt photo', async () => {
+    const [item] = await repo.getItems();
+    const entry = await repo.addEntry({
+      type: 'expense',
+      amount: 120,
+      occurredOn: '2026-10-06',
+      accountId: WALLET_CASH_ID,
+      itemId: item.id,
+    });
+    expect(entry.photoPath).toBeNull();
+    expect(await repo.getEntryPhoto(entry.id)).toBeNull();
+
+    const jpeg = new Blob([new Uint8Array([1, 2, 3])], { type: 'image/jpeg' });
+    const withPhoto = await repo.setEntryPhoto(entry.id, jpeg);
+    expect(withPhoto.photoPath).toBe(`${entry.householdId}/${entry.id}.jpg`);
+    expect((await repo.getEntry(entry.id))?.photoPath).toBe(withPhoto.photoPath);
+    const stored = await repo.getEntryPhoto(entry.id);
+    expect(stored?.size).toBe(3);
+
+    // Replacing keeps one photo per entry and follows the new format
+    const webp = new Blob([new Uint8Array([4, 5])], { type: 'image/webp' });
+    const replaced = await repo.setEntryPhoto(entry.id, webp);
+    expect(replaced.photoPath).toBe(`${entry.householdId}/${entry.id}.webp`);
+    expect((await repo.getEntryPhoto(entry.id))?.size).toBe(2);
+
+    // Editing other fields keeps the photo
+    await repo.updateEntry(entry.id, { amount: 130 });
+    expect((await repo.getEntry(entry.id))?.photoPath).toBe(replaced.photoPath);
+
+    // Remove only clears the link
+    const removed = await repo.removeEntryPhoto(entry.id);
+    expect(removed.photoPath).toBeNull();
+    expect(await repo.getEntryPhoto(entry.id)).toBeNull();
+    expect(await db.photos.get(entry.id)).toBeDefined();
+
+    await expect(repo.setEntryPhoto('missing', jpeg)).rejects.toThrow('Entry not found');
+  });
 });

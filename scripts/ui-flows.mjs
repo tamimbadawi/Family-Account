@@ -133,6 +133,49 @@ const FLOWS = {
     await sleep(800);
     await assertUsable(page, page.getByText('Bakery test').first(), 'the new group after saving');
   },
+  async photo(page) {
+    await page.goto(BASE + '/en/history', { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    // A big camera-sized JPEG, made in the page
+    const jpeg = Buffer.from(await page.evaluate(() => {
+      const c = document.createElement('canvas');
+      c.width = 4032; c.height = 3024;
+      const g = c.getContext('2d');
+      for (let i = 0; i < 400; i++) { g.fillStyle = `hsl(${i * 37 % 360} 70% 50%)`; g.fillRect((i * 97) % 4032, (i * 61) % 3024, 300, 200); }
+      return c.toDataURL('image/jpeg', 0.95).split(',')[1];
+    }), 'base64');
+    await openSheet(page);
+    await typeAmount(page, ['1', '2', '0']);
+    await tap(page, 'Food');
+    await tap(page, 'Groceries');
+    await tap(page, 'Supermarket');
+    await page.getByLabel('Add a receipt photo').setInputFiles({ name: 'receipt.jpg', mimeType: 'image/jpeg', buffer: jpeg });
+    const thumb = btn(page, 'View receipt photo');
+    await assertUsable(page, thumb, 'photo thumbnail');
+    await assertOnePopup(page, '120'); // the photo chip still fits with Save on screen
+    const width = await thumb.locator('img').evaluate((img) => img.naturalWidth);
+    if (width > 1600) throw new Error(`photo was not shrunk (${width}px wide)`);
+    // Viewer: Remove → Undo brings it back
+    await tap(page, 'View receipt photo');
+    await assertUsable(page, btn(page, 'Remove'), 'Remove in the photo viewer');
+    await assertUsable(page, page.getByText('Replace', { exact: true }), 'Replace in the photo viewer');
+    await tap(page, 'Remove');
+    await assertUsable(page, page.getByLabel('Add a receipt photo').locator('..'), 'camera chip after Remove');
+    await page.getByRole('button', { name: 'Undo' }).first().click();
+    await sleep(400);
+    await assertUsable(page, btn(page, 'View receipt photo'), 'photo thumbnail after Undo');
+    const save = await saveButton(page);
+    await assertUsable(page, save, 'Save button');
+    await save.click();
+    await sleep(1500);
+    // History marks the entry, and editing it shows the photo again
+    const clip = page.getByLabel('Has a photo').first();
+    await assertUsable(page, clip, 'photo mark on the history row');
+    await clip.click();
+    await page.getByText('Edit').first().waitFor({ timeout: 8000 });
+    await sleep(700); // let the sheet finish sliding up
+    await assertUsable(page, btn(page, 'View receipt photo'), 'photo thumbnail when editing');
+  },
 };
 
 const selected = process.argv.slice(2).filter((a) => FLOWS[a]);

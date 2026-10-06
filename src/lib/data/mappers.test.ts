@@ -158,6 +158,7 @@ describe('mappers', () => {
       to_account_id: null,
       item_id: 'i-1',
       note: 'فاتورة الكهرباء',
+      photo_path: 'h-1/t-1.jpg',
       created_by: 'u-1',
       updated_by: null,
       created_at: '2026-10-06T10:00:00.000Z',
@@ -167,6 +168,7 @@ describe('mappers', () => {
     const domain = toEntry(row);
     expect(domain.amount).toBe(450.75);
     expect(domain.occurredOn).toBe('2026-10-06');
+    expect(domain.photoPath).toBe('h-1/t-1.jpg');
     expect(toTransactionRow(domain)).toEqual(row);
   });
 });
