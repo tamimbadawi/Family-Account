@@ -84,6 +84,20 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
   const [amountStr, setAmountStr] = React.useState(defaultAmount);
   const [selectedWalletId, setSelectedWalletId] = React.useState<string | null>(defaultWalletId);
   const [selectedToWalletId, setSelectedToWalletId] = React.useState<string | null>(defaultToWalletId);
+
+  // Move: picking the wallet that is already on the other side swaps the two
+  const pickFromWallet = (id: string) => {
+    if (id === selectedToWalletId) setSelectedToWalletId(selectedWalletId);
+    setSelectedWalletId(id);
+  };
+  const pickToWallet = (id: string) => {
+    if (id === selectedWalletId) setSelectedWalletId(selectedToWalletId);
+    setSelectedToWalletId(id);
+  };
+  const swapWallets = () => {
+    setSelectedWalletId(selectedToWalletId);
+    setSelectedToWalletId(selectedWalletId);
+  };
   const [occurredOn, setOccurredOn] = React.useState(defaultOccurredOn);
   const [note, setNote] = React.useState(defaultNote);
   const [selectedItem, setSelectedItem] = React.useState<Item | null>(defaultItem);
@@ -270,19 +284,18 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
 
       {isTransfer ? (
         <div className="flex items-center gap-2">
-          <WalletSelect
-            label={t('from')}
-            value={selectedWalletId}
-            onChange={setSelectedWalletId}
-            exclude={selectedToWalletId}
-          />
-          <ArrowRight className="size-5 shrink-0 text-ink-muted rtl:rotate-180" />
-          <WalletSelect
-            label={t('to')}
-            value={selectedToWalletId}
-            onChange={setSelectedToWalletId}
-            exclude={selectedWalletId}
-          />
+          {/* Both pickers list every wallet: choosing the one already on the other side swaps them,
+              so money can move bank → cash as easily as cash → bank */}
+          <WalletSelect label={t('from')} value={selectedWalletId} onChange={pickFromWallet} />
+          <button
+            type="button"
+            onClick={swapWallets}
+            aria-label={t('swapWallets')}
+            className="flex size-12 shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink-muted transition-transform active:scale-90 cursor-pointer"
+          >
+            <ArrowRight className="size-5 rtl:rotate-180" />
+          </button>
+          <WalletSelect label={t('to')} value={selectedToWalletId} onChange={pickToWallet} />
         </div>
       ) : (
         <CategoryRow

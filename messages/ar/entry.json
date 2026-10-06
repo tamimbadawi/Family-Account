@@ -54,5 +54,6 @@
   "addBank": "إضافة",
   "back": "رجوع",
   "addedBy": "أضافها {name}",
-  "changedBy": "آخر تعديل من {name}"
+  "changedBy": "آخر تعديل من {name}",
+  "swapWallets": "اعكس الاتجاه"
 }
