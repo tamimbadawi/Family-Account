@@ -75,21 +75,21 @@ export function EntryRow({ entry, onClick }: EntryRowProps) {
       tabIndex={onClick ? 0 : undefined}
       onClick={onClick}
       onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
-      className="flex min-h-[56px] items-center justify-between gap-3.5 py-3 transition-colors active:bg-surface-2/40 select-none cursor-pointer"
+      className="flex min-h-[48px] items-center justify-between gap-3 py-2 transition-colors active:bg-surface-2/40 select-none cursor-pointer"
     >
-      <div className="flex items-center gap-3.5 min-w-0">
+      <div className="flex items-center gap-3 min-w-0">
         <div
           style={circleStyle}
-          className={`flex size-12 shrink-0 items-center justify-center rounded-full ${circleClass}`}
+          className={`flex size-10 shrink-0 items-center justify-center rounded-full ${circleClass}`}
         >
           {isTransfer ? (
-            <ArrowLeftRight className="size-6" />
+            <ArrowLeftRight className="size-5" />
           ) : (
-            <CategoryIcon name={entry.categoryIcon} className="size-6" />
+            <CategoryIcon name={entry.categoryIcon} className="size-5" />
           )}
         </div>
         <div className="min-w-0">
-          <div className="truncate text-heading font-medium text-ink leading-snug">
+          <div className="truncate text-body font-medium text-ink leading-snug">
             {title}
           </div>
           <div className="truncate text-caption text-ink-muted leading-tight">
@@ -98,7 +98,7 @@ export function EntryRow({ entry, onClick }: EntryRowProps) {
         </div>
       </div>
 
-      <div className={`shrink-0 text-heading font-bold tabular-nums ${amountClass}`}>
+      <div className={`shrink-0 text-body font-bold tabular-nums ${amountClass}`}>
         {sign}
         {money(entry.amount, locale)}
       </div>

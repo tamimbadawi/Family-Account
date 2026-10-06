@@ -13,8 +13,8 @@ export default function LoginPage() {
   const tAuth = useTranslations('auth');
   const router = useRouter();
 
-  const [username, setUsername] = React.useState('mama');
-  const [password, setPassword] = React.useState('••••••••');
+  const [username, setUsername] = React.useState('');
+  const [password, setPassword] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -24,12 +24,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="mx-auto flex h-dvh max-w-[520px] flex-col justify-between overflow-hidden bg-canvas px-6 py-7 text-ink select-none">
+    <div className="mx-auto flex h-dvh max-w-[520px] flex-col justify-between overflow-hidden bg-canvas px-6 pt-[max(env(safe-area-inset-top,0px),1.5rem)] pb-[max(env(safe-area-inset-bottom,0px),1.5rem)] text-ink select-none">
       <div>
         <InstallBanner />
       </div>
 
-      <div className="flex flex-col items-center text-center -mt-4">
+      <div className="flex flex-col items-center text-center mt-2">
         <div className="relative size-24 overflow-hidden rounded-[22px] shadow-card bg-surface">
           <Image
             src="/icons/icon-1024.png"
@@ -92,7 +92,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <Button type="submit" className="h-14 w-full text-heading font-semibold mt-2">
+        <Button type="submit" className="h-14 w-full text-heading font-semibold mt-2 text-accent-ink">
           {tAuth('signIn')}
         </Button>
       </form>
@@ -104,12 +104,6 @@ export default function LoginPage() {
         >
           <Smartphone className="size-4" />
           <span>{tAuth('howToInstall')}</span>
-        </Link>
-        <Link
-          href="/welcome"
-          className="text-caption text-ink-muted hover:text-ink transition-colors"
-        >
-          {tAuth('welcomeTitle')} (First run setup)
         </Link>
       </div>
     </div>

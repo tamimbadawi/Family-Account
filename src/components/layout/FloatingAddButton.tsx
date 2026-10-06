@@ -17,9 +17,9 @@ export function FloatingAddButton() {
       type="button"
       aria-label="Add entry"
       onClick={() => openAdd()}
-      className="absolute end-5 bottom-[calc(4rem+env(safe-area-inset-bottom,0px)+1rem)] z-30 flex size-16 items-center justify-center rounded-full bg-accent text-accent-ink shadow-card transition-transform active:scale-95 select-none"
+      className="absolute end-4 bottom-[calc(4rem+env(safe-area-inset-bottom,0px)+0.75rem)] z-30 flex size-14 items-center justify-center rounded-full bg-accent text-accent-ink shadow-card transition-transform active:scale-95 select-none cursor-pointer"
     >
-      <Plus className="size-8" strokeWidth={2.25} />
+      <Plus className="size-7" strokeWidth={2.25} />
     </button>
   );
 }

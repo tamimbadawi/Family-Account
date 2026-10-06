@@ -54,9 +54,9 @@ export default function HistoryPage() {
   const isEmpty = entries !== undefined && entries.length === 0;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       {/* Controls: Month switcher and filter chips */}
-      <div className="px-5 pt-2 pb-3 space-y-3 shrink-0">
+      <div className="px-5 pt-1 pb-3 space-y-3 shrink-0">
         <MonthSwitcher
           value={selectedMonth}
           onChange={setSelectedMonth}
@@ -101,7 +101,7 @@ export default function HistoryPage() {
       </div>
 
       {/* Main content: list of day groups or empty / loading state */}
-      <div className="flex-1 overflow-y-auto overscroll-contain pb-24">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-32 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {isLoading && (
           <div className="px-5 py-3 space-y-4">
             <div className="space-y-3 bg-surface p-4 rounded-card border border-line/40">

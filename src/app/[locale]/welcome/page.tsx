@@ -38,7 +38,7 @@ export default function WelcomePage() {
   };
 
   return (
-    <div className="mx-auto flex h-dvh max-w-[520px] flex-col justify-between overflow-hidden bg-canvas px-6 py-8 text-ink select-none">
+    <div className="mx-auto flex h-dvh max-w-[520px] flex-col justify-between overflow-hidden bg-canvas px-6 pt-[max(env(safe-area-inset-top,0px),1.5rem)] pb-[max(env(safe-area-inset-bottom,0px),1.5rem)] text-ink select-none">
       <div className="flex flex-col items-center text-center mt-2">
         <div className="relative size-24 overflow-hidden rounded-[22px] shadow-card bg-surface">
           <Image
@@ -90,17 +90,11 @@ export default function WelcomePage() {
         <Button
           type="submit"
           disabled={saving}
-          className="h-14 w-full text-heading font-semibold mt-3"
+          className="h-14 w-full text-heading font-semibold mt-3 text-accent-ink"
         >
           {tAuth('getStarted')}
         </Button>
       </form>
-
-      <div className="text-center pb-2">
-        <p className="text-caption text-ink-muted">
-          {tAuth('appName')}
-        </p>
-      </div>
     </div>
   );
 }

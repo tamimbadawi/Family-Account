@@ -9,6 +9,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "check-rtl": "node scripts/check-rtl.mjs",
     "ui:check": "node scripts/ui-check.mjs"
   },
   "dependencies": {

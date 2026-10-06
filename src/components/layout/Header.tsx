@@ -10,6 +10,11 @@ export function Header() {
   const tApp = useTranslations('app');
   const pathname = usePathname();
 
+  // Sub-screens under /settings/ render their own unified header with back chevron
+  if (pathname.startsWith('/settings/')) {
+    return null;
+  }
+
   let title = tApp('name');
   if (pathname.startsWith('/history')) {
     title = tNav('history');

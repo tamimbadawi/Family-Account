@@ -88,9 +88,9 @@ export default function InstallPage() {
       <div className="pt-6">
         <Button
           asChild
-          className="h-14 w-full text-heading font-semibold"
+          className="h-14 w-full text-heading font-semibold text-accent-ink"
         >
-          <Link href="/">
+          <Link href="/" className="text-accent-ink">
             <Check className="size-5" />
             <span>{tCommon('done')}</span>
           </Link>

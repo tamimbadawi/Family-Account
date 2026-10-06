@@ -22,6 +22,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 
 export default function WalletManagerPage() {
   const locale = useLocale();
@@ -120,32 +121,28 @@ export default function WalletManagerPage() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto overscroll-contain">
-      {/* Header */}
-      <div className="px-5 pt-2 pb-3 shrink-0 flex items-center justify-between border-b border-line/30 select-none">
-        <Link
-          href="/settings"
-          className="flex items-center gap-1 text-accent font-semibold text-body hover:opacity-80 transition-opacity"
-        >
-          <ChevronLeft className="size-5 rtl:rotate-180" />
-          <span>{t('back')}</span>
-        </Link>
-        <h2 className="text-heading font-semibold text-ink">
-          {t('wallets')}
-        </h2>
-        <div className="w-12" aria-hidden="true" />
+      {/* ONE Top Header: back chevron + large title */}
+      <div className="px-5 pt-[max(env(safe-area-inset-top,0px),1rem)] pb-3 shrink-0 flex items-center justify-between border-b border-line/30 select-none">
+        <div className="flex items-center gap-2 min-w-0">
+          <Link
+            href="/settings"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full text-accent hover:bg-surface-2 transition-colors -ms-2"
+            aria-label={t('back')}
+          >
+            <ChevronLeft className="size-6 rtl:rotate-180" />
+          </Link>
+          <h1 className="text-title font-bold text-ink truncate">
+            {t('wallets')}
+          </h1>
+        </div>
       </div>
 
-      {/* Toolbar */}
-      <div className="px-5 py-3 flex items-center justify-between shrink-0">
-        <label className="flex items-center gap-2 text-caption text-ink-muted cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showArchived}
-            onChange={(e) => setShowArchived(e.target.checked)}
-            className="size-4 rounded accent-accent"
-          />
-          <span>{t('showArchived')}</span>
-        </label>
+      {/* Toolbar with full-width Switch row */}
+      <div className="px-5 py-3 shrink-0">
+        <div className="flex h-12 items-center justify-between px-4 bg-surface rounded-2xl border border-line/40 select-none">
+          <span className="text-body font-medium text-ink">{t('showArchived')}</span>
+          <Switch checked={showArchived} onCheckedChange={setShowArchived} />
+        </div>
       </div>
 
       {/* Main List */}
@@ -199,18 +196,19 @@ export default function WalletManagerPage() {
                         {name}
                       </div>
                       <div className="text-caption text-ink-muted">
-                        <span>{t('openingBalance')}: </span>
-                        <span className="tabular-nums font-medium text-ink">
-                          {money(wallet.openingBalance, locale)}
-                        </span>
+                        {t('openingBalance')}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5 shrink-0 ps-3">
+                    <span className="text-body font-bold tabular-nums text-ink">
+                      {money(wallet.openingBalance, locale)}
+                    </span>
                     <button
                       type="button"
-                      className="p-2 rounded-full hover:bg-surface-2 text-ink-muted transition-colors"
+                      className="p-1.5 rounded-full hover:bg-surface-2 text-ink-muted transition-colors"
+                      aria-label={t('edit')}
                     >
                       <Edit2 className="size-4" />
                     </button>
