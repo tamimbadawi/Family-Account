@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background emerald gradient (design tokens: accent #0F766E with subtle depth) -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14B8A6" />
+      <stop offset="45%" stop-color="#0F766E" />
+      <stop offset="100%" stop-color="#0B524D" />
+    </linearGradient>
+
+    <!-- Top highlight for subtle iOS native depth -->
+    <linearGradient id="highlight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.22" />
+      <stop offset="30%" stop-color="#FFFFFF" stop-opacity="0.04" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Soft drop shadow for mark against canvas -->
+    <filter id="mark-drop" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#042F2C" flood-opacity="0.35" />
+    </filter>
+
+    <!-- Gold coin clasp gradient -->
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A" />
+      <stop offset="45%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+
+    <!-- Clasp button shadow -->
+    <filter id="clasp-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0F766E" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- iOS App Icon Squircle (standard Apple curvature: rx=115 at 512x512) -->
+  <rect width="512" height="512" rx="115" fill="url(#bg)" />
+  <rect width="512" height="512" rx="115" fill="url(#highlight)" />
+
+  <!-- Main House-Wallet Mark (stylised combination of Home and Family Finances) -->
+  <g filter="url(#mark-drop)">
+    <!-- Base House Silhouette with Overhanging Eaves -->
+    <path
+      d="M 244 122
+         C 251 116 261 116 268 122
+         L 374 207
+         C 382 213 379 225 369 225
+         L 348 225
+         L 348 338
+         C 348 356 334 370 316 370
+         L 196 370
+         C 178 370 164 356 164 338
+         L 164 225
+         L 143 225
+         C 133 225 130 213 138 207
+         Z"
+      fill="#FFFFFF"
+    />
+
+    <!-- Lower Wallet Pocket Layer (soft warm mint-ivory) -->
+    <path
+      d="M 164 256
+         L 214 256
+         C 220 256 225 259 228 264
+         L 235 277
+         C 240 287 247 293 256 293
+         C 265 293 272 287 277 277
+         L 284 264
+         C 287 259 292 256 298 256
+         L 348 256
+         L 348 338
+         C 348 356 334 370 316 370
+         L 196 370
+         C 178 370 164 356 164 338
+         Z"
+      fill="#F2F9F7"
+    />
+
+    <!-- Wallet Flap Seam Line with Emerald Stroke -->
+    <path
+      d="M 164 256
+         L 214 256
+         C 220 256 225 259 228 264
+         L 235 277
+         C 240 287 247 293 256 293
+         C 265 293 272 287 277 277
+         L 284 264
+         C 287 259 292 256 298 256
+         L 348 256"
+      fill="none"
+      stroke="#0F766E"
+      stroke-width="6"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+
+    <!-- Attic Coin Slot in House Gable (savings motif) -->
+    <rect x="228" y="168" width="56" height="10" rx="5" fill="#0F766E" fill-opacity="0.3" />
+
+    <!-- Gold Coin / Clasp Button on Wallet Flap -->
+    <circle cx="256" cy="275" r="16" fill="url(#gold)" filter="url(#clasp-shadow)" />
+    <!-- Inner Embossed Rim of Coin -->
+    <circle cx="256" cy="275" r="11" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.85" />
+    <!-- Center Dot of Coin -->
+    <circle cx="256" cy="275" r="3" fill="#D97706" />
+  </g>
+</svg>
