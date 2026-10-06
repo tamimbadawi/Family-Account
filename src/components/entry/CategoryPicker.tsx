@@ -40,13 +40,21 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
   const [selectedCategory, setSelectedCategory] = React.useState<Category | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = React.useState<Subcategory | null>(null);
 
-  // Direction for animation (+1 = drill down, -1 = go back)
-  const [direction, setDirection] = React.useState<1 | -1>(1);
 
   // Inline "New" state
   const [isCreating, setIsCreating] = React.useState(false);
   const [newNameAr, setNewNameAr] = React.useState('');
   const [newNameEn, setNewNameEn] = React.useState('');
+
+  // Reset when kind changes (expense <-> income)
+  const [prevKind, setPrevKind] = React.useState(kind);
+  if (prevKind !== kind) {
+    setPrevKind(kind);
+    setStep('category');
+    setSelectedCategory(null);
+    setSelectedSubcategory(null);
+    setIsCreating(false);
+  }
 
   // Queries
   const recentItems = useRecentItems(6);
@@ -54,22 +62,20 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
   const subcategories = useSubcategories(selectedCategory?.id);
   const items = useItems(selectedSubcategory?.id);
 
-  // Filter recents by kind
+  // Filter recents by kind (max 2 rows = max 4 chips)
   const filteredRecents = React.useMemo(() => {
     if (!recentItems) return [];
-    return recentItems.filter((r) => r.category.kind === kind);
+    return recentItems.filter((r) => r.category.kind === kind).slice(0, 4);
   }, [recentItems, kind]);
 
   const handleSelectCategory = (cat: Category) => {
     setSelectedCategory(cat);
-    setDirection(1);
     setIsCreating(false);
     setStep('subcategory');
   };
 
   const handleSelectSubcategory = (sub: Subcategory) => {
     setSelectedSubcategory(sub);
-    setDirection(1);
     setIsCreating(false);
     setStep('item');
   };
@@ -83,11 +89,9 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
   const handleBack = () => {
     setIsCreating(false);
     if (step === 'item') {
-      setDirection(-1);
       setSelectedSubcategory(null);
       setStep('subcategory');
     } else if (step === 'subcategory') {
-      setDirection(-1);
       setSelectedCategory(null);
       setStep('category');
     }
@@ -131,8 +135,6 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
     }
   };
 
-  // Direction-aware animation offsets
-  const xOffset = isRtl ? -40 * direction : 40 * direction;
 
   return (
     <div className={`space-y-3 ${className}`}>
@@ -190,14 +192,14 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
         </div>
       )}
 
-      {/* Animated Step Content */}
-      <AnimatePresence mode="wait" initial={false}>
+      {/* Animated Step Content (fast step transition without delay) */}
+      <AnimatePresence initial={false}>
         <motion.div
           key={step}
-          initial={{ opacity: 0, x: xOffset }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -xOffset }}
-          transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.1 }}
           className="w-full"
         >
           {/* Step 1: Category Tiles */}
@@ -214,7 +216,7 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
                     key={cat.id}
                     type="button"
                     onClick={() => handleSelectCategory(cat)}
-                    className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-surface p-3.5 text-center shadow-card transition-transform active:scale-95 hover:shadow-md"
+                    className="flex flex-col items-center justify-center gap-1.5 rounded-2xl bg-surface p-3 text-center shadow-card transition-transform active:scale-95 hover:shadow-md cursor-pointer"
                   >
                     <div
                       style={
@@ -229,7 +231,7 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
                     >
                       <CategoryIcon name={cat.icon} className="size-6" />
                     </div>
-                    <span className="truncate w-full text-caption font-semibold text-ink">
+                    <span className="line-clamp-2 min-h-[2.5rem] flex items-center justify-center text-caption font-semibold text-ink leading-tight text-center px-1">
                       {name}
                     </span>
                   </button>
@@ -241,12 +243,12 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
                 <button
                   type="button"
                   onClick={() => setIsCreating(true)}
-                  className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line bg-surface/50 p-3.5 text-center transition-colors hover:bg-surface-2"
+                  className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-line bg-surface/50 p-3 text-center transition-colors hover:bg-surface-2 cursor-pointer"
                 >
                   <div className="flex size-12 items-center justify-center rounded-full bg-surface-2 text-ink-muted">
                     <Plus className="size-6" />
                   </div>
-                  <span className="truncate w-full text-caption font-semibold text-ink-muted">
+                  <span className="min-h-[2.5rem] flex items-center justify-center text-caption font-semibold text-ink-muted leading-tight text-center px-1">
                     {t('newCategory')}
                   </span>
                 </button>

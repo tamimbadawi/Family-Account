@@ -22,7 +22,7 @@ export default function AppLayout({
           <Toaster position="bottom-center" />
           <Header />
           
-          <main className="flex-1 overflow-y-auto overscroll-contain px-5 pb-6 pt-1">
+          <main className="flex-1 min-h-0 flex flex-col overflow-hidden relative">
             <PageTransition>
               {children}
             </PageTransition>

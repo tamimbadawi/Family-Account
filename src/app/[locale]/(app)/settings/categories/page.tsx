@@ -35,6 +35,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 
 export default function CategoryManagerPage() {
   const locale = useLocale();
@@ -253,48 +254,50 @@ export default function CategoryManagerPage() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto overscroll-contain">
-      {/* Top Header & Navigation */}
-      <div className="px-5 pt-2 pb-3 shrink-0 flex items-center justify-between border-b border-line/30 select-none">
-        {selectedSubcategory ? (
-          <button
-            type="button"
-            onClick={() => setSelectedSubcategory(null)}
-            className="flex items-center gap-1 text-accent font-semibold text-body hover:opacity-80 transition-opacity cursor-pointer"
-          >
-            <ChevronLeft className="size-5 rtl:rotate-180" />
-            <span className="truncate max-w-[120px]">{currentCategoryName}</span>
-          </button>
-        ) : selectedCategory ? (
-          <button
-            type="button"
-            onClick={() => setSelectedCategory(null)}
-            className="flex items-center gap-1 text-accent font-semibold text-body hover:opacity-80 transition-opacity cursor-pointer"
-          >
-            <ChevronLeft className="size-5 rtl:rotate-180" />
-            <span>{t('categories')}</span>
-          </button>
-        ) : (
-          <Link
-            href="/settings"
-            className="flex items-center gap-1 text-accent font-semibold text-body hover:opacity-80 transition-opacity"
-          >
-            <ChevronLeft className="size-5 rtl:rotate-180" />
-            <span>{t('back')}</span>
-          </Link>
-        )}
+      {/* ONE Top Header: back chevron + large title */}
+      <div className="px-5 pt-[max(env(safe-area-inset-top,0px),1rem)] pb-3 shrink-0 flex items-center justify-between border-b border-line/30 select-none">
+        <div className="flex items-center gap-2 min-w-0">
+          {selectedSubcategory ? (
+            <button
+              type="button"
+              onClick={() => setSelectedSubcategory(null)}
+              className="flex size-11 shrink-0 items-center justify-center rounded-full text-accent hover:bg-surface-2 transition-colors cursor-pointer -ms-2"
+              aria-label={t('back')}
+            >
+              <ChevronLeft className="size-6 rtl:rotate-180" />
+            </button>
+          ) : selectedCategory ? (
+            <button
+              type="button"
+              onClick={() => setSelectedCategory(null)}
+              className="flex size-11 shrink-0 items-center justify-center rounded-full text-accent hover:bg-surface-2 transition-colors cursor-pointer -ms-2"
+              aria-label={t('back')}
+            >
+              <ChevronLeft className="size-6 rtl:rotate-180" />
+            </button>
+          ) : (
+            <Link
+              href="/settings"
+              className="flex size-11 shrink-0 items-center justify-center rounded-full text-accent hover:bg-surface-2 transition-colors -ms-2"
+              aria-label={t('back')}
+            >
+              <ChevronLeft className="size-6 rtl:rotate-180" />
+            </Link>
+          )}
 
-        <h2 className="text-heading font-semibold text-ink truncate max-w-[160px]">
-          {selectedSubcategory
-            ? currentSubcategoryName
-            : selectedCategory
-            ? currentCategoryName
-            : t('categories')}
-        </h2>
+          <h1 className="text-title font-bold text-ink truncate">
+            {selectedSubcategory
+              ? currentSubcategoryName
+              : selectedCategory
+              ? currentCategoryName
+              : t('categories')}
+          </h1>
+        </div>
 
         <button
           type="button"
           onClick={() => setIsReordering(!isReordering)}
-          className="text-body font-semibold text-accent hover:opacity-80 transition-opacity cursor-pointer"
+          className="text-body font-semibold text-accent hover:opacity-80 transition-opacity cursor-pointer shrink-0 ps-3"
         >
           {isReordering ? t('done') : t('reorder')}
         </button>
@@ -328,16 +331,9 @@ export default function CategoryManagerPage() {
             </button>
           </div>
 
-          <div className="flex items-center justify-between px-1">
-            <label className="flex items-center gap-2 text-caption text-ink-muted cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showArchived}
-                onChange={(e) => setShowArchived(e.target.checked)}
-                className="size-4 rounded accent-accent"
-              />
-              <span>{t('showArchived')}</span>
-            </label>
+          <div className="flex h-12 items-center justify-between px-4 bg-surface rounded-2xl border border-line/40 select-none">
+            <span className="text-body font-medium text-ink">{t('showArchived')}</span>
+            <Switch checked={showArchived} onCheckedChange={setShowArchived} />
           </div>
         </div>
       )}

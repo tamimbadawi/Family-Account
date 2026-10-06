@@ -17,7 +17,7 @@
   "updated": "Updated",
   "deleted": "Deleted",
   "sameWallet": "Pick two different wallets",
-  "newCategory": "+ New Category",
+  "newCategory": "+ New",
   "newSubcategory": "+ New Group",
   "newItem": "+ New Item",
   "nameArLabel": "Name in Arabic",
@@ -26,5 +26,7 @@
   "yesterday": "Yesterday",
   "pickDay": "Pick a day",
   "allCategories": "Categories",
-  "change": "Change"
+  "change": "Change",
+  "next": "Next",
+  "editAmount": "Edit amount"
 }

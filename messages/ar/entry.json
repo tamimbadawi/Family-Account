@@ -17,7 +17,7 @@
   "updated": "اتعدّل",
   "deleted": "اتحذف",
   "sameWallet": "اختار محفظتين مختلفتين",
-  "newCategory": "+ قسم جديد",
+  "newCategory": "+ جديد",
   "newSubcategory": "+ فرع جديد",
   "newItem": "+ بند جديد",
   "nameArLabel": "الاسم بالعربي",
@@ -26,5 +26,7 @@
   "yesterday": "امبارح",
   "pickDay": "اختار يوم",
   "allCategories": "الأقسام",
-  "change": "تغيير"
+  "change": "تغيير",
+  "next": "التالي",
+  "editAmount": "تعديل المبلغ"
 }

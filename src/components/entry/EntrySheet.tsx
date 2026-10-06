@@ -13,7 +13,7 @@ import type {
 } from '@/lib/data/types';
 import { useRepository, useWallets } from '@/lib/data/provider';
 import { validateEntry } from '@/lib/validation/entry';
-import { pickName } from '@/lib/format';
+import { money, pickName } from '@/lib/format';
 import { CategoryIcon } from '@/components/ui/category-icon';
 
 import {
@@ -91,13 +91,15 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
   const [note, setNote] = React.useState(defaultNote);
   const [selectedItem, setSelectedItem] = React.useState<Item | null>(defaultItem);
 
+  // Phase state: 1 = amount pad, 2 = category/details
+  const [phase, setPhase] = React.useState<1 | 2>(mode === 'edit' ? 2 : 1);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  // When type changes, clear incompatible item
+  // When type changes, clear incompatible item (expense <-> income or transfer)
   const handleTypeChange = (newType: EntryType) => {
-    setType(newType);
-    if (newType === 'transfer') {
+    if (newType !== type) {
+      setType(newType);
       setSelectedItem(null);
     }
   };
@@ -219,132 +221,190 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
 
   return (
     <div className="space-y-4 px-5 pb-8 select-none">
-      {/* 1. TypeToggle */}
-      <TypeToggle value={type} onChange={handleTypeChange} />
+      {/* PHASE 1: TypeToggle + AmountDisplay + AmountPad + Next */}
+      {phase === 1 && (
+        <div className="space-y-4">
+          {/* 1. TypeToggle */}
+          <TypeToggle value={type} onChange={handleTypeChange} />
 
-      {/* 2. AmountDisplay */}
-      <AmountDisplay value={amountStr} type={type} />
+          {/* 2. AmountDisplay */}
+          <AmountDisplay value={amountStr} type={type} />
 
-      {/* 3. Step Area: Recents -> CategoryPicker or Wallets */}
-      {isTransfer ? (
-        <div className="space-y-3 rounded-card bg-surface p-4 shadow-card">
-          <div className="space-y-1.5">
-            <span className="text-caption font-semibold text-ink-muted">{t('from')}</span>
-            <WalletPicker
-              value={selectedWalletId}
-              onChange={setSelectedWalletId}
-              exclude={selectedToWalletId}
-            />
+          {/* 3. AmountPad (fills space) */}
+          <div className="pt-2">
+            <AmountPad value={amountStr} onChange={setAmountStr} />
           </div>
-          <div className="space-y-1.5 pt-2 border-t border-line">
-            <span className="text-caption font-semibold text-ink-muted">{t('to')}</span>
-            <WalletPicker
-              value={selectedToWalletId}
-              onChange={setSelectedToWalletId}
-              exclude={selectedWalletId}
-            />
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {selectedItemLabel ? (
-            <div className="flex items-center justify-between rounded-card bg-surface p-4 shadow-card">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
-                  <CategoryIcon className="size-5" />
-                </div>
-                <span className="truncate text-body font-semibold text-ink">
-                  {selectedItemLabel}
-                </span>
-              </div>
+
+          {/* 4. Next Button */}
+          <div className="pt-2 space-y-2">
+            <Button
+              type="button"
+              onClick={() => setPhase(2)}
+              disabled={numericAmount <= 0}
+              className="w-full h-14 rounded-2xl text-heading font-semibold text-accent-ink shadow-xs cursor-pointer"
+            >
+              <span>{t('next')}</span>
+            </Button>
+
+            {mode === 'edit' && (
               <button
                 type="button"
-                onClick={() => setSelectedItem(null)}
-                className="shrink-0 text-caption font-semibold text-accent hover:underline ps-2"
+                onClick={handleDelete}
+                className="flex h-12 w-full items-center justify-center gap-1.5 rounded-2xl text-body font-semibold text-danger transition-colors hover:bg-danger/10 active:scale-98 cursor-pointer"
               >
-                {t('change')}
+                <Trash2 className="size-5" />
+                <span>{tCommon('delete')}</span>
               </button>
-            </div>
-          ) : (
-            <div className="rounded-card bg-surface p-4 shadow-card">
-              <CategoryPicker
-                kind={type === 'income' ? 'income' : 'expense'}
-                onPick={handlePickCategoryItem}
-              />
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
 
-      {/* 4. AmountPad */}
-      <div className="pt-1">
-        <AmountPad value={amountStr} onChange={setAmountStr} />
-      </div>
-
-      {/* 5. Review strip */}
-      <div className="space-y-3 pt-2">
-        {/* Wallet for expense/income */}
-        {!isTransfer && (
-          <div className="space-y-1.5">
-            <span className="text-caption font-semibold text-ink-muted">{t('wallet')}</span>
-            <WalletPicker
-              value={selectedWalletId}
-              onChange={setSelectedWalletId}
-            />
+      {/* PHASE 2: Amount Pill + Category/Wallets + Review Strip + Save */}
+      {phase === 2 && (
+        <div className="space-y-4">
+          {/* 1. Small Amount Pill (tapping returns to Pad) */}
+          <div className="flex justify-center pb-1">
+            <button
+              type="button"
+              onClick={() => setPhase(1)}
+              className="inline-flex items-center gap-2 rounded-full bg-surface-2 px-4 py-2 shadow-xs transition-transform active:scale-95 hover:bg-surface-2/80 cursor-pointer"
+            >
+              <span
+                className={`text-heading font-bold tabular-nums ${
+                  type === 'income'
+                    ? 'text-income'
+                    : type === 'expense'
+                    ? 'text-expense'
+                    : 'text-ink'
+                }`}
+              >
+                {money(numericAmount, locale)}
+              </span>
+              <span className="text-caption text-ink-muted">·</span>
+              <span className="text-caption font-semibold text-accent">
+                {t('editAmount')}
+              </span>
+            </button>
           </div>
-        )}
 
-        {/* Date Chips */}
-        <div className="space-y-1.5">
-          <DateChips value={occurredOn} onChange={setOccurredOn} />
-        </div>
+          {/* 2. Step Area: CategoryPicker or Wallets */}
+          {isTransfer ? (
+            <div className="space-y-3 rounded-card bg-surface p-4 shadow-card">
+              <div className="space-y-1.5">
+                <span className="text-caption font-semibold text-ink-muted">{t('from')}</span>
+                <WalletPicker
+                  value={selectedWalletId}
+                  onChange={setSelectedWalletId}
+                  exclude={selectedToWalletId}
+                />
+              </div>
+              <div className="space-y-1.5 pt-2 border-t border-line">
+                <span className="text-caption font-semibold text-ink-muted">{t('to')}</span>
+                <WalletPicker
+                  value={selectedToWalletId}
+                  onChange={setSelectedToWalletId}
+                  exclude={selectedWalletId}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {selectedItemLabel ? (
+                <div className="flex items-center justify-between rounded-card bg-surface p-4 shadow-card">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
+                      <CategoryIcon className="size-5" />
+                    </div>
+                    <span className="truncate text-body font-semibold text-ink">
+                      {selectedItemLabel}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedItem(null)}
+                    className="shrink-0 text-caption font-semibold text-accent hover:underline ps-2 cursor-pointer"
+                  >
+                    {t('change')}
+                  </button>
+                </div>
+              ) : (
+                <div className="rounded-card bg-surface p-4 shadow-card">
+                  <CategoryPicker
+                    kind={type === 'income' ? 'income' : 'expense'}
+                    onPick={handlePickCategoryItem}
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
-        {/* Note Field */}
-        <NoteField value={note} onChange={setNote} />
-      </div>
-
-      {/* 6. Save Button */}
-      <div className="pt-3 space-y-2">
-        <Button
-          onClick={handleSave}
-          disabled={!canSave}
-          className="relative w-full h-14 rounded-2xl text-heading font-semibold overflow-hidden"
-        >
-          <AnimatePresence mode="wait">
-            {isSuccess ? (
-              <motion.div
-                key="check"
-                initial={{ scale: 0, rotate: -45 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                className="flex items-center justify-center"
-              >
-                <Check className="size-7 stroke-[3]" />
-              </motion.div>
-            ) : (
-              <motion.span
-                key="label"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                {tCommon('save')}
-              </motion.span>
+          {/* 3. Review strip */}
+          <div className="space-y-3 pt-1">
+            {/* Wallet for expense/income */}
+            {!isTransfer && (
+              <div className="space-y-1.5">
+                <span className="text-caption font-semibold text-ink-muted">{t('wallet')}</span>
+                <WalletPicker
+                  value={selectedWalletId}
+                  onChange={setSelectedWalletId}
+                />
+              </div>
             )}
-          </AnimatePresence>
-        </Button>
 
-        {/* Edit mode: Delete button */}
-        {mode === 'edit' && (
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="flex h-12 w-full items-center justify-center gap-1.5 rounded-2xl text-body font-semibold text-danger transition-colors hover:bg-danger/10 active:scale-98"
-          >
-            <Trash2 className="size-5" />
-            <span>{tCommon('delete')}</span>
-          </button>
-        )}
-      </div>
+            {/* Date Chips */}
+            <div className="space-y-1.5">
+              <DateChips value={occurredOn} onChange={setOccurredOn} />
+            </div>
+
+            {/* Note Field */}
+            <NoteField value={note} onChange={setNote} />
+          </div>
+
+          {/* 4. Save Button */}
+          <div className="pt-2 space-y-2">
+            <Button
+              onClick={handleSave}
+              disabled={!canSave}
+              className="relative w-full h-14 rounded-2xl text-heading font-semibold text-accent-ink overflow-hidden cursor-pointer"
+            >
+              <AnimatePresence mode="wait">
+                {isSuccess ? (
+                  <motion.div
+                    key="check"
+                    initial={{ scale: 0, rotate: -45 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                    className="flex items-center justify-center"
+                  >
+                    <Check className="size-7 stroke-[3]" />
+                  </motion.div>
+                ) : (
+                  <motion.span
+                    key="label"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    {tCommon('save')}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </Button>
+
+            {/* Edit mode: Delete button */}
+            {mode === 'edit' && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="flex h-12 w-full items-center justify-center gap-1.5 rounded-2xl text-body font-semibold text-danger transition-colors hover:bg-danger/10 active:scale-98 cursor-pointer"
+              >
+                <Trash2 className="size-5" />
+                <span>{tCommon('delete')}</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

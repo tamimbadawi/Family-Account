@@ -29,11 +29,23 @@ export default function HomePage() {
     return new Date().toISOString().slice(0, 7);
   }, []);
 
+  // Responsive limit: at most 3 entries, 2 on short screens (<720px height)
+  const [maxRows, setMaxRows] = React.useState(3);
+
+  React.useEffect(() => {
+    const update = () => {
+      setMaxRows(window.innerHeight < 720 ? 2 : 3);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
   // Queries
   const members = useMembers();
   const summary = useMonthSummary(currentMonth);
   const topCategories = useCategoryTotals(currentMonth, 'expense', 'category');
-  const entries = useEntries({ limit: 5 });
+  const entries = useEntries({ limit: 3 });
 
   // Loading state
   const isLoading = summary === undefined || entries === undefined;
@@ -49,7 +61,7 @@ export default function HomePage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 pt-2">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-8 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-5">
         {/* Greeting Skeleton */}
         <Skeleton className="h-6 w-36" />
 
@@ -88,13 +100,13 @@ export default function HomePage() {
 
   if (isEmpty) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center select-none">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-8 pt-1 flex flex-col items-center justify-center py-12 text-center select-none">
         <div className="mb-4 flex size-20 items-center justify-center rounded-full bg-accent-soft text-accent">
           <Sparkles className="size-10" />
         </div>
         <h2 className="text-title font-bold text-ink">{tHome('emptyTitle')}</h2>
         <p className="mt-2 max-w-xs text-body text-ink-muted">{tHome('emptyBody')}</p>
-        <Button onClick={() => openAdd()} className="mt-8 w-full max-w-xs">
+        <Button onClick={() => openAdd()} className="mt-8 w-full max-w-xs text-accent-ink">
           <Plus className="size-5" />
           {tCommon('add')}
         </Button>
@@ -106,7 +118,7 @@ export default function HomePage() {
   const displayedCategories = (topCategories ?? []).slice(0, 3);
 
   return (
-    <div className="space-y-5 pt-1">
+    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-8 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-4 select-none">
       {/* 1. Greeting */}
       <div>
         <span className="text-heading font-medium text-ink-muted">
@@ -196,7 +208,7 @@ export default function HomePage() {
         </div>
 
         <div className="divide-y divide-line rounded-card bg-surface px-4 py-1 shadow-card">
-          {entries.map((entry) => (
+          {entries.slice(0, maxRows).map((entry) => (
             <EntryRow key={entry.id} entry={entry} onClick={() => openEdit(entry)} />
           ))}
         </div>

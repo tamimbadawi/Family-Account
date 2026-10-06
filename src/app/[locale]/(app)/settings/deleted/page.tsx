@@ -47,19 +47,20 @@ export default function RecentlyDeletedPage() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto overscroll-contain">
-      {/* Top navigation */}
-      <div className="px-5 pt-2 pb-3 shrink-0 flex items-center justify-between border-b border-line/30 select-none">
-        <Link
-          href="/settings"
-          className="flex items-center gap-1 text-accent font-semibold text-body hover:opacity-80 active:opacity-60 transition-opacity"
-        >
-          <ChevronLeft className="size-5 rtl:rotate-180" />
-          <span>{t('back')}</span>
-        </Link>
-        <h2 className="text-heading font-semibold text-ink">
-          {t('recentlyDeleted')}
-        </h2>
-        <div className="w-12" aria-hidden="true" />
+      {/* ONE Top Header: back chevron + large title */}
+      <div className="px-5 pt-[max(env(safe-area-inset-top,0px),1rem)] pb-3 shrink-0 flex items-center justify-between border-b border-line/30 select-none">
+        <div className="flex items-center gap-2 min-w-0">
+          <Link
+            href="/settings"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full text-accent hover:bg-surface-2 transition-colors -ms-2"
+            aria-label={t('back')}
+          >
+            <ChevronLeft className="size-6 rtl:rotate-180" />
+          </Link>
+          <h1 className="text-title font-bold text-ink truncate">
+            {t('recentlyDeleted')}
+          </h1>
+        </div>
       </div>
 
       {/* Description header */}
