@@ -78,6 +78,7 @@ and the orchestrator applies it when merging.
 Whenever the user says a chat opened a PR or is BLOCKED (or just "check"):
 1. `git fetch`; find every new `step/*` branch on origin. Merge in dependency order (stacked branches after their base).
 2. For each: build, lint, typecheck, test, and a quick look at the diff and preview against `AGENTS.md`, `DESIGN.md` and the workflow.
-3. Green and on-spec → merge into `main` (`--no-ff`), push, mark ✅ in `PROGRESS.md` with the chat's note, apply shared-file requests.
-4. Not OK → fix trivial issues myself during the merge; otherwise give the user a short paste-ready fix prompt for that chat.
-5. If a chat was BLOCKED and is now unblocked, tell the user to send it: "continue your queue".
+3. **Look-and-feel gates: A1, A2b, A3b, A5.** For these, send the user the Vercel preview link and wait for their OK before merging (the agent keeps working on its next step meanwhile; stacking is allowed).
+4. Green and on-spec → merge into `main` (`--no-ff`), push, mark ✅ in `PROGRESS.md` with the chat's note, apply shared-file requests.
+5. Not OK → fix trivial issues myself during the merge; otherwise give the user a short paste-ready fix prompt for that chat.
+6. If a chat was BLOCKED and is now unblocked, tell the user to send it: "continue your queue".
