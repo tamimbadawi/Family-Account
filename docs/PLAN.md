@@ -242,6 +242,9 @@ Every save lands in the phone's IndexedDB instantly and is pushed to Supabase la
 11. **Stale devices re-download.** If a phone's last successful pull is older than 25 days, it does a full pull and drops local rows the server no longer has. The purge hard-deletes soft-deleted entries after 30 days, and an incremental pull cannot see those.
 12. **Dates are local.** `occurred_on` is always computed on the phone in local time (never `toISOString().slice(0, 10)`, which is UTC and lands on yesterday after midnight in Cairo) and always sent explicitly.
 
+13. **Balance corrections are targets, not deltas.** A correction records "this wallet holds X on date Y". The correction amount is derived from synced data, so a phone with stale data cannot write a wrong difference. (Added 2026-10-06; PROGRESS.md P1.)
+14. **Receipt photos sync separately.** Photos are kept in Dexie `photos` and uploaded by their own queue before the entry's `photo_path` is pushed. A failed upload retries and never leaves a path pointing at a missing file. Files of purged entries are removed through the Storage API. (PROGRESS.md P2, P3.)
+
 Home-screen web apps on iOS are not subject to Safari's 7-day storage eviction for websites, so the local data persists. The data always lives on the server too.
 
 ## PWA setup for iPhone

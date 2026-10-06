@@ -1,8 +1,11 @@
 name: Weekly database backup
 
-# Dumps schema + data to a private workflow artifact kept for 90 days.
-# Needs repo secret SUPABASE_DB_URL = the "Session pooler" connection string
-# (GitHub runners are IPv4-only; the direct connection is IPv6). Skips until set.
+# Dumps schema + data, encrypts them, and keeps the encrypted file as a workflow artifact for 90 days.
+# Needs repo secrets:
+#   SUPABASE_DB_URL   = the "Session pooler" connection string (GitHub runners are IPv4-only).
+#   BACKUP_PASSPHRASE = set by the owner (Injy) only; the maintainer never sees it.
+# Skips until SUPABASE_DB_URL is set. Fails (never uploads plain SQL) if the passphrase is missing.
+# Restore: gpg --decrypt db-backup.tar.gz.gpg > db-backup.tar.gz && tar xzf db-backup.tar.gz
 # The repository MUST stay private.
 
 on:
@@ -19,10 +22,14 @@ jobs:
         id: check
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
         run: |
           if [ -z "$SUPABASE_DB_URL" ]; then
             echo "SUPABASE_DB_URL not set yet — skipping (expected before step B5)."
             echo "run=false" >> "$GITHUB_OUTPUT"
+          elif [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::BACKUP_PASSPHRASE is not set. Refusing to upload an unencrypted backup."
+            exit 1
           else
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
@@ -40,11 +47,21 @@ jobs:
           mkdir -p backup
           supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/schema.sql
           supabase db dump --db-url "$SUPABASE_DB_URL" --data-only -f backup/data.sql
-          ls -la backup
+
+      - name: Encrypt (plain SQL never leaves the runner)
+        if: steps.check.outputs.run == 'true'
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          mkdir -p out
+          tar czf - backup | gpg --batch --yes --symmetric --cipher-algo AES256 \
+            --passphrase-fd 3 -o out/db-backup.tar.gz.gpg 3<<<"$BACKUP_PASSPHRASE"
+          rm -rf backup
+          ls -la out
 
       - uses: actions/upload-artifact@v4
         if: steps.check.outputs.run == 'true'
         with:
           name: db-backup-${{ github.run_number }}
-          path: backup/
+          path: out/db-backup.tar.gz.gpg
           retention-days: 90
