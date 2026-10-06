@@ -1,20 +1,19 @@
 # Orchestration — who does what
 
-**Four Antigravity chats build (two per account). Claude Code coordinates.**
+**Two Antigravity agents build (one per account, one folder each). Claude Code coordinates.**
 
-| Chat | Account | Folder (its own git worktree) | Dev server | Queue |
+| Agent | Account | Folder (its own git worktree) | Dev server | Queue |
 |---|---|---|---|---|
 | **AG-1** | account-one | `C:\Dev\family-accounts\ag1` | `npm run dev -- -p 3001` | AG-1 in `docs/PROGRESS.md` |
-| **AG-1B** | account-one | `C:\Dev\family-accounts\ag1b` | `npm run dev -- -p 3003` | AG-1B |
 | **AG-2** | account-two | `C:\Dev\family-accounts\ag2` | `npm run dev -- -p 3002` | AG-2 |
-| **AG-2B** | account-two | `C:\Dev\family-accounts\ag2b` | `npm run dev -- -p 3004` | AG-2B |
 | **Claude** | Claude Code | `C:\Dev\family-accounts\main` (`main`) | `npm run dev` (3000) | reviewing, merging, `PROGRESS.md`, **all Vercel and Supabase configuration** |
 
 Builders use Supabase only through the MCP calls their workflow names (B1+).
 
-## 1. Folders: one per chat, always
+## 1. Folders: one per agent, always
 
-Two chats in one folder overwrite each other's files. Each chat opens **only its own folder** as its workspace.
+Two agents in one folder overwrite each other's files. Each agent opens **only its own folder** as its workspace,
+and runs **one chat at a time** in it.
 All folders are worktrees of the same repository, so branches and commits are shared instantly without pushing.
 Each folder needs its own `npm install` once, and uses its own dev-server port (table above).
 The old folders on `P:` (pCloud) are retired: never open or work in them. Sync drives corrupt git repos and are slow.
@@ -47,18 +46,15 @@ For each step in your queue, in order:
 
 ## 3. Timeline (overview; the queues in `docs/PROGRESS.md` are the source of truth)
 
-| Wave | AG-1 | AG-1B | AG-2 | AG-2B |
-|---|---|---|---|---|
-| 0 | A0 scaffold | — | A7-icon | — |
-| 1 | A1 design system | — | A2a data layer | — |
-| 2 | A2b shell + Home | A3a entry parts | — (waits for A2b) | A5b-logic → A7 PWA |
-| 3 | A3b entry sheet ⭐ | A6 settings | A5 reports overview | (A7 continues) |
-| 4 | A4 history | — | A5b breakdown UI | — |
-| 5 | A8 polish (alone: it touches everything) | — | — | — |
-| — | 🚦 Family test on the **production URL** → A9 fixes (AG-1) | | | |
-| B | B1 → B2 → B3 → B6 (AG-1) | | B5 (after B1) → B4 (after B3) (AG-2) | |
-
-More than four chats would not help: the remaining steps depend on each other.
+| Wave | AG-1 | AG-2 |
+|---|---|---|
+| 0 | A0 scaffold ✅ | A7-icon ✅ |
+| 1 | A1 design system | A2a data layer → A5b-logic pivot engine |
+| 2 | A2b shell + Home → A3a entry parts | A7 PWA, login, install |
+| 3 | A3b entry sheet ⭐ → A4 history | A5 reports overview → A5b breakdown UI |
+| 4 | A6 settings → A8 polish (alone: it touches everything) | — |
+| — | 🚦 Family test on the **production URL** → A9 fixes (AG-1) | |
+| B | B1 → B2 → B3 → B6 | B5 (after B1) → B4 (after B3) |
 
 ## 4. Shared files: one owner each
 
@@ -70,9 +66,9 @@ and the orchestrator applies it when merging.
 | `docs/PROGRESS.md`, `docs/ORCHESTRATION.md`, `AGENTS.md`, `.agents/**` | Claude |
 | `src/lib/data/repository.ts`, `types.ts`, `mappers.ts`, `src/lib/offline/db.ts` | AG-2 (from A2a) |
 | `src/app/globals.css`, `src/app/tokens.css`, `src/components/ui/**` | AG-1 (from A1) |
-| `src/app/[locale]/layout.tsx`, `src/app/[locale]/(app)/layout.tsx`, `src/components/layout/**` | AG-1 (A0/A2b); AG-2B may add iOS metadata in A7 |
-| `src/components/entry/**` | AG-1B (A3a), then AG-1 (from A3b) |
-| `src/lib/reports/**` | AG-2B (A5b-logic), then AG-2 |
+| `src/app/[locale]/layout.tsx`, `src/app/[locale]/(app)/layout.tsx`, `src/components/layout/**` | AG-1 (A0/A2b); AG-2 may add iOS metadata in A7 |
+| `src/components/entry/**` | AG-1 (A3a, A3b) |
+| `src/lib/reports/**` | AG-2 (A5b-logic, A5, A5b) |
 | `src/i18n/request.ts` namespace list | whoever adds a namespace (one line; conflicts are trivial) |
 | `messages/{en,ar}/<ns>.json` | the chat building that screen |
 | `package.json` / `package-lock.json` | anyone may add deps; on conflict take `main`'s lockfile and rerun `npm install` |
