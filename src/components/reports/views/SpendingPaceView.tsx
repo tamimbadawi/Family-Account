@@ -61,21 +61,21 @@ export function SpendingPaceView() {
   const typicalPercent = Math.min(100, Math.round((paceData.typicalByToday / maxVal) * 100));
 
   return (
-    <div className="space-y-3 select-none">
+    <div className="space-y-2 select-none">
       {/* Hero Status Card */}
-      <Card className="rounded-card bg-surface p-5 shadow-card border border-line/60 text-center space-y-3">
-        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-surface-2 text-ink">
+      <Card className="rounded-card bg-surface p-3.5 shadow-card border border-line/60 text-center space-y-2">
+        <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-surface-2 text-ink">
           {isAhead ? (
-            <TrendingUp className="size-7 text-expense" />
+            <TrendingUp className="size-5 text-expense" />
           ) : isBehind ? (
-            <TrendingDown className="size-7 text-income" />
+            <TrendingDown className="size-5 text-income" />
           ) : (
-            <Gauge className="size-7 text-accent" />
+            <Gauge className="size-5 text-accent" />
           )}
         </div>
 
         <div>
-          <h2 className="text-title font-bold text-ink">
+          <h2 className="text-body font-bold text-ink">
             {isAhead
               ? t('library.aheadPace')
               : isBehind
@@ -83,32 +83,32 @@ export function SpendingPaceView() {
               : t('library.onTrackPace')}
           </h2>
           {pacePercent !== null && (
-            <p className="text-body font-semibold tabular-nums mt-1 text-ink-muted">
+            <p className="text-caption font-semibold tabular-nums mt-0.5 text-ink-muted">
               {pacePercent > 0 ? `+${pacePercent}%` : `${pacePercent}%`}
             </p>
           )}
         </div>
 
-        <div className="pt-2 border-t border-line/40">
+        <div className="pt-1.5 border-t border-line/40">
           <p className="text-caption text-ink-muted">
             {locale.startsWith('ar')
-              ? `بحلول اليوم ${dayOfMonth} من الشهر، تنفق العائلة عادة حوالي ${money(paceData.typicalByToday, locale, { fractionDigits: 0 })}.`
-              : `By day ${dayOfMonth} of the month, typical spending is around ${money(paceData.typicalByToday, locale, { fractionDigits: 0 })}.`}
+              ? `بحلول اليوم ${dayOfMonth}، الإنفاق المعتاد حوالي ${money(paceData.typicalByToday, locale, { fractionDigits: 0 })}.`
+              : `By day ${dayOfMonth}, typical spending is around ${money(paceData.typicalByToday, locale, { fractionDigits: 0 })}.`}
           </p>
         </div>
       </Card>
 
       {/* Comparison Stats Cards */}
-      <div className="grid grid-cols-2 gap-2.5">
-        <Card className="rounded-card bg-surface p-3.5 shadow-card border border-line/60">
+      <div className="grid grid-cols-2 gap-2">
+        <Card className="rounded-card bg-surface p-3 shadow-card border border-line/60">
           <span className="text-caption text-ink-muted block">
             {t('library.spentSoFar')}
           </span>
-          <span className="text-heading font-bold tabular-nums text-expense block mt-0.5">
+          <span className="text-body font-bold tabular-nums text-expense block mt-0.5">
             {money(paceData.spentSoFar, locale, { fractionDigits: 0 })}
           </span>
           {/* Progress bar */}
-          <div className="mt-2.5 h-1.5 w-full bg-surface-2 rounded-full overflow-hidden">
+          <div className="mt-2 h-1.5 w-full bg-surface-2 rounded-full overflow-hidden">
             <div
               style={{ width: `${spentPercent}%` }}
               className="h-full bg-expense rounded-full"
@@ -116,15 +116,15 @@ export function SpendingPaceView() {
           </div>
         </Card>
 
-        <Card className="rounded-card bg-surface p-3.5 shadow-card border border-line/60">
+        <Card className="rounded-card bg-surface p-3 shadow-card border border-line/60">
           <span className="text-caption text-ink-muted block">
             {t('library.typicalByToday')}
           </span>
-          <span className="text-heading font-bold tabular-nums text-ink block mt-0.5">
+          <span className="text-body font-bold tabular-nums text-ink block mt-0.5">
             {money(paceData.typicalByToday, locale, { fractionDigits: 0 })}
           </span>
           {/* Progress bar */}
-          <div className="mt-2.5 h-1.5 w-full bg-surface-2 rounded-full overflow-hidden">
+          <div className="mt-2 h-1.5 w-full bg-surface-2 rounded-full overflow-hidden">
             <div
               style={{ width: `${typicalPercent}%` }}
               className="h-full bg-accent rounded-full"
@@ -134,7 +134,7 @@ export function SpendingPaceView() {
       </div>
 
       {/* Full Month Projection Card */}
-      <Card className="rounded-card bg-surface p-4 shadow-card border border-line/60 flex items-center justify-between">
+      <Card className="rounded-card bg-surface p-3 shadow-card border border-line/60 flex items-center justify-between">
         <div className="min-w-0">
           <span className="text-caption font-medium text-ink-muted block">
             {t('library.typicalFullMonth')}
@@ -143,8 +143,8 @@ export function SpendingPaceView() {
             {money(paceData.typicalMonth, locale, { fractionDigits: 0 })}
           </span>
         </div>
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
-          <CheckCircle2 className="size-5" />
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
+          <CheckCircle2 className="size-4" />
         </div>
       </Card>
     </div>
