@@ -28,5 +28,12 @@
   "allCategories": "Categories",
   "change": "Change",
   "next": "Next",
-  "editAmount": "Edit amount"
+  "editAmount": "Edit amount",
+  "keypad": "Number pad",
+  "backspace": "Delete last digit",
+  "plus": "Plus",
+  "minus": "Minus",
+  "multiply": "Times",
+  "divide": "Divided by",
+  "invalidAmount": "Total must be more than 0"
 }

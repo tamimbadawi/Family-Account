@@ -1,14 +1,29 @@
 'use client';
 
 import * as React from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import type { EntryType } from '@/lib/data/types';
+import { formatExpression, hasOperator, previewValue } from '@/lib/format/expression';
 
 export interface AmountDisplayProps {
   value: string;
   type?: EntryType;
   placeholder?: string;
   className?: string;
+}
+
+// Format value with thousands separators while preserving typing state (dot, trailing zeros)
+function formatLive(val: string) {
+  if (!val) return '';
+  const parts = val.split('.');
+  const intPart = parts[0];
+  const decPart = parts.length > 1 ? parts[1] : null;
+
+  const formattedInt = Number(intPart).toLocaleString('en-US'); // Western digits 0-9
+  if (decPart !== null) {
+    return `${formattedInt}.${decPart}`;
+  }
+  return formattedInt;
 }
 
 export function AmountDisplay({
@@ -18,6 +33,7 @@ export function AmountDisplay({
   className = '',
 }: AmountDisplayProps) {
   const locale = useLocale();
+  const t = useTranslations('entry');
   const isAr = locale.startsWith('ar');
   const currency = isAr ? 'ج.م' : 'EGP';
 
@@ -25,39 +41,43 @@ export function AmountDisplay({
   if (type === 'income') colorClass = 'text-income';
   else if (type === 'transfer') colorClass = 'text-ink';
 
-  // Format value with thousands separators while preserving typing state (dot, trailing zeros)
-  const formatLive = (val: string) => {
-    if (!val) return '';
-    const parts = val.split('.');
-    const intPart = parts[0];
-    const decPart = parts.length > 1 ? parts[1] : null;
+  const isExpression = hasOperator(value);
+  const result = isExpression ? previewValue(value) : null;
 
-    const formattedInt = Number(intPart).toLocaleString('en-US'); // Western digits 0-9
-    if (decPart !== null) {
-      return `${formattedInt}.${decPart}`;
-    }
-    return formattedInt;
-  };
+  let displayStr: string;
+  if (!value) displayStr = placeholder;
+  else if (!isExpression) displayStr = formatLive(value);
+  else if (result === null) displayStr = '—';
+  else displayStr = result.toLocaleString('en-US', { maximumFractionDigits: 2 });
 
-  const displayStr = value ? formatLive(value) : placeholder;
   const isPlaceholder = !value;
 
+  // Fixed min height so the optional expression line never pushes the pad down
   return (
     <div
-      aria-label="Amount"
-      className={`flex items-baseline justify-center gap-1.5 py-4 text-center select-none ${className}`}
+      aria-label={t('amount')}
+      className={`flex min-h-18 flex-col items-center justify-center text-center select-none ${className}`}
     >
-      <span
-        data-amount
-        className={`text-display font-semibold tabular-nums tracking-tight ${
-          isPlaceholder ? 'text-ink-faint' : colorClass
-        }`}
-      >
-        {displayStr}
-      </span>
-      <span className="text-caption font-medium text-ink-muted">
-        {currency}
-      </span>
+      {isExpression && (
+        <span
+          dir="ltr"
+          data-expression
+          className="max-w-full truncate text-body text-ink-muted tabular-nums"
+        >
+          {formatExpression(value)}
+        </span>
+      )}
+      <div className={`flex items-baseline justify-center gap-1.5 ${isExpression ? '' : 'py-4'}`}>
+        <span
+          data-amount
+          className={`text-display font-semibold tabular-nums tracking-tight ${
+            isPlaceholder || (isExpression && result === null) ? 'text-ink-faint' : colorClass
+          }`}
+        >
+          {displayStr}
+        </span>
+        <span className="text-caption font-medium text-ink-muted">{currency}</span>
+      </div>
     </div>
   );
 }

@@ -28,5 +28,12 @@
   "allCategories": "الأقسام",
   "change": "تغيير",
   "next": "التالي",
-  "editAmount": "تعديل المبلغ"
+  "editAmount": "تعديل المبلغ",
+  "keypad": "لوحة الأرقام",
+  "backspace": "امسح آخر رقم",
+  "plus": "زائد",
+  "minus": "ناقص",
+  "multiply": "ضرب",
+  "divide": "قسمة",
+  "invalidAmount": "المجموع لازم يكون أكبر من صفر"
 }

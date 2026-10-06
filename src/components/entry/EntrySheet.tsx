@@ -14,6 +14,7 @@ import type {
 import { useRepository, useWallets } from '@/lib/data/provider';
 import { validateEntry } from '@/lib/validation/entry';
 import { money, pickName } from '@/lib/format';
+import { previewValue, trimTrailingOperator } from '@/lib/format/expression';
 import { CategoryIcon } from '@/components/ui/category-icon';
 
 import {
@@ -109,7 +110,10 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
   };
 
   // Validation
-  const numericAmount = parseFloat(amountStr) || 0;
+  // The pad may hold an expression ("120+85"); only its result is saved
+  const amountResult = previewValue(amountStr);
+  const numericAmount = amountResult ?? 0;
+  const isInvalidAmount = amountStr !== '' && amountResult === null;
   const isTransfer = type === 'transfer';
   const hasItem = Boolean(selectedItem);
   const hasWallets = isTransfer
@@ -239,11 +243,14 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
           <div className="pt-2 space-y-2">
             <Button
               type="button"
-              onClick={() => setPhase(2)}
+              onClick={() => {
+                setAmountStr(trimTrailingOperator(amountStr));
+                setPhase(2);
+              }}
               disabled={numericAmount <= 0}
               className="w-full h-14 rounded-2xl text-heading font-semibold text-accent-ink shadow-xs cursor-pointer"
             >
-              <span>{t('next')}</span>
+              <span>{isInvalidAmount ? t('invalidAmount') : t('next')}</span>
             </Button>
 
             {mode === 'edit' && (

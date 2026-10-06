@@ -66,6 +66,52 @@ describe('applyKey state machine', () => {
     expect(withDec3).toBe('9999999.99');
   });
 
+  it('ignores an operator on an empty value', () => {
+    expect(applyKey('', '+')).toBe('');
+  });
+
+  it('appends operators and continues typing a new number', () => {
+    let val = '120';
+    val = applyKey(val, '+');
+    expect(val).toBe('120+');
+    val = applyKey(val, '8');
+    val = applyKey(val, '5');
+    expect(val).toBe('120+85');
+  });
+
+  it('replaces an operator typed after an operator', () => {
+    expect(applyKey('120+', '×')).toBe('120*');
+    expect(applyKey('120*', '−')).toBe('120-');
+    expect(applyKey('120-', '/')).toBe('120/');
+  });
+
+  it('drops a dangling dot before an operator', () => {
+    expect(applyKey('12.', '+')).toBe('12+');
+  });
+
+  it('applies decimal and zero rules to the current number only', () => {
+    expect(applyKey('10.5+', '.')).toBe('10.5+0.');
+    expect(applyKey('10.5+3', '.')).toBe('10.5+3.');
+    expect(applyKey('10.5+3.25', '1')).toBe('10.5+3.25');
+    expect(applyKey('10+0', '5')).toBe('10+5');
+    expect(applyKey('10+0', '0')).toBe('10+0');
+  });
+
+  it('limits each number to the max amount', () => {
+    expect(applyKey('5+9999999', '9')).toBe('5+9999999');
+  });
+
+  it('allows at most 12 numbers', () => {
+    let val = '1';
+    for (let i = 0; i < 11; i++) val = applyKey(applyKey(val, '+'), '1');
+    expect(val.split('+')).toHaveLength(12);
+    expect(applyKey(val, '+')).toBe(val);
+  });
+
+  it('backspace removes an operator', () => {
+    expect(applyKey('120+', 'backspace')).toBe('120');
+  });
+
   it('normalises Arabic-Indic digits passed as key', () => {
     let val = '';
     val = applyKey(val, '٥');
