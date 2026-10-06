@@ -89,7 +89,7 @@ src/lib/reports     pivot() and report helpers — pure, unit-tested
 ## 7. Definition of done (every step)
 
 1. `npm run build`, `npm run lint`, `npm run typecheck`, `npm test` all pass.
-2. Run the **quick /design-review** on every screen you touched (390×844, `/en` light and `/ar` light). Fix what it finds. The full matrix runs once in A8.
+2. Run **`npm run ui:check`** (headless, see /design-review; never the IDE browser) and the **quick /design-review** on every screen you touched (390×844, `/en` light and `/ar` light). Fix what it finds. The full matrix runs once in A8.
 3. Commit on your step branch with a clear message (`feat(entry): amount pad and category picker`), push the branch, and open a pull request into `main` using the PR template.
 4. Put the one-line notes (what changed, anything deferred, the **Vercel preview URL**) in the PR description. **Do not edit `docs/PROGRESS.md`.** Where a workflow says "tick PROGRESS.md" or "commit and push", this rule replaces it.
 5. Report back in one or two lines (step, PR link, open questions), then **continue with the next step in your queue** (`docs/ORCHESTRATION.md` §2). Stop only when your queue is done or every remaining step is BLOCKED.
