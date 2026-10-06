@@ -13,7 +13,8 @@ const namespaces = [
   'settings',
   'auth',
   'install',
-  'offline'
+  'offline',
+  'styleguide'
 ] as const;
 
 function isAppLocale(locale: string | undefined): locale is Locale {

@@ -2,8 +2,16 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
+import { IBM_Plex_Sans_Arabic } from 'next/font/google';
 import { type Locale, routing } from '@/i18n/routing';
 import '../globals.css';
+
+const ibmPlexArabic = IBM_Plex_Sans_Arabic({
+  subsets: ['arabic', 'latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-plex-arabic',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Family Accounts',
@@ -36,8 +44,8 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'}>
-      <body className="antialiased font-sans">
+    <html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'} className={ibmPlexArabic.variable}>
+      <body className="antialiased font-sans" suppressHydrationWarning>
         <NextIntlClientProvider locale={locale} messages={messages}>
           {children}
         </NextIntlClientProvider>

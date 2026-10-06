@@ -1,0 +1,146 @@
+/**
+ * Family Accounts — format helpers
+ * Western digits (0–9) are used everywhere, in both languages.
+ */
+
+export interface MoneyOptions {
+  sign?: boolean;
+  compact?: boolean;
+  hideCurrency?: boolean;
+  fractionDigits?: number;
+}
+
+/**
+ * Normalises Arabic-Indic (٠-٩) and Eastern Arabic-Indic / Persian (۰-۹) digits to ASCII 0-9.
+ * Also converts Arabic decimal comma (٫) to dot (.) and removes thousands separators (٬ and ,).
+ */
+export function normalizeDigits(str: string | null | undefined): string {
+  if (!str) return '';
+
+  return str
+    // Arabic-Indic digits
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632))
+    // Eastern Arabic-Indic (Persian) digits
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776))
+    // Arabic decimal separator (U+066B) -> '.'
+    .replace(/٫/g, '.')
+    // Arabic thousands separator (U+066C) and comma -> remove
+    .replace(/[٬,]/g, '')
+    .trim();
+}
+
+/**
+ * Formats a currency amount in EGP with Western digits in both English and Arabic.
+ * Examples:
+ *   money(1250, 'en') => "1,250 EGP"
+ *   money(1250.5, 'ar') => "1,250.50 ج.م"
+ *   money(500, 'en', { sign: true }) => "+500 EGP"
+ */
+export function money(
+  amount: number,
+  locale: string = 'en',
+  options: MoneyOptions = {}
+): string {
+  const isAr = locale.startsWith('ar');
+  const currencySymbol = isAr ? 'ج.م' : 'EGP';
+
+  const absAmount = Math.abs(amount);
+  const isInt = absAmount % 1 === 0;
+
+  let minFraction = isInt ? 0 : 2;
+  let maxFraction = 2;
+
+  if (options.fractionDigits !== undefined) {
+    minFraction = options.fractionDigits;
+    maxFraction = options.fractionDigits;
+  }
+
+  const formatter = new Intl.NumberFormat(isAr ? 'ar-EG' : 'en-EG', {
+    notation: options.compact ? 'compact' : 'standard',
+    minimumFractionDigits: options.compact ? 0 : minFraction,
+    maximumFractionDigits: options.compact ? 1 : maxFraction,
+    numberingSystem: 'latn',
+  });
+
+  const formattedNum = formatter.format(absAmount);
+
+  let prefix = '';
+  if (options.sign) {
+    if (amount > 0) prefix = '+';
+    else if (amount < 0) prefix = '-';
+  } else if (amount < 0) {
+    prefix = '-';
+  }
+
+  if (options.hideCurrency) {
+    return `${prefix}${formattedNum}`;
+  }
+
+  return `${prefix}${formattedNum} ${currencySymbol}`;
+}
+
+export interface BilingualRow {
+  name_ar?: string | null;
+  name_en?: string | null;
+  name?: string | null;
+}
+
+/**
+ * Selects the localised name from a row, with fallback to the other language.
+ */
+export function pickName(
+  row: BilingualRow | null | undefined,
+  locale: string = 'en'
+): string {
+  if (!row) return '';
+  const isAr = locale.startsWith('ar');
+
+  if (isAr) {
+    return row.name_ar?.trim() || row.name_en?.trim() || row.name?.trim() || '';
+  }
+  return row.name_en?.trim() || row.name_ar?.trim() || row.name?.trim() || '';
+}
+
+/**
+ * Formats a date relative to today (Today / Yesterday / Day of week + date).
+ * Always uses Western digits (numberingSystem: 'latn').
+ */
+export function formatDay(
+  dateInput: Date | string | number,
+  locale: string = 'en'
+): string {
+  const isAr = locale.startsWith('ar');
+  const date = typeof dateInput === 'string' || typeof dateInput === 'number'
+    ? new Date(dateInput)
+    : dateInput;
+
+  const now = new Date();
+  const dYear = date.getFullYear();
+  const dMonth = date.getMonth();
+  const dDate = date.getDate();
+
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = new Date(dYear, dMonth, dDate);
+
+  const diffDays = Math.round((today.getTime() - target.getTime()) / (1000 * 60 * 60 * 24));
+
+  // Date format e.g. "Monday, Oct 5" or "الإثنين 5 أكتوبر"
+  const weekdayFormatter = new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-EG', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    numberingSystem: 'latn',
+  });
+  const formattedDayStr = weekdayFormatter.format(date);
+
+  if (diffDays === 0) {
+    const label = isAr ? 'النهارده' : 'Today';
+    return `${label} · ${formattedDayStr}`;
+  }
+  if (diffDays === 1) {
+    const label = isAr ? 'امبارح' : 'Yesterday';
+    return `${label} · ${formattedDayStr}`;
+  }
+
+  return formattedDayStr;
+}
