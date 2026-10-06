@@ -6,6 +6,9 @@ import { Header } from '@/components/layout/Header';
 import { TabBar } from '@/components/layout/TabBar';
 import { FloatingAddButton } from '@/components/layout/FloatingAddButton';
 import { PageTransition } from '@/components/layout/PageTransition';
+import { EntrySheetProvider } from '@/components/entry/EntrySheetContext';
+import { EntrySheet } from '@/components/entry/EntrySheet';
+import { Toaster } from '@/components/ui/sonner';
 
 export default function AppLayout({
   children,
@@ -14,18 +17,22 @@ export default function AppLayout({
 }) {
   return (
     <RepositoryProvider>
-      <div className="mx-auto flex h-dvh max-w-[520px] flex-col overflow-hidden bg-canvas text-ink relative shadow-2xl">
-        <Header />
-        
-        <main className="flex-1 overflow-y-auto overscroll-contain px-5 pb-6 pt-1">
-          <PageTransition>
-            {children}
-          </PageTransition>
-        </main>
+      <EntrySheetProvider>
+        <div className="mx-auto flex h-dvh max-w-[520px] flex-col overflow-hidden bg-canvas text-ink relative shadow-2xl">
+          <Toaster position="bottom-center" />
+          <Header />
+          
+          <main className="flex-1 overflow-y-auto overscroll-contain px-5 pb-6 pt-1">
+            <PageTransition>
+              {children}
+            </PageTransition>
+          </main>
 
-        <FloatingAddButton />
-        <TabBar />
-      </div>
+          <FloatingAddButton />
+          <TabBar />
+          <EntrySheet />
+        </div>
+      </EntrySheetProvider>
     </RepositoryProvider>
   );
 }

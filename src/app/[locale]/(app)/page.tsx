@@ -11,6 +11,7 @@ import {
   useMembers,
 } from '@/lib/data/provider';
 import { EntryRow } from '@/components/entry/EntryRow';
+import { useEntrySheet } from '@/components/entry/EntrySheetContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,6 +22,7 @@ export default function HomePage() {
   const tHome = useTranslations('home');
   const tCommon = useTranslations('common');
   const locale = useLocale();
+  const { openAdd, openEdit } = useEntrySheet();
 
   // Current month string 'YYYY-MM'
   const currentMonth = React.useMemo(() => {
@@ -92,7 +94,7 @@ export default function HomePage() {
         </div>
         <h2 className="text-title font-bold text-ink">{tHome('emptyTitle')}</h2>
         <p className="mt-2 max-w-xs text-body text-ink-muted">{tHome('emptyBody')}</p>
-        <Button className="mt-8 w-full max-w-xs">
+        <Button onClick={() => openAdd()} className="mt-8 w-full max-w-xs">
           <Plus className="size-5" />
           {tCommon('add')}
         </Button>
@@ -195,7 +197,7 @@ export default function HomePage() {
 
         <div className="divide-y divide-line rounded-card bg-surface px-4 py-1 shadow-card">
           {entries.map((entry) => (
-            <EntryRow key={entry.id} entry={entry} />
+            <EntryRow key={entry.id} entry={entry} onClick={() => openEdit(entry)} />
           ))}
         </div>
       </section>
