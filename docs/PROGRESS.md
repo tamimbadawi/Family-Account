@@ -21,9 +21,9 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 | 6 | A4 | `/a4-history` — History, edit, soft delete, Recently deleted | A3b | `step/a4-history` | ✅ |
 | 7 | A6 | `/a6-settings-categories` — Settings, category & wallet managers, language | A2b | `step/a6-settings` | ✅ |
 | 6 | A8a | `/a8-polish-pass` on what is merged: Login, Home, Add sheet, History, Settings | A4, A6, A7b | `step/a8a-polish` |  |
-| + | A3d | `/a3d-calculator-pad` — + − × ÷ in the number pad with live result | fix/fit-and-income | `step/a3d-calculator` |  |
+| + | A3d (Claude) | `/a3d-calculator-pad` — + − × ÷ in the number pad with live result | fix/fit-and-income | `step/a3d-calculator` |  |
 | + | Home money | Place `OurMoneyRow` (from A2c) on Home, keeping Home within one screen | **A2c** | `step/home-our-money` |  |
-| + | A5e | `/a5c-report-library` part A5e: 6 Planning reports | **A5c** | `step/a5e-planning-reports` |  |
+| + | A5e (Claude: logic ✅, screens after A5c) | `/a5c-report-library` part A5e: 6 Planning reports | **A5c** | `step/a5e-planning-reports` |  |
 | 7 | A3c | `/a3c-receipt-photo` — optional receipt photo on an entry (camera, compression, thumbnail, viewer) | A3b, A4 | `step/a3c-receipt-photo` |  |
 | 8 | A8b | `/a8-polish-pass` on Reports (Overview + Breakdown) and a last full sweep | **A5, A5b** | `step/a8b-polish` |  |
 
@@ -89,3 +89,4 @@ _(write what you observed here: every hesitation, question, or complaint)_
 | 2026-10-06 | Reports library | User wants all reports as a library: 17 reports in 3 groups (A5c hub + money flow, A5d banks & cash: AG-2; A5e planning: AG-1). Reports bank card opens Our money sheet |
 | 2026-10-06 | Handover plan | Owner = Injy (her Gmail). Tamim stays as emergency maintainer with NO data access: Supabase transferred to her org, repo transferred (Tamim collaborator), production environment needs her approval, backups encrypted with her passphrase. Family management in-app (B2 edge function), forced password change on first sign-in |
 | 2026-10-06 | A5b | AG-2: Breakdown pivot table, presets, drill-down, sharing (PR #17). Gate: ui:check 24/24 ok on the preview. Follow-up: period chip clipped by the filter button. Reverted AG-2 loosening of ui-check (covered check inside scroll areas) |
+| 2026-10-06 | Speed-up | User: Claude builds too; agents on Gemini 3.8 Flash Medium. Claude owns: + New form fix, A3d calculator, A5e planning reports. A5e logic merged (6 functions, 12 tests). AG-1 ships fix PR 1 then A8a |
