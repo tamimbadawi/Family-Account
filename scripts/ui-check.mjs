@@ -112,9 +112,11 @@ function audit() {
 
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
 let failures = 0;
-for (const route of routes) {
-  for (const [w, h] of SIZES) {
-    for (const theme of THEMES) {
+const started = Date.now();
+// Checks run 4 at a time (UI_PARALLEL to change); output lines are printed as each finishes.
+const jobs = routes.flatMap((route) => SIZES.flatMap(([w, h]) => THEMES.map((theme) => ({ route, w, h, theme }))));
+const PARALLEL = Number(process.env.UI_PARALLEL || 4);
+async function runJob({ route, w, h, theme }) {
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, colorScheme: theme, isMobile: true, hasTouch: true });
       const page = await ctx.newPage();
       const consoleErrors = [];
@@ -140,9 +142,12 @@ for (const route of routes) {
       if (problems.length) failures++;
       console.log(`${tag} ${route} ${w}x${h} ${theme}${problems.length ? ' -> ' + problems.join(' ; ') : ''}  [${name}]`);
       await ctx.close();
-    }
-  }
 }
+const queue = [...jobs];
+await Promise.all(Array.from({ length: Math.min(PARALLEL, queue.length) }, async () => {
+  while (queue.length) await runJob(queue.shift());
+}));
 await browser.close();
-console.log(`\n${failures ? failures + ' screen(s) with problems' : 'all screens ok'} — screenshots in ${OUT}`);
+const secs = ((Date.now() - started) / 1000).toFixed(0);
+console.log(`\n${failures ? failures + ' screen(s) with problems' : 'all screens ok'} — ${jobs.length} checks in ${secs}s — screenshots in ${OUT}`);
 process.exit(failures ? 1 : 0);
