@@ -10,6 +10,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { mockRepository } from './mock-repository';
+import { getLastNMonths } from '@/lib/reports/months';
 import type { ListEntriesParams, Repository } from './repository';
 import type {
   Category,
@@ -138,6 +139,20 @@ export function useMonthSummary(month: string): MonthSummary | undefined {
       return repo.monthSummary(month);
     },
     [repo, month],
+    undefined
+  );
+}
+
+export function useSixMonthSummary(endMonth: string): MonthSummary[] | undefined {
+  const repo = useRepository();
+
+  return useLiveQuery(
+    async () => {
+      if (typeof window === 'undefined') return undefined;
+      const months = getLastNMonths(endMonth, 6);
+      return Promise.all(months.map((m) => repo.monthSummary(m)));
+    },
+    [repo, endMonth],
     undefined
   );
 }
