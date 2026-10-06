@@ -114,6 +114,7 @@ export class MockRepository implements Repository {
           seedVersion.value === SEED_VERSION
         ) {
           await this.renameArabicSampleMembers();
+          await this.backfillMissingCreators();
           return;
         }
 
@@ -185,6 +186,18 @@ export class MockRepository implements Repository {
 
   // Sample members were first seeded as ماما / بابا. Names are now English: rename them in place
   // (only those exact defaults), so phones keep their practice entries.
+  // Entries added before who-added-it was recorded (2026-10-06) have no creator, so they showed
+  // no initial. In sample mode the phone's user is the owner, so they get the current member.
+  private async backfillMissingCreators(): Promise<void> {
+    const missing = await this.db.transactions.filter((t) => !t.created_by).toArray();
+    for (const row of missing) {
+      await this.db.transactions.update(row.id, {
+        created_by: this.currentUserId,
+        updated_by: row.updated_by ?? this.currentUserId,
+      });
+    }
+  }
+
   private async renameArabicSampleMembers(): Promise<void> {
     const renames: Record<string, string> = { 'ماما': 'Mama', 'بابا': 'Baba' };
     const rows = await this.db.household_members.toArray();

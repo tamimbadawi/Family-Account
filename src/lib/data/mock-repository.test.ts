@@ -138,6 +138,18 @@ describe('MockRepository with fake-indexeddb', () => {
     expect(names).toEqual(['Baba', 'Mama']);
   });
 
+  it('gives entries saved before creators were recorded to the current member', async () => {
+    const item = (await repo.getItems())[0];
+    const added = await repo.addEntry({ type: 'expense', amount: 10, occurredOn: '2026-10-06', accountId: WALLET_CASH_ID, itemId: item.id });
+    await db.transactions.update(added.id, { created_by: null, updated_by: null });
+    // A new connection = the app starting again (the startup check runs once per connection)
+    const fresh = new MockRepository(new FamilyAccountsDB(db.name));
+    await fresh.ensureSeeded();
+    const listed = (await fresh.listEntries()).find((e) => e.id === added.id);
+    expect(listed?.createdBy).toBe(USER_MAMA_ID);
+    expect(listed?.createdByName).toBe('Mama');
+  });
+
   it('stamps who added and who last changed an entry', async () => {
     const item = (await repo.getItems())[0];
     const added = await repo.addEntry({
