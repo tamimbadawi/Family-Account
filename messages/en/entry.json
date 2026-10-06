@@ -52,5 +52,7 @@
   "whichBank": "Which bank?",
   "bankName": "Bank name",
   "addBank": "Add",
-  "back": "Back"
+  "back": "Back",
+  "addedBy": "Added by {name}",
+  "changedBy": "last changed by {name}"
 }

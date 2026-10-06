@@ -51,7 +51,7 @@ export default function HomePage() {
   const isLoading = summary === undefined || entries === undefined;
 
   // Member name for greeting
-  const memberName = members?.[0]?.displayName || (locale === 'ar' ? 'ماما' : 'Mama');
+  const memberName = members?.[0]?.displayName || 'Mama';
 
   // Greeting based on time of day
   const isMorning = new Date().getHours() < 12;

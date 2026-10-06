@@ -8,18 +8,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { db } from '@/lib/offline/db';
 import { DEMO_HOUSEHOLD_ID, USER_MAMA_ID } from '@/lib/data/mock-seed';
+import { isEnglishName } from '@/lib/members';
 
 export default function WelcomePage() {
   const tAuth = useTranslations('auth');
   const router = useRouter();
 
   const [householdName, setHouseholdName] = React.useState('بيت العيلة');
-  const [yourName, setYourName] = React.useState('ماما');
+  const [yourName, setYourName] = React.useState('Mama');
+  const nameIsValid = isEnglishName(yourName);
   const [saving, setSaving] = React.useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (saving) return;
+    if (saving || !nameIsValid) return;
     setSaving(true);
 
     try {
@@ -28,7 +30,7 @@ export default function WelcomePage() {
         name: householdName.trim() || 'عائلتنا',
       });
       await db.household_members.update([DEMO_HOUSEHOLD_ID, USER_MAMA_ID], {
-        display_name: yourName.trim() || 'ماما',
+        display_name: yourName.trim(),
       });
     } catch (err) {
       console.error('Failed to update local household name:', err);
@@ -83,13 +85,25 @@ export default function WelcomePage() {
             onChange={(e) => setYourName(e.target.value)}
             placeholder={tAuth('namePlaceholder')}
             required
+            dir="ltr"
+            lang="en"
+            autoCapitalize="words"
+            autoComplete="given-name"
+            aria-invalid={!nameIsValid}
+            aria-describedby="your-name-hint"
             className="h-14 bg-surface text-body shadow-xs"
           />
+          <p
+            id="your-name-hint"
+            className={`mt-1.5 text-caption ${nameIsValid ? 'text-ink-muted' : 'text-danger'}`}
+          >
+            {tAuth('nameEnglishOnly')}
+          </p>
         </div>
 
         <Button
           type="submit"
-          disabled={saving}
+          disabled={saving || !nameIsValid}
           className="h-14 w-full text-heading font-semibold mt-3 text-accent-ink"
         >
           {tAuth('getStarted')}

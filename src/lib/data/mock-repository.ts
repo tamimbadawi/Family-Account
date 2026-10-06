@@ -26,6 +26,7 @@ import {
   ITEM_EXPENSE_BALANCE_CORRECTION_ID,
   ITEM_INCOME_BALANCE_CORRECTION_ID,
   SEED_VERSION,
+  USER_MAMA_ID,
 } from './mock-seed';
 import type {
   CreateCategoryInput,
@@ -80,9 +81,15 @@ export class MockRepository implements Repository {
   private static seedPromises = new WeakMap<FamilyAccountsDB, Promise<void>>();
   private db: FamilyAccountsDB;
   private seedPromise: Promise<void> | null = null;
+  /**
+   * Who is "signed in" on this phone in sample mode. New entries and edits are stamped with it,
+   * the way the database stamps auth.uid() in live mode (set_txn_audit). Defaults to the owner.
+   */
+  currentUserId: string;
 
-  constructor(customDb?: FamilyAccountsDB) {
+  constructor(customDb?: FamilyAccountsDB, currentUserId: string = USER_MAMA_ID) {
     this.db = customDb ?? defaultDb;
+    this.currentUserId = currentUserId;
   }
 
   // Ensures database is seeded on first access (idempotent, StrictMode-safe via shared promise)
@@ -106,6 +113,7 @@ export class MockRepository implements Repository {
           seedVersion &&
           seedVersion.value === SEED_VERSION
         ) {
+          await this.renameArabicSampleMembers();
           return;
         }
 
@@ -173,6 +181,19 @@ export class MockRepository implements Repository {
         await this.db.meta.put({ key: 'lastSyncedAt', value: new Date().toISOString() });
       }
     );
+  }
+
+  // Sample members were first seeded as ماما / بابا. Names are now English: rename them in place
+  // (only those exact defaults), so phones keep their practice entries.
+  private async renameArabicSampleMembers(): Promise<void> {
+    const renames: Record<string, string> = { 'ماما': 'Mama', 'بابا': 'Baba' };
+    const rows = await this.db.household_members.toArray();
+    for (const row of rows) {
+      const english = renames[row.display_name];
+      if (english) {
+        await this.db.household_members.update([row.household_id, row.user_id], { display_name: english });
+      }
+    }
   }
 
   // Resets the mock database
@@ -593,6 +614,7 @@ export class MockRepository implements Repository {
       const sub = item ? subMap.get(item.subcategory_id) : undefined;
       const cat = sub ? catMap.get(sub.category_id) : undefined;
       const creator = row.created_by ? memberMap.get(row.created_by) : undefined;
+      const editor = row.updated_by ? memberMap.get(row.updated_by) : undefined;
 
       return {
         ...entry,
@@ -611,6 +633,7 @@ export class MockRepository implements Repository {
         categoryIcon: cat?.icon ?? null,
         categoryColor: cat?.color ?? null,
         createdByName: creator?.display_name ?? null,
+        updatedByName: editor?.display_name ?? null,
       };
     });
   }
@@ -737,8 +760,8 @@ export class MockRepository implements Repository {
       to_account_id: input.type === 'transfer' ? input.toAccountId! : null,
       item_id: input.type === 'transfer' ? null : input.itemId!,
       note: input.note ?? null,
-      created_by: input.createdBy ?? null,
-      updated_by: null,
+      created_by: input.createdBy ?? this.currentUserId,
+      updated_by: input.createdBy ?? this.currentUserId,
       created_at: now,
       updated_at: now,
       deleted_at: null,
@@ -789,7 +812,7 @@ export class MockRepository implements Repository {
       to_account_id: nextType === 'transfer' ? nextToAccountId : null,
       item_id: nextType === 'transfer' ? null : nextItemId,
       note: updates.note !== undefined ? updates.note : row.note,
-      updated_by: updates.updatedBy ?? row.updated_by,
+      updated_by: updates.updatedBy ?? this.currentUserId,
       updated_at: new Date().toISOString(),
     };
 
@@ -803,6 +826,7 @@ export class MockRepository implements Repository {
     await this.db.transactions.update(id, {
       deleted_at: now,
       updated_at: now,
+      updated_by: this.currentUserId,
     });
   }
 
@@ -811,6 +835,7 @@ export class MockRepository implements Repository {
     await this.db.transactions.update(id, {
       deleted_at: null,
       updated_at: new Date().toISOString(),
+      updated_by: this.currentUserId,
     });
   }
 

@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { ArrowLeftRight, Paperclip } from 'lucide-react';
 import type { EnrichedEntry } from '@/lib/data/types';
 import { CategoryIcon } from '@/components/ui/category-icon';
+import { MemberBadge } from '@/components/ui/member-badge';
 import { money, pickName } from '@/lib/format';
 
 export interface EntryRowProps {
@@ -81,13 +82,21 @@ export function EntryRow({ entry, onClick }: EntryRowProps) {
       <div className="flex items-center gap-3 min-w-0">
         <div
           style={circleStyle}
-          className={`flex size-10 shrink-0 items-center justify-center rounded-full ${circleClass}`}
+          className={`relative flex size-10 shrink-0 items-center justify-center rounded-full ${circleClass}`}
         >
           {isTransfer ? (
             <ArrowLeftRight className="size-5" />
           ) : (
             <CategoryIcon name={entry.categoryIcon} className="size-5" />
           )}
+          {/* Who added it: a small initial on the icon's corner, so it costs no text width */}
+          <MemberBadge
+            className="absolute -bottom-1 -end-1 ring-2 ring-surface"
+            createdBy={entry.createdBy}
+            createdByName={entry.createdByName}
+            updatedBy={entry.updatedBy}
+            updatedByName={entry.updatedByName}
+          />
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-1 text-body font-medium text-ink leading-snug">
