@@ -20,8 +20,16 @@ export const DEMO_HOUSEHOLD_ID = '11111111-1111-1111-1111-111111111111';
 export const USER_MAMA_ID = '22222222-2222-2222-2222-222222222222';
 export const USER_BABA_ID = '33333333-3333-3333-3333-333333333333';
 
+export const SEED_VERSION = 2;
+
 export const WALLET_CASH_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
-export const WALLET_BANK_ID = 'aaaaaaaa-0000-0000-0000-000000000002';
+export const WALLET_BANK_ID = 'aaaaaaaa-0000-0000-0000-000000000002'; // NBE
+export const WALLET_NBE_ID = WALLET_BANK_ID;
+export const WALLET_CIB_ID = 'aaaaaaaa-0000-0000-0000-000000000003';
+export const WALLET_BANQUE_MISR_ID = 'aaaaaaaa-0000-0000-0000-000000000004';
+
+export const ITEM_EXPENSE_BALANCE_CORRECTION_ID = 'i0000007-0000-0000-0000-000000000001';
+export const ITEM_INCOME_BALANCE_CORRECTION_ID = 'i0000007-0000-0000-0000-000000000002';
 
 export const DEFAULT_HOUSEHOLD: HouseholdRow = {
   id: DEMO_HOUSEHOLD_ID,
@@ -67,13 +75,41 @@ export const DEFAULT_WALLETS: AccountRow[] = [
   {
     id: WALLET_BANK_ID,
     household_id: DEMO_HOUSEHOLD_ID,
-    name_ar: 'البنك',
-    name_en: 'Bank',
+    name_ar: 'البنك الأهلي',
+    name_en: 'NBE',
     type: 'bank',
     opening_balance: 45000,
     icon: 'building-2',
-    color: '#1D4ED8',
+    color: '#15803D',
     sort_order: 1,
+    is_archived: false,
+    created_at: '2026-06-01T00:00:00.000Z',
+    updated_at: '2026-06-01T00:00:00.000Z',
+  },
+  {
+    id: WALLET_CIB_ID,
+    household_id: DEMO_HOUSEHOLD_ID,
+    name_ar: 'بنك CIB',
+    name_en: 'CIB',
+    type: 'bank',
+    opening_balance: 30000,
+    icon: 'building-2',
+    color: '#1D4ED8',
+    sort_order: 2,
+    is_archived: false,
+    created_at: '2026-06-01T00:00:00.000Z',
+    updated_at: '2026-06-01T00:00:00.000Z',
+  },
+  {
+    id: WALLET_BANQUE_MISR_ID,
+    household_id: DEMO_HOUSEHOLD_ID,
+    name_ar: 'بنك مصر',
+    name_en: 'Banque Misr',
+    type: 'bank',
+    opening_balance: 12000,
+    icon: 'building-2',
+    color: '#B91C1C',
+    sort_order: 3,
     is_archived: false,
     created_at: '2026-06-01T00:00:00.000Z',
     updated_at: '2026-06-01T00:00:00.000Z',
@@ -258,6 +294,50 @@ export const CATEGORY_TREE_DEF: CategorySeedDef[] = [
       },
     ],
   },
+  {
+    id: 'c0000007-0000-0000-0000-000000000001',
+    kind: 'expense',
+    nameEn: 'Adjustments',
+    nameAr: 'تسويات',
+    icon: 'scale',
+    color: '#64748B',
+    subs: [
+      {
+        id: 's0000007-0000-0000-0000-000000000001',
+        nameEn: 'Balance correction',
+        nameAr: 'تصحيح الرصيد',
+        items: [
+          {
+            id: ITEM_EXPENSE_BALANCE_CORRECTION_ID,
+            nameEn: 'Balance correction',
+            nameAr: 'تصحيح الرصيد',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'c0000007-0000-0000-0000-000000000002',
+    kind: 'income',
+    nameEn: 'Adjustments',
+    nameAr: 'تسويات',
+    icon: 'scale',
+    color: '#64748B',
+    subs: [
+      {
+        id: 's0000007-0000-0000-0000-000000000002',
+        nameEn: 'Balance correction',
+        nameAr: 'تصحيح الرصيد',
+        items: [
+          {
+            id: ITEM_INCOME_BALANCE_CORRECTION_ID,
+            nameEn: 'Balance correction',
+            nameAr: 'تصحيح الرصيد',
+          },
+        ],
+      },
+    ],
+  },
 ];
 
 // Helper to flatten categories, subcategories, items for insertion
@@ -407,7 +487,7 @@ export function generateRealisticEntries(
       deleted_at: null,
     });
 
-    // 2. Rent received: Day 5 (6,000 EGP to Bank)
+    // 2. Rent received: Day 5 (6,000 EGP to CIB)
     if (maxDay >= 5) {
       entries.push({
         id: makeId(),
@@ -415,7 +495,7 @@ export function generateRealisticEntries(
         type: 'income',
         amount: 6000,
         occurred_on: dateStr(5),
-        account_id: WALLET_BANK_ID,
+        account_id: WALLET_CIB_ID,
         to_account_id: null,
         item_id: items.rentReceived,
         note: 'إيجار شقة العمارة',
@@ -427,7 +507,7 @@ export function generateRealisticEntries(
       });
     }
 
-    // 3. ATM Transfer: Bank -> Cash (Day 2: 5000 EGP)
+    // 3. ATM Transfer: Bank -> Cash (Day 2: 5000 EGP from NBE)
     if (maxDay >= 2) {
       entries.push({
         id: makeId(),
@@ -447,7 +527,7 @@ export function generateRealisticEntries(
       });
     }
 
-    // Second ATM Transfer if mid-month reached (Day 16: 4000 EGP)
+    // Second ATM Transfer if mid-month reached (Day 16: 4000 EGP from Banque Misr)
     if (maxDay >= 16) {
       entries.push({
         id: makeId(),
@@ -455,7 +535,7 @@ export function generateRealisticEntries(
         type: 'transfer',
         amount: 4000,
         occurred_on: dateStr(16),
-        account_id: WALLET_BANK_ID,
+        account_id: WALLET_BANQUE_MISR_ID,
         to_account_id: WALLET_CASH_ID,
         item_id: null,
         note: 'سحب كاش نص الشهر',

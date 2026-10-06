@@ -37,7 +37,8 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 | 7 | A5b | `/a5b-breakdown-ui` — Breakdown tab: pivot table, chips, presets, share | A5, A5b-logic | `step/a5b-breakdown-ui` | ✅ |
 | 8 | A5c | `/a5c-report-library` part A5c: Reports hub (Overview · All reports · Breakdown) + 6 Money-flow reports | A5b | `step/a5c-report-hub` | ✅ |
 | 9 | Reports flows | ui:flows tests for the Reports hub, library and sheets | A5c ✅ | `test/reports-flows` | ✅ |
-| 10 | A2c | `/a2c-wallets` — Cash at home + 3 banks in sample data, Our money sheet, Update balance | A5b | `step/a2c-wallets` |  |
+| 10 | A2c | `/a2c-wallets` PR 1: data layer (Cash + 3 banks, Balance correction, adjustWalletBalance, seed v2) | A5b | `step/a2c-wallets` | ✅ |
+| 10b | A2c UI | PR 2: Our money sheet + OurMoneyRow, Update balance / Add wallet in Settings (not on Home, not the entry sheet) | A2c ✅ | `step/a2c-wallets-ui` | ⏳ |
 | 11 | A5d | `/a5c-report-library` part A5d: 5 Banks & cash reports | A5c, A2c | `step/a5d-wallet-reports` |  |
 
 | 12 | Home money | Place `OurMoneyRow` (from A2c) on Home, keeping Home within one screen | A2c | `step/home-our-money` |  |
@@ -48,8 +49,8 @@ Owns `src/components/entry/**` until A3c is merged (nobody else edits the entry 
 
 | # | Step | Workflow | Needs merged first | Branch | Status |
 |---|---|---|---|---|---|
-| 1 | A3d + save fix | calculator pad + one popup + wallet preselected once wallets load (Save works for income/expense) | — | `step/a3d-calculator` | ⏳ |
-| 2 | A3c | `/a3c-receipt-photo` — optional receipt photo on an entry | A3d | `step/a3c-receipt-photo` |  |
+| 1 | A3d + save fix | calculator pad + one popup + wallet preselected once wallets load (Save works for income/expense) | — | `step/a3d-calculator` | ✅ |
+| 2 | A3c | `/a3c-receipt-photo` — optional receipt photo on an entry | A3d | `step/a3c-receipt-photo` | ✅ |
 
 **Bold** = owned by the other agent (the only reason you might have to wait).
 
@@ -102,3 +103,4 @@ _(write what you observed here: every hesitation, question, or complaint)_
 | 2026-10-06 | fix PR 1 | AG-1: screens fit (ui:check 66/66 ok on preview). ui:flows found: no wallet preselected so Save stays disabled (income/expense cannot be saved), new-group overlay stays on top. Sent back to AG-1 |
 | 2026-10-06 | Untangle | A5c merged (AG-2). Three chats were editing the entry sheet: the wallet-preselect fix now goes only into A3d (Claude builder), and AG-1's fix/save-flows is dropped. A5e screens move to AG-1; Home money row moves to AG-2 (it needs A2c); A3c moves to the Claude builder (entry owner) |
 | 2026-10-06 | Reports flows | AG-2: ui:flows reports_tabs/library/sheets (en+ar, 3 sizes) + fixes: library links keep the locale, ?tab= read via useSearchParams. Merged with orchestrator lint fix (setState in effect -> derive during render). Gate on local main: reports flows 18/18, ui:check 42/42, build ok. Remaining ui:flows failures are the known entry-sheet ones (A3d). Follow-up: reports_sheets skips silently when a button is missing; biggest-expenses step looks for the wrong label |
+| 2026-10-06 | A2c PR 1 | AG-2 was stuck 40 min (installed eslint-plugin-react, hunted a non-existent SEED_VERSION); re-prompted with A2c split in 2 PRs. PR 1 merged with orchestrator fixes: no hard-coded Arabic note on corrections, no silent fallback to a random item, test conflict with A3c resolved, cash wallet named Cash/كاش ("Cash at home" truncated History/Home rows). Gate on local main: ui:check 42/42, ui:flows 40/40 (income/expense save now pass), build ok, 129 tests |

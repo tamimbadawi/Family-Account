@@ -30,9 +30,11 @@ describe('MockRepository with fake-indexeddb', () => {
     expect(names).toContain('بابا');
 
     const wallets = await repo.getWallets();
-    expect(wallets).toHaveLength(2);
+    expect(wallets).toHaveLength(4);
     expect(wallets.map((w) => w.nameAr)).toContain('كاش');
-    expect(wallets.map((w) => w.nameAr)).toContain('البنك');
+    expect(wallets.map((w) => w.nameAr)).toContain('البنك الأهلي');
+    expect(wallets.map((w) => w.nameAr)).toContain('بنك CIB');
+    expect(wallets.map((w) => w.nameAr)).toContain('بنك مصر');
 
     const categories = await repo.getCategories();
     expect(categories.length).toBeGreaterThanOrEqual(6);
@@ -60,7 +62,7 @@ describe('MockRepository with fake-indexeddb', () => {
 
   it('calculates wallet balances accurately factoring opening balance and transactions', async () => {
     const balances = await repo.walletBalances();
-    expect(balances).toHaveLength(2);
+    expect(balances).toHaveLength(4);
 
     const cashWallet = balances.find((w) => w.id === WALLET_CASH_ID);
     const bankWallet = balances.find((w) => w.id === WALLET_BANK_ID);
@@ -348,4 +350,66 @@ describe('MockRepository with fake-indexeddb', () => {
 
     await expect(repo.setEntryPhoto('missing', jpeg)).rejects.toThrow('Entry not found');
   });
+
+  describe('adjustWalletBalance', () => {
+    it('adjusts balance up with an income correction entry', async () => {
+      const balancesBefore = await repo.walletBalances();
+      const cash = balancesBefore.find((w) => w.id === WALLET_CASH_ID)!;
+      const targetBalance = cash.balance + 500;
+
+      const entry = await repo.adjustWalletBalance(WALLET_CASH_ID, targetBalance, '2026-10-06');
+      expect(entry).not.toBeNull();
+      expect(entry?.type).toBe('income');
+      expect(entry?.amount).toBe(500);
+      expect(entry?.accountId).toBe(WALLET_CASH_ID);
+
+      const balancesAfter = await repo.walletBalances();
+      const cashAfter = balancesAfter.find((w) => w.id === WALLET_CASH_ID)!;
+      expect(cashAfter.balance).toBe(targetBalance);
+    });
+
+    it('adjusts balance down with an expense correction entry', async () => {
+      const balancesBefore = await repo.walletBalances();
+      const cash = balancesBefore.find((w) => w.id === WALLET_CASH_ID)!;
+      const targetBalance = cash.balance - 250;
+
+      const entry = await repo.adjustWalletBalance(WALLET_CASH_ID, targetBalance, '2026-10-06');
+      expect(entry).not.toBeNull();
+      expect(entry?.type).toBe('expense');
+      expect(entry?.amount).toBe(250);
+      expect(entry?.accountId).toBe(WALLET_CASH_ID);
+
+      const balancesAfter = await repo.walletBalances();
+      const cashAfter = balancesAfter.find((w) => w.id === WALLET_CASH_ID)!;
+      expect(cashAfter.balance).toBe(targetBalance);
+    });
+
+    it('returns null and creates no entry when difference is zero', async () => {
+      const balancesBefore = await repo.walletBalances();
+      const cash = balancesBefore.find((w) => w.id === WALLET_CASH_ID)!;
+
+      const entry = await repo.adjustWalletBalance(WALLET_CASH_ID, cash.balance, '2026-10-06');
+      expect(entry).toBeNull();
+
+      const balancesAfter = await repo.walletBalances();
+      const cashAfter = balancesAfter.find((w) => w.id === WALLET_CASH_ID)!;
+      expect(cashAfter.balance).toBe(cash.balance);
+    });
+
+    it('re-seeds when seedVersion is bumped', async () => {
+      const dbName = `test-reseed-${Math.random().toString(36).substring(2, 9)}`;
+      const reseedDb = new FamilyAccountsDB(dbName);
+      const reseedRepo = new MockRepository(reseedDb);
+
+      await reseedRepo.seed();
+      // Overwrite seedVersion with older version 1
+      await reseedDb.meta.put({ key: 'seedVersion', value: 1 });
+
+      // Call ensureSeeded should detect mismatch and reseed
+      await reseedRepo.ensureSeeded();
+      const v = await reseedDb.meta.get('seedVersion');
+      expect(v?.value).toBe(2);
+    });
+  });
 });
+

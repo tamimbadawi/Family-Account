@@ -22,6 +22,9 @@ import {
   DEMO_HOUSEHOLD_ID,
   generateRealisticEntries,
   getFlattenedCategoryTree,
+  ITEM_EXPENSE_BALANCE_CORRECTION_ID,
+  ITEM_INCOME_BALANCE_CORRECTION_ID,
+  SEED_VERSION,
 } from './mock-seed';
 import type {
   CreateCategoryInput,
@@ -95,7 +98,13 @@ export class MockRepository implements Repository {
     promise = (async () => {
       try {
         const seeded = await this.db.meta.get('seeded');
-        if (seeded && seeded.value === true) {
+        const seedVersion = await this.db.meta.get('seedVersion');
+        if (
+          seeded &&
+          seeded.value === true &&
+          seedVersion &&
+          seedVersion.value === SEED_VERSION
+        ) {
           return;
         }
 
@@ -159,6 +168,7 @@ export class MockRepository implements Repository {
 
         // Set metadata
         await this.db.meta.put({ key: 'seeded', value: true });
+        await this.db.meta.put({ key: 'seedVersion', value: SEED_VERSION });
         await this.db.meta.put({ key: 'lastSyncedAt', value: new Date().toISOString() });
       }
     );
@@ -290,6 +300,59 @@ export class MockRepository implements Repository {
         ...wallet,
         balance: roundMoney(balance),
       };
+    });
+  }
+
+  private async getCorrectionItemId(kind: 'expense' | 'income'): Promise<string> {
+    const defaultId =
+      kind === 'expense'
+        ? ITEM_EXPENSE_BALANCE_CORRECTION_ID
+        : ITEM_INCOME_BALANCE_CORRECTION_ID;
+    const item = await this.db.items.get(defaultId);
+    if (item) return item.id;
+
+    const cats = await this.db.categories.where('kind').equals(kind).toArray();
+    const catIds = new Set(cats.map((c) => c.id));
+    const subcats = await this.db.subcategories.filter((s) => catIds.has(s.category_id)).toArray();
+    const subcatIds = new Set(subcats.map((s) => s.id));
+    const found = await this.db.items
+      .filter((i) => subcatIds.has(i.subcategory_id))
+      .first();
+    if (found) return found.id;
+
+    throw new Error(`Balance correction item not found for kind: ${kind}`);
+  }
+
+  async adjustWalletBalance(
+    walletId: string,
+    actualBalance: number,
+    occurredOn?: string
+  ): Promise<Entry | null> {
+    const balances = await this.walletBalances();
+    const wallet = balances.find((w) => w.id === walletId);
+    if (!wallet) {
+      throw new Error(`Wallet not found: ${walletId}`);
+    }
+
+    const currentBalance = wallet.balance;
+    const diff = roundMoney(actualBalance - currentBalance);
+
+    if (diff === 0) {
+      return null;
+    }
+
+    const isIncome = diff > 0;
+    const amount = roundMoney(Math.abs(diff));
+    const date = occurredOn ?? new Date().toISOString().slice(0, 10);
+    const itemId = await this.getCorrectionItemId(isIncome ? 'income' : 'expense');
+
+    return this.addEntry({
+      type: isIncome ? 'income' : 'expense',
+      amount,
+      occurredOn: date,
+      accountId: walletId,
+      itemId,
+      note: isIncome ? 'تصحيح الرصيد (زيادة)' : 'تصحيح الرصيد (عجز)',
     });
   }
 
