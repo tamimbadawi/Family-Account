@@ -26,6 +26,14 @@ function formatLive(val: string) {
   return formattedInt;
 }
 
+// Long expressions keep their newest part visible, like a phone calculator
+const MAX_EXPRESSION_CHARS = 30;
+function tailOf(expr: string) {
+  if (expr.length <= MAX_EXPRESSION_CHARS) return expr;
+  const tail = expr.slice(-MAX_EXPRESSION_CHARS);
+  return '… ' + tail.slice(tail.indexOf(' ') + 1);
+}
+
 export function AmountDisplay({
   value,
   type = 'expense',
@@ -62,9 +70,9 @@ export function AmountDisplay({
         <span
           dir="ltr"
           data-expression
-          className="max-w-full truncate text-body text-ink-muted tabular-nums"
+          className="max-w-full whitespace-nowrap text-body text-ink-muted tabular-nums"
         >
-          {formatExpression(value)}
+          {tailOf(formatExpression(value))}
         </span>
       )}
       <div className={`flex items-baseline justify-center gap-1.5 ${isExpression ? '' : 'py-4'}`}>
