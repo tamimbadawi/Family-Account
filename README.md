@@ -1,6 +1,6 @@
-# حساباتنا · Family Accounts
+# Family Accounts · حساباتنا
 
-A calm, bilingual (Arabic/English) household accounting app for iPhone, installed from the browser.
+A calm, bilingual (English/Arabic) household accounting app for iPhone, installed from the browser.
 Expenses, income and transfers across wallets; 3-level categories; simple reports and pivot tables;
 works offline; zero running costs.
 

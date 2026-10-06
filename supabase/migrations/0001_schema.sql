@@ -20,7 +20,7 @@ create table public.household_members (
   user_id      uuid not null references auth.users(id) on delete cascade,
   display_name text not null,
   role         text not null default 'member' check (role in ('owner', 'member')),
-  locale       text not null default 'ar' check (locale in ('ar', 'en')),
+  locale       text not null default 'en' check (locale in ('ar', 'en')),
   created_at   timestamptz not null default now(),
   primary key (household_id, user_id)
 );
@@ -311,7 +311,7 @@ end $$;
 
 -- ---------- Onboarding RPCs ----------
 create or replace function public.create_household(
-  p_name text, p_display_name text, p_locale text default 'ar')
+  p_name text, p_display_name text, p_locale text default 'en')
 returns uuid language plpgsql security definer set search_path = ''
 as $$
 declare hid uuid;

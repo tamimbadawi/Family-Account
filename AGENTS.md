@@ -1,6 +1,6 @@
 # AGENTS.md — Family Accounts (حساباتنا)
 
-You are building a bilingual (Arabic-first, RTL) household accounting PWA for two non-technical,
+You are building a bilingual (English-first, LTR default with Arabic RTL support) household accounting PWA for two non-technical,
 older family members who will use it **only on iPhones**. They have zero spreadsheet skills.
 If a screen would confuse someone who has never used a finance app, it is wrong.
 
@@ -22,7 +22,7 @@ In Phase B you must not redesign screens — only swap what is behind `src/lib/d
 ## 2. Stack (fixed — do not substitute)
 
 Next.js 16 App Router · React 19 · TypeScript strict · Tailwind CSS v4 · shadcn/ui (restyled) ·
-next-intl (`ar` default, `en`) · Dexie (IndexedDB) · Supabase (`@supabase/supabase-js`, `@supabase/ssr`) ·
+next-intl (`en` default, `ar`) · Dexie (IndexedDB) · Supabase (`@supabase/supabase-js`, `@supabase/ssr`) ·
 Serwist (`@serwist/turbopack`) · vaul · motion (`motion/react`) · lucide-react · recharts · sonner · zod.
 Hosting: Vercel Hobby. Node ≥ 20.9. Package manager: **npm**.
 

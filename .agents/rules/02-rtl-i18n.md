@@ -3,9 +3,9 @@ trigger: glob
 globs: src/**/*.tsx, src/**/*.ts, messages/*.json
 ---
 
-# Arabic-first, RTL-correct, bilingual
+# English-first, bilingual with Arabic RTL support
 
-- Locales: `ar` (default, RTL) and `en` (LTR). Routes are `/ar/...` and `/en/...` via next-intl.
+- Locales: `en` (default, LTR) and `ar` (RTL). Routes are `/en/...` and `/ar/...` via next-intl.
 - `<html lang dir>` is set in `src/app/[locale]/layout.tsx` from the locale.
 - **Only logical Tailwind utilities:** `ms- me- ps- pe- start- end- text-start text-end rounded-s rounded-e border-s border-e`.
   Forbidden: `ml- mr- pl- pr- left- right- text-left text-right rounded-l rounded-r border-l border-r`.

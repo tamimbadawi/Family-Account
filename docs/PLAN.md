@@ -12,7 +12,7 @@ The app is a bilingual (Arabic/English) household money tracker. It runs as an i
 | --- | --- | --- |
 | Scope | Expenses, income and transfers across "wallets" (cash, bank, card) | All-round accounting without debits and credits jargon |
 | Categories | Category → Subcategory → Item, editable in-app, separate trees for expense and income | Strict 3-tier hierarchy, enforced in the database |
-| Language | Arabic (RTL, default) and English, switchable per user | next-intl with `/ar` and `/en` routes |
+| Language | English (LTR, default) and Arabic (RTL), switchable per user | next-intl with `/en` and `/ar` routes |
 | Auth | Supabase email + password, public sign-up disabled, sessions never expire | They log in once on each phone, then never again |
 | Sharing | One "household"; both in-laws see and edit the same books | Row Level Security scopes every row to the household |
 | Editing | Full edit; deletes are soft and restorable for 30 days | Mistakes are always recoverable |
@@ -162,7 +162,7 @@ create table public.household_members (
   user_id      uuid not null references auth.users(id) on delete cascade,
   display_name text not null,
   role         text not null default 'member' check (role in ('owner', 'member')),
-  locale       text not null default 'ar' check (locale in ('ar', 'en')),
+  locale       text not null default 'en' check (locale in ('ar', 'en')),
   created_at   timestamptz not null default now(),
   primary key (household_id, user_id)
 );
@@ -453,7 +453,7 @@ end $$;
 
 -- ---------- Onboarding RPCs ----------
 create or replace function public.create_household(
-  p_name text, p_display_name text, p_locale text default 'ar')
+  p_name text, p_display_name text, p_locale text default 'en')
 returns uuid language plpgsql security definer set search_path = ''
 as $$
 declare hid uuid;
@@ -602,7 +602,7 @@ family-accounts/
     │   ├── format/                # money(), date(), normalizeDigits()
     │   └── validation/            # zod schemas for entry/category forms
     └── i18n/
-        ├── routing.ts             # locales ['ar','en'], default 'ar'
+        ├── routing.ts             # locales ['en','ar'], default 'en'
         └── request.ts
 ```
 
@@ -641,16 +641,16 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'حساباتنا · Family Accounts',
-    short_name: 'حساباتنا',
-    start_url: '/ar',
+    name: 'Family Accounts · حساباتنا',
+    short_name: 'Family Accounts',
+    start_url: '/en',
     scope: '/',
     display: 'standalone',
     orientation: 'portrait',
     background_color: '#FAF8F5',
     theme_color: '#FAF8F5',
-    dir: 'rtl',
-    lang: 'ar',
+    dir: 'ltr',
+    lang: 'en',
     icons: [
       { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
       { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
@@ -754,7 +754,7 @@ Save docs/PLAN.md from the plan I paste below. Then write AGENTS.md containing: 
 "Architecture", the UI-first rule, the whole "Design direction" section, and this definition of done:
 "Before reporting done: open every changed screen in the browser at 390x844 in /ar and /en,
 screenshot, critique against Design direction, fix, then commit, push, and give the Vercel preview URL."
-Set up next-intl with locales ['ar','en'], default 'ar', <html dir> set per locale, using proxy.ts
+Set up next-intl with locales ['en','ar'], default 'en', <html dir> set per locale, using proxy.ts
 (Next 16 naming). Create messages/ar.json and en.json. Add a placeholder home page.
 Connect the repo to Vercel and confirm a production deploy works. Do not touch Supabase yet.
 [paste this whole doc exported as Markdown]
