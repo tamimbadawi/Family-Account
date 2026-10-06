@@ -1,0 +1,141 @@
+/*
+ * Family Accounts — design tokens (Tailwind CSS v4)
+ * Source of truth for colour, type, radius and motion.
+ * Step A1 copies this file to src/app/tokens.css and imports it from globals.css
+ * AFTER shadcn's generated variables, so these values win.
+ *
+ * Usage in components: bg-canvas, bg-surface, bg-surface-2, text-ink, text-ink-muted,
+ * border-line, bg-accent, text-accent, bg-accent-soft, text-income, text-expense,
+ * bg-expense-soft, rounded-card, rounded-sheet, text-hero, text-title, text-body …
+ */
+
+:root {
+  /* Surfaces */
+  --canvas: #faf8f5;        /* app background — warm off-white */
+  --surface: #ffffff;       /* cards, sheets */
+  --surface-2: #f3efe9;     /* chips, inputs, pressed states */
+  --line: #e7e2da;          /* hairlines (use sparingly) */
+
+  /* Ink */
+  --ink: #1c1917;
+  --ink-muted: #6b6560;
+  --ink-faint: #a8a29e;
+
+  /* Brand + meaning */
+  --accent: #0f766e;        /* emerald — primary actions */
+  --accent-ink: #ffffff;    /* text on accent */
+  --accent-soft: #d5efeb;   /* tinted backgrounds */
+  --income: #15803d;
+  --income-soft: #dcf2e3;
+  --expense: #c2410c;       /* terracotta, not alarm red */
+  --expense-soft: #fbe6da;
+  --transfer: #475569;
+  --warning: #b45309;
+  --danger: #b91c1c;        /* only for destructive confirms */
+
+  /* Elevation (the only two shadows allowed) */
+  --shadow-card: 0 1px 2px rgb(28 25 23 / 0.04), 0 4px 16px rgb(28 25 23 / 0.05);
+  --shadow-sheet: 0 -8px 32px rgb(28 25 23 / 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #121110;
+    --surface: #1c1a18;
+    --surface-2: #262320;
+    --line: #2f2b27;
+    --ink: #f5f2ee;
+    --ink-muted: #a8a29e;
+    --ink-faint: #6b6560;
+    --accent: #2dd4bf;
+    --accent-ink: #0b1f1d;
+    --accent-soft: #123532;
+    --income: #4ade80;
+    --income-soft: #143221;
+    --expense: #fb923c;
+    --expense-soft: #3a2316;
+    --transfer: #94a3b8;
+    --warning: #fbbf24;
+    --danger: #f87171;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
+    --shadow-sheet: 0 -8px 32px rgb(0 0 0 / 0.5);
+  }
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-income: var(--income);
+  --color-income-soft: var(--income-soft);
+  --color-expense: var(--expense);
+  --color-expense-soft: var(--expense-soft);
+  --color-transfer: var(--transfer);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  --font-sans: var(--font-plex-arabic), ui-sans-serif, system-ui, sans-serif;
+
+  /* Type scale (size / line-height). Body is 17px — iOS default. */
+  --text-hero: 3.25rem;      --text-hero--line-height: 1.05;   /* 52px amounts */
+  --text-display: 2.25rem;   --text-display--line-height: 1.1; /* 36px amount pad */
+  --text-title: 1.5rem;      --text-title--line-height: 1.25;  /* 24px screen titles */
+  --text-heading: 1.1875rem; --text-heading--line-height: 1.35;/* 19px card titles */
+  --text-body: 1.0625rem;    --text-body--line-height: 1.5;    /* 17px */
+  --text-caption: 0.9375rem; --text-caption--line-height: 1.4; /* 15px minimum */
+
+  --radius-card: 1.25rem;    /* 20px */
+  --radius-sheet: 1.75rem;   /* 28px top corners of sheets */
+  --radius-pill: 999px;
+
+  --shadow-card: var(--shadow-card);
+  --shadow-sheet: var(--shadow-sheet);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Map shadcn/ui variables onto our tokens so every shadcn component inherits the palette. */
+:root {
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-ink);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--ink);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--ink-muted);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--accent);
+  --destructive: var(--danger);
+  --radius: 1rem;
+}
+
+/* iOS standalone polish */
+html { -webkit-text-size-adjust: 100%; }
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 100dvh;
+}
+.tabular-nums, [data-amount] { font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

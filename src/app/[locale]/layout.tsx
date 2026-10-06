@@ -3,9 +3,17 @@ import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { SerwistProvider } from '@serwist/turbopack/react';
+import { IBM_Plex_Sans_Arabic } from 'next/font/google';
 import { type Locale, routing } from '@/i18n/routing';
 import { STARTUP_IMAGES } from '../startup-images';
 import '../globals.css';
+
+const ibmPlexArabic = IBM_Plex_Sans_Arabic({
+  subsets: ['arabic', 'latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-plex-arabic',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Family Accounts',
@@ -59,7 +67,7 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+    <html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'} className={ibmPlexArabic.variable}>
       <head>
         {STARTUP_IMAGES.map((img) => (
           <link
@@ -70,7 +78,7 @@ export default async function LocaleLayout({
           />
         ))}
       </head>
-      <body className="antialiased font-sans">
+      <body className="antialiased font-sans" suppressHydrationWarning>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <SerwistProvider
             swUrl="/serwist/sw.js"
