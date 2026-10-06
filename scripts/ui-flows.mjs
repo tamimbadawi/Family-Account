@@ -56,7 +56,6 @@ const FLOWS = {
     await openSheet(page);
     await tap(page, 'Money in');
     await typeAmount(page, ['5', '0', '0', '0']);
-    await tap(page, 'Next');
     await tap(page, 'Income');
     await tap(page, 'Regular');
     await tap(page, 'Pension');
@@ -74,7 +73,6 @@ const FLOWS = {
     const before = await homeNumbers(page);
     await openSheet(page);
     await typeAmount(page, ['2', '5', '0']);
-    await tap(page, 'Next');
     await tap(page, 'Food');
     await tap(page, 'Groceries');
     await tap(page, 'Supermarket');
@@ -89,19 +87,15 @@ const FLOWS = {
     await openSheet(page);
     await tap(page, 'Money in');
     await typeAmount(page, ['1', '0', '0']);
-    await tap(page, 'Next');
     await assertUsable(page, btn(page, 'Income'), 'income category after choosing Money in');
     if (await btn(page, 'Food').isVisible().catch(() => false)) throw new Error('expense category "Food" shown for Money in');
-    await tap(page, 'Edit amount').catch(async () => { await page.getByText('100').first().click(); });
     await tap(page, 'Money out');
-    await tap(page, 'Next');
     await assertUsable(page, btn(page, 'Food'), 'expense category after switching back to Money out');
     if (await btn(page, 'Income').isVisible().catch(() => false)) throw new Error('income category still shown after switching to Money out');
   },
   async newgroup(page) {
     await openSheet(page);
     await typeAmount(page, ['5', '0']);
-    await tap(page, 'Next');
     await tap(page, 'Food');
     await tap(page, '+ New Group');
     const input = page.getByRole('textbox').first();
