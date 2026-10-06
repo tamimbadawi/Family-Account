@@ -431,8 +431,9 @@ export default function CategoryManagerPage() {
                           <>
                             <button
                               type="button"
+                              aria-label={t('editCategory')}
                               onClick={(e) => openEditCategory(cat, e)}
-                              className="p-2 rounded-full hover:bg-surface-2 text-ink-muted transition-colors"
+                              className="p-2 rounded-full hover:bg-surface-2 text-ink-muted transition-colors cursor-pointer"
                             >
                               <Edit2 className="size-4" />
                             </button>

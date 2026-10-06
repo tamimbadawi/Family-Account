@@ -6,6 +6,7 @@ const withNextIntl = createNextIntlPlugin();
 
 const nextConfig: NextConfig = {
   turbopack: {},
+  devIndicators: false,
 };
 
 export default withSerwist(withNextIntl(nextConfig));

@@ -33,14 +33,15 @@ function audit() {
   // Any element that directly holds text (the app uses divs for most text, not only p/span).
   const ownText = (e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
   const textEls = [...document.querySelectorAll('body *')].filter(
-    (e) => !['SCRIPT', 'STYLE', 'NOSCRIPT', 'svg'].includes(e.tagName) && visible(e) && ownText(e),
+    (e) => !['SCRIPT', 'STYLE', 'NOSCRIPT', 'svg'].includes(e.tagName) && !e.closest('svg') && visible(e) && ownText(e),
   );
-  const label = (e) => e.innerText.trim().split('\n')[0].slice(0, 28);
+  const label = (e) => (e.innerText || e.textContent || '').trim().split('\n')[0].slice(0, 28);
   const inSheet = (e) => !!e.closest('[data-slot=drawer-content],[role=dialog]');
   const scrollParent = (e) => {
     for (let p = e.parentElement; p; p = p.parentElement) {
       const s = getComputedStyle(p);
       if (/(auto|scroll)/.test(s.overflowY) && p.scrollHeight > p.clientHeight + 2) return p;
+      if (/(auto|scroll)/.test(s.overflowX) && p.scrollWidth > p.clientWidth + 2) return p;
     }
     return null;
   };
@@ -80,10 +81,16 @@ function audit() {
     if (inSheet(t)) continue;
     const r = t.getBoundingClientRect();
     if (r.width < 2 || r.height < 2) continue;
+    // Inside a scroll area, points scrolled out of the area's visible box are legitimately hidden (e.g. pivot
+    // columns off to the side, list rows below the fold): skip those points. Points that ARE on screen inside the
+    // area are still checked, so a floating button covering a visible row is always caught.
+    const sp = scrollParent(t);
+    const box = sp ? sp.getBoundingClientRect() : null;
     const y = r.top + r.height / 2;
     const xs = [r.left + 3, r.left + r.width / 2, r.right - 3];
     let blocker = null, offscreen = false;
     for (const x of xs) {
+      if (box && (x < box.left || x > box.right || y < box.top || y > box.bottom)) continue;
       if (y >= innerHeight || x < 0 || x >= innerWidth) { offscreen = true; continue; }
       const top = document.elementFromPoint(x, y);
       if (top && !(t === top || t.contains(top) || top.contains(t))) { blocker = top; break; }
@@ -124,7 +131,7 @@ async function runJob({ route, w, h, theme }) {
       await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 45000 }).catch((e) => consoleErrors.push('load: ' + e.message.slice(0, 80)));
       await page.waitForTimeout(1200);
       const a = await page.evaluate(audit).catch((e) => ({ errors: ['audit: ' + e.message] }));
-      const name = `${route.replace(/^\//, '').replace(/\//g, '_') || 'root'}__${w}x${h}__${theme}.png`;
+      const name = `${route.replace(/^\//, '').replace(/[/?&=]/g, '_') || 'root'}__${w}x${h}__${theme}.png`;
       await page.screenshot({ path: path.join(OUT, name) });
       const problems = [];
       if (a.pageScrolls) problems.push('PAGE SCROLLS');

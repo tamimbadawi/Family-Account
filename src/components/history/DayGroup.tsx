@@ -58,7 +58,7 @@ export function DayGroup({
   return (
     <section className="mb-4">
       {/* Sticky day header */}
-      <div className="sticky top-0 z-10 flex items-center justify-between ps-5 pe-24 py-2.5 bg-canvas/95 backdrop-blur border-b border-line/40 select-none">
+      <div className="sticky top-0 z-10 flex items-center justify-between ps-4 pe-18 py-2 bg-canvas/95 backdrop-blur border-b border-line/40 select-none">
         <span className="text-caption font-semibold text-ink-muted">
           {formattedDay}
         </span>
@@ -70,7 +70,7 @@ export function DayGroup({
       </div>
 
       {/* Day entries card/list */}
-      <div className="ps-5 pe-24 bg-surface divide-y divide-line/30">
+      <div className="ps-4 pe-18 bg-surface divide-y divide-line/30">
         {entries.map((entry) => (
           <EntryRow
             key={entry.id}

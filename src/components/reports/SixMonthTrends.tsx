@@ -99,7 +99,7 @@ export function SixMonthTrends({
               stroke="var(--ink-muted)"
               tickLine={false}
               axisLine={{ stroke: 'var(--line)' }}
-              tick={{ fill: 'var(--ink-muted)', fontSize: 13 }}
+              tick={{ fill: 'var(--ink-muted)', fontSize: 15 }}
             />
             <YAxis
               orientation={isRtl ? 'right' : 'left'}
@@ -107,7 +107,7 @@ export function SixMonthTrends({
               tickLine={false}
               axisLine={false}
               tickCount={4}
-              tick={{ fill: 'var(--ink-faint)', fontSize: 11 }}
+              tick={{ fill: 'var(--ink-faint)', fontSize: 15 }}
               tickFormatter={(val: number) =>
                 money(val, locale, { compact: true, hideCurrency: true })
               }

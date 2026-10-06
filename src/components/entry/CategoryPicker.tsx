@@ -32,6 +32,7 @@ type Step = 'category' | 'subcategory' | 'item';
 
 export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerProps) {
   const t = useTranslations('entry');
+  const tCommon = useTranslations('common');
   const locale = useLocale();
   const repo = useRepository();
   const isRtl = locale === 'ar';
@@ -39,7 +40,6 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
   const [step, setStep] = React.useState<Step>('category');
   const [selectedCategory, setSelectedCategory] = React.useState<Category | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = React.useState<Subcategory | null>(null);
-
 
   // Inline "New" state
   const [isCreating, setIsCreating] = React.useState(false);
@@ -87,7 +87,10 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
   };
 
   const handleBack = () => {
-    setIsCreating(false);
+    if (isCreating) {
+      setIsCreating(false);
+      return;
+    }
     if (step === 'item') {
       setSelectedSubcategory(null);
       setStep('subcategory');
@@ -135,20 +138,21 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
     }
   };
 
-
   return (
     <div className={`space-y-3 ${className}`}>
-      {/* Breadcrumb Header if drilled down */}
-      {step !== 'category' && (
+      {/* Breadcrumb Header if drilled down or creating */}
+      {(step !== 'category' || isCreating) && (
         <div className="flex items-center gap-1.5 pb-1 select-none">
           <button
             type="button"
             onClick={handleBack}
-            className="flex items-center gap-1 rounded-xl px-2 py-1 text-body font-semibold text-accent hover:bg-surface-2 transition-colors"
+            className="flex items-center gap-1 rounded-xl px-2 py-1 text-body font-semibold text-accent hover:bg-surface-2 transition-colors cursor-pointer"
           >
             <ChevronLeft className="size-5 rtl:rotate-180" />
             <span>
-              {step === 'subcategory'
+              {isCreating
+                ? tCommon('back')
+                : step === 'subcategory'
                 ? pickName(
                     { name_ar: selectedCategory?.nameAr, name_en: selectedCategory?.nameEn },
                     locale
@@ -162,8 +166,8 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
         </div>
       )}
 
-      {/* Recents Row (only on root category step) */}
-      {step === 'category' && filteredRecents.length > 0 && (
+      {/* Recents Row (only on root category step when not creating) */}
+      {step === 'category' && !isCreating && filteredRecents.length > 0 && (
         <div className="space-y-1.5 select-none">
           <div className="flex items-center gap-1.5 text-caption font-medium text-ink-muted">
             <Sparkles className="size-4 text-accent" />
@@ -192,179 +196,186 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
         </div>
       )}
 
-      {/* Animated Step Content (fast step transition without delay) */}
-      <AnimatePresence initial={false}>
+      {/* Animated Step Content */}
+      <AnimatePresence initial={false} mode="wait">
         <motion.div
-          key={step}
+          key={isCreating ? `creating-${step}` : step}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.1 }}
           className="w-full"
         >
-          {/* Step 1: Category Tiles */}
-          {step === 'category' && (
-            <div className="grid grid-cols-3 gap-3 select-none">
-              {(categories ?? []).map((cat) => {
-                const name = pickName(
-                  { name_ar: cat.nameAr, name_en: cat.nameEn },
-                  locale
-                );
-
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => handleSelectCategory(cat)}
-                    className="flex flex-col items-center justify-center gap-1.5 rounded-2xl bg-surface p-3 text-center shadow-card transition-transform active:scale-95 hover:shadow-md cursor-pointer"
-                  >
-                    <div
-                      style={
-                        cat.color
-                          ? {
-                              backgroundColor: `${cat.color}18`,
-                              color: cat.color,
-                            }
-                          : undefined
-                      }
-                      className="flex size-12 items-center justify-center rounded-full bg-accent-soft text-accent"
-                    >
-                      <CategoryIcon name={cat.icon} className="size-6" />
-                    </div>
-                    <span className="line-clamp-2 min-h-[2.5rem] flex items-center justify-center text-caption font-semibold text-ink leading-tight text-center px-1">
-                      {name}
-                    </span>
-                  </button>
-                );
-              })}
-
-              {/* + New Tile */}
-              {!isCreating ? (
-                <button
-                  type="button"
-                  onClick={() => setIsCreating(true)}
-                  className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-line bg-surface/50 p-3 text-center transition-colors hover:bg-surface-2 cursor-pointer"
-                >
-                  <div className="flex size-12 items-center justify-center rounded-full bg-surface-2 text-ink-muted">
-                    <Plus className="size-6" />
-                  </div>
-                  <span className="min-h-[2.5rem] flex items-center justify-center text-caption font-semibold text-ink-muted leading-tight text-center px-1">
-                    {t('newCategory')}
-                  </span>
-                </button>
-              ) : null}
-            </div>
-          )}
-
-          {/* Step 2: Subcategory List */}
-          {step === 'subcategory' && (
-            <div className="divide-y divide-line rounded-card bg-surface shadow-card select-none">
-              {(subcategories ?? []).map((sub) => {
-                const name = pickName(
-                  { name_ar: sub.nameAr, name_en: sub.nameEn },
-                  locale
-                );
-
-                return (
-                  <button
-                    key={sub.id}
-                    type="button"
-                    onClick={() => handleSelectSubcategory(sub)}
-                    className="flex h-14 w-full items-center justify-between px-4 text-start transition-colors active:bg-surface-2 hover:bg-surface-2/50"
-                  >
-                    <span className="text-body font-medium text-ink">{name}</span>
-                    <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
-                  </button>
-                );
-              })}
-
-              {/* + New Subcategory */}
-              {!isCreating && (
-                <button
-                  type="button"
-                  onClick={() => setIsCreating(true)}
-                  className="flex h-14 w-full items-center gap-2 px-4 text-start font-semibold text-accent transition-colors active:bg-surface-2"
-                >
-                  <Plus className="size-5" />
-                  <span>{t('newSubcategory')}</span>
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Step 3: Items List */}
-          {step === 'item' && (
-            <div className="divide-y divide-line rounded-card bg-surface shadow-card select-none">
-              {(items ?? []).map((item) => {
-                const name = pickName(
-                  { name_ar: item.nameAr, name_en: item.nameEn },
-                  locale
-                );
-
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => handleSelectItem(item)}
-                    className="flex h-14 w-full items-center justify-between px-4 text-start transition-colors active:bg-surface-2 hover:bg-surface-2/50"
-                  >
-                    <span className="text-body font-medium text-ink">{name}</span>
-                    <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
-                  </button>
-                );
-              })}
-
-              {/* + New Item */}
-              {!isCreating && (
-                <button
-                  type="button"
-                  onClick={() => setIsCreating(true)}
-                  className="flex h-14 w-full items-center gap-2 px-4 text-start font-semibold text-accent transition-colors active:bg-surface-2"
-                >
-                  <Plus className="size-5" />
-                  <span>{t('newItem')}</span>
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Inline Create Form */}
-          {isCreating && (
-            <div className="mt-3 space-y-3 rounded-card bg-surface p-4 shadow-card">
-              <div className="space-y-2">
-                <Input
-                  autoFocus
-                  placeholder={isRtl ? t('nameArLabel') : t('nameEnLabel')}
-                  value={isRtl ? newNameAr : newNameEn}
-                  onChange={(e) =>
-                    isRtl ? setNewNameAr(e.target.value) : setNewNameEn(e.target.value)
-                  }
-                  className="h-12 rounded-xl text-body"
-                />
+          {/* Top-aligned "+ New" Form replacing picker */}
+          {isCreating ? (
+            <div className="space-y-3 rounded-card bg-surface p-4 shadow-card">
+              <div className="text-body font-semibold text-ink">
+                {step === 'category'
+                  ? t('newCategory')
+                  : step === 'subcategory'
+                  ? t('newSubcategory')
+                  : t('newItem')}
               </div>
-              <div className="flex gap-2">
+              <Input
+                autoFocus
+                placeholder={isRtl ? t('nameArLabel') : t('nameEnLabel')}
+                value={isRtl ? newNameAr : newNameEn}
+                onChange={(e) =>
+                  isRtl ? setNewNameAr(e.target.value) : setNewNameEn(e.target.value)
+                }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleCreate();
+                  }
+                }}
+                className="h-12 rounded-xl text-body bg-surface"
+              />
+              <div className="flex gap-2.5 pt-1">
                 <Button
-                  size="sm"
+                  type="button"
                   onClick={handleCreate}
                   disabled={isRtl ? !newNameAr.trim() : !newNameEn.trim()}
-                  className="flex-1 rounded-xl h-11"
+                  className="flex-1 h-12 rounded-xl text-body font-semibold text-accent-ink cursor-pointer"
                 >
-                  {t('saved')}
+                  {tCommon('save')}
                 </Button>
                 <Button
-                  size="sm"
+                  type="button"
                   variant="outline"
                   onClick={() => {
                     setIsCreating(false);
                     setNewNameAr('');
                     setNewNameEn('');
                   }}
-                  className="rounded-xl h-11"
+                  className="h-12 rounded-xl text-body font-semibold cursor-pointer"
                 >
-                  {isRtl ? 'إلغاء' : 'Cancel'}
+                  {tCommon('cancel')}
                 </Button>
               </div>
             </div>
+          ) : (
+            <>
+              {/* Step 1: Category Tiles */}
+              {step === 'category' && (
+                <div className="grid grid-cols-3 gap-3 select-none">
+                  {(categories ?? []).map((cat) => {
+                    const name = pickName(
+                      { name_ar: cat.nameAr, name_en: cat.nameEn },
+                      locale
+                    );
+
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => handleSelectCategory(cat)}
+                        className="flex flex-col items-center justify-center gap-1.5 rounded-2xl bg-surface p-3 text-center shadow-card transition-transform active:scale-95 hover:shadow-md cursor-pointer"
+                      >
+                        <div
+                          style={
+                            cat.color
+                              ? {
+                                  backgroundColor: `${cat.color}18`,
+                                  color: cat.color,
+                                }
+                              : undefined
+                          }
+                          className="flex size-12 items-center justify-center rounded-full bg-accent-soft text-accent"
+                        >
+                          <CategoryIcon name={cat.icon} className="size-6" />
+                        </div>
+                        <span className="line-clamp-2 min-h-[2.5rem] flex items-center justify-center text-caption font-semibold text-ink leading-tight text-center px-1">
+                          {name}
+                        </span>
+                      </button>
+                    );
+                  })}
+
+                  {/* + New Tile */}
+                  <button
+                    type="button"
+                    onClick={() => setIsCreating(true)}
+                    className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-line bg-surface/50 p-3 text-center transition-colors hover:bg-surface-2 cursor-pointer"
+                  >
+                    <div className="flex size-12 items-center justify-center rounded-full bg-surface-2 text-ink-muted">
+                      <Plus className="size-6" />
+                    </div>
+                    <span className="min-h-[2.5rem] flex items-center justify-center text-caption font-semibold text-ink-muted leading-tight text-center px-1">
+                      {t('newCategory')}
+                    </span>
+                  </button>
+                </div>
+              )}
+
+              {/* Step 2: Subcategory List */}
+              {step === 'subcategory' && (
+                <div className="divide-y divide-line rounded-card bg-surface shadow-card select-none">
+                  {(subcategories ?? []).map((sub) => {
+                    const name = pickName(
+                      { name_ar: sub.nameAr, name_en: sub.nameEn },
+                      locale
+                    );
+
+                    return (
+                      <button
+                        key={sub.id}
+                        type="button"
+                        onClick={() => handleSelectSubcategory(sub)}
+                        className="flex h-14 w-full items-center justify-between px-4 text-start transition-colors active:bg-surface-2 hover:bg-surface-2/50 cursor-pointer"
+                      >
+                        <span className="text-body font-medium text-ink">{name}</span>
+                        <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
+                      </button>
+                    );
+                  })}
+
+                  {/* + New Subcategory */}
+                  <button
+                    type="button"
+                    onClick={() => setIsCreating(true)}
+                    className="flex h-14 w-full items-center gap-2 px-4 text-start font-semibold text-accent transition-colors active:bg-surface-2 cursor-pointer"
+                  >
+                    <Plus className="size-5" />
+                    <span>{t('newSubcategory')}</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Step 3: Items List */}
+              {step === 'item' && (
+                <div className="divide-y divide-line rounded-card bg-surface shadow-card select-none">
+                  {(items ?? []).map((item) => {
+                    const name = pickName(
+                      { name_ar: item.nameAr, name_en: item.nameEn },
+                      locale
+                    );
+
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleSelectItem(item)}
+                        className="flex h-14 w-full items-center justify-between px-4 text-start transition-colors active:bg-surface-2 hover:bg-surface-2/50 cursor-pointer"
+                      >
+                        <span className="text-body font-medium text-ink">{name}</span>
+                        <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
+                      </button>
+                    );
+                  })}
+
+                  {/* + New Item */}
+                  <button
+                    type="button"
+                    onClick={() => setIsCreating(true)}
+                    className="flex h-14 w-full items-center gap-2 px-4 text-start font-semibold text-accent transition-colors active:bg-surface-2 cursor-pointer"
+                  >
+                    <Plus className="size-5" />
+                    <span>{t('newItem')}</span>
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </motion.div>
       </AnimatePresence>

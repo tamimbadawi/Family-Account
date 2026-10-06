@@ -13,14 +13,25 @@ function subscribe(callback: () => void) {
 
 function getSnapshot() {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
-  const isIos =
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  const isStandalone =
-    ('standalone' in navigator && (navigator as { standalone?: boolean }).standalone === true) ||
-    window.matchMedia('(display-mode: standalone)').matches;
-  const isDismissed = sessionStorage.getItem('dismiss_install_banner') === '1';
-  return isIos && !isStandalone && !isDismissed;
+  try {
+    const ua = navigator.userAgent || '';
+    if (/android/i.test(ua)) return false;
+
+    const isIos =
+      /iPhone|iPad|iPod/.test(ua) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (!isIos) return false;
+
+    const isStandalone =
+      ('standalone' in navigator && (navigator as unknown as { standalone?: boolean }).standalone === true) ||
+      window.matchMedia('(display-mode: standalone)').matches;
+    if (isStandalone) return false;
+
+    const isDismissed = localStorage.getItem('dismiss_install_banner') === '1';
+    return !isDismissed;
+  } catch {
+    return false;
+  }
 }
 
 function getServerSnapshot() {
@@ -37,7 +48,11 @@ export function InstallBanner() {
   if (!show) return null;
 
   const handleDismiss = () => {
-    sessionStorage.setItem('dismiss_install_banner', '1');
+    try {
+      localStorage.setItem('dismiss_install_banner', '1');
+    } catch {
+      // ignore storage errors
+    }
     setDismissed(true);
   };
 

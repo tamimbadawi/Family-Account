@@ -29,12 +29,12 @@ export default function HomePage() {
     return new Date().toISOString().slice(0, 7);
   }, []);
 
-  // Responsive limit: at most 3 entries, 2 on short screens (<720px height)
-  const [maxRows, setMaxRows] = React.useState(3);
+  // Responsive limit: at most 3 entries, 2 on 700-749px, 1 on <700px (iPhone SE 375x667)
+  const [maxRows, setMaxRows] = React.useState(1);
 
   React.useEffect(() => {
     const update = () => {
-      setMaxRows(window.innerHeight < 720 ? 2 : 3);
+      setMaxRows(window.innerHeight < 700 ? 1 : (window.innerHeight < 750 ? 2 : 3));
     };
     update();
     window.addEventListener('resize', update);
@@ -61,36 +61,35 @@ export default function HomePage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-8 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-5">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-6 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-4">
         {/* Greeting Skeleton */}
         <Skeleton className="h-6 w-36" />
 
         {/* Hero Card Skeleton */}
-        <div className="space-y-3 rounded-card bg-surface p-6 shadow-card">
-          <Skeleton className="h-5 w-28" />
-          <Skeleton className="h-12 w-48" />
-          <Skeleton className="h-4 w-40" />
+        <div className="space-y-2 rounded-card bg-surface p-4 shadow-card">
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-10 w-44" />
+          <Skeleton className="h-4 w-36" />
         </div>
 
         {/* Top categories Skeleton */}
         <div className="space-y-2">
-          <Skeleton className="h-5 w-32" />
-          <div className="grid grid-cols-3 gap-2.5">
-            <Skeleton className="h-20 rounded-2xl" />
-            <Skeleton className="h-20 rounded-2xl" />
-            <Skeleton className="h-20 rounded-2xl" />
+          <Skeleton className="h-4 w-32" />
+          <div className="grid grid-cols-3 gap-2">
+            <Skeleton className="h-18 rounded-2xl" />
+            <Skeleton className="h-18 rounded-2xl" />
+            <Skeleton className="h-18 rounded-2xl" />
           </div>
         </div>
 
         {/* Recent entries Skeleton */}
-        <div className="space-y-3 rounded-card bg-surface p-5 shadow-card">
+        <div className="space-y-2 rounded-card bg-surface p-4 shadow-card">
           <div className="flex items-center justify-between">
-            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-4 w-24" />
             <Skeleton className="h-4 w-16" />
           </div>
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
         </div>
       </div>
     );
@@ -100,7 +99,7 @@ export default function HomePage() {
 
   if (isEmpty) {
     return (
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-8 pt-1 flex flex-col items-center justify-center py-12 text-center select-none">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-6 pt-1 flex flex-col items-center justify-center py-12 text-center select-none">
         <div className="mb-4 flex size-20 items-center justify-center rounded-full bg-accent-soft text-accent">
           <Sparkles className="size-10" />
         </div>
@@ -118,24 +117,24 @@ export default function HomePage() {
   const displayedCategories = (topCategories ?? []).slice(0, 3);
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-8 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-4 select-none">
+    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-6 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-3 select-none">
       {/* 1. Greeting */}
       <div>
-        <span className="text-heading font-medium text-ink-muted">
+        <span className="text-body font-medium text-ink-muted">
           {greeting}
         </span>
       </div>
 
       {/* 2. Hero Card */}
       <Link href="/reports" className="block active:scale-[0.99] transition-transform">
-        <Card className="bg-surface p-6 shadow-card hover:shadow-md transition-shadow">
-          <span className="text-heading text-ink-muted">
+        <Card className="bg-surface p-4 sm:p-5 shadow-card hover:shadow-md transition-shadow">
+          <span className="text-caption text-ink-muted font-medium">
             {tHome('spentThisMonth')}
           </span>
-          <div className="mt-1 text-hero font-bold tabular-nums text-expense">
+          <div className="mt-0.5 text-[32px] sm:text-hero font-bold tabular-nums text-expense leading-tight">
             {money(summary?.expense ?? 0, locale)}
           </div>
-          <div className="mt-2 flex items-center gap-2 text-caption text-ink-muted font-medium">
+          <div className="mt-1.5 flex items-center gap-2 text-caption text-ink-muted font-medium">
             <span>
               {tHome('incomeShort', { amount: money(summary?.income ?? 0, locale) })}
             </span>
@@ -149,12 +148,12 @@ export default function HomePage() {
 
       {/* 3. Top categories this month */}
       {displayedCategories.length > 0 && (
-        <section className="space-y-2.5">
-          <h2 className="text-heading font-semibold text-ink">
+        <section className="space-y-1.5">
+          <h2 className="text-body font-semibold text-ink">
             {tHome('topCategories')}
           </h2>
 
-          <div className="grid grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-3 gap-2">
             {displayedCategories.map((cat) => {
               const name = pickName(
                 { name_ar: cat.nameAr, name_en: cat.nameEn },
@@ -164,7 +163,7 @@ export default function HomePage() {
               return (
                 <div
                   key={cat.id}
-                  className="flex flex-col items-center justify-center gap-1.5 rounded-2xl bg-surface p-3 text-center shadow-card select-none"
+                  className="flex flex-col items-center justify-center gap-1 rounded-2xl bg-surface p-2 text-center shadow-card select-none"
                 >
                   <div
                     style={
@@ -175,9 +174,9 @@ export default function HomePage() {
                           }
                         : undefined
                     }
-                    className="flex size-11 items-center justify-center rounded-full bg-accent-soft text-accent"
+                    className="flex size-9 items-center justify-center rounded-full bg-accent-soft text-accent"
                   >
-                    <CategoryIcon name={cat.icon} className="size-5" />
+                    <CategoryIcon name={cat.icon} className="size-4.5" />
                   </div>
                   <span className="truncate w-full text-caption font-medium text-ink">
                     {name}
@@ -193,9 +192,9 @@ export default function HomePage() {
       )}
 
       {/* 4. Recent entries */}
-      <section className="space-y-2">
+      <section className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <h2 className="text-heading font-semibold text-ink">
+          <h2 className="text-body font-semibold text-ink">
             {tHome('recent')}
           </h2>
           <Link
@@ -207,7 +206,7 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="divide-y divide-line rounded-card bg-surface px-4 py-1 shadow-card">
+        <div className="divide-y divide-line rounded-card bg-surface px-4 py-0.5 shadow-card">
           {entries.slice(0, maxRows).map((entry) => (
             <EntryRow key={entry.id} entry={entry} onClick={() => openEdit(entry)} />
           ))}

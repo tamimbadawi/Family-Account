@@ -414,7 +414,7 @@ export function EntrySheet() {
   const { isOpen, mode, editingEntry, initialType, close } = useEntrySheet();
 
   return (
-    <Drawer open={isOpen} onOpenChange={(open) => !open && close()}>
+    <Drawer open={isOpen} onOpenChange={(open) => !open && close()} repositionInputs>
       <DrawerContent className="max-h-[92dvh] overflow-y-auto">
         <DrawerHeader className="pb-2">
           <DrawerTitle className="text-title font-bold text-ink">

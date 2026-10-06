@@ -82,17 +82,17 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-3.5 pt-1 select-none">
+    <div className="px-5 space-y-2.5 pt-1 select-none">
       {/* Primary Inset Group */}
       <div className="bg-surface rounded-card border border-line/40 shadow-card divide-y divide-line/30">
         {/* Categories */}
         <Link
           href="/settings/categories"
-          className="flex items-center justify-between p-4 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
         >
-          <div className="flex items-center gap-3.5">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/12 text-accent">
-              <FolderTree className="size-5" />
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent/12 text-accent">
+              <FolderTree className="size-4.5" />
             </div>
             <span className="text-body font-semibold text-ink">
               {t('categories')}
@@ -104,11 +104,11 @@ export default function SettingsPage() {
         {/* Wallets */}
         <Link
           href="/settings/wallets"
-          className="flex items-center justify-between p-4 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
         >
-          <div className="flex items-center gap-3.5">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-income-soft text-income">
-              <Wallet className="size-5" />
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-income-soft text-income">
+              <Wallet className="size-4.5" />
             </div>
             <span className="text-body font-semibold text-ink">
               {t('wallets')}
@@ -120,11 +120,11 @@ export default function SettingsPage() {
         {/* Recently Deleted */}
         <Link
           href="/settings/deleted"
-          className="flex items-center justify-between p-4 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
         >
-          <div className="flex items-center gap-3.5">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-expense-soft text-expense">
-              <Trash2 className="size-5" />
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-expense-soft text-expense">
+              <Trash2 className="size-4.5" />
             </div>
             <span className="text-body font-semibold text-ink">
               {t('recentlyDeleted')}
@@ -142,22 +142,22 @@ export default function SettingsPage() {
           tabIndex={0}
           onClick={handleLanguageToggle}
           onKeyDown={(e) => e.key === 'Enter' && handleLanguageToggle()}
-          className="flex items-center justify-between p-4 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
+          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
         >
-          <div className="flex items-center gap-3.5">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/12 text-amber-600 dark:text-amber-400">
-              <Globe className="size-5" />
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/12 text-amber-600 dark:text-amber-400">
+              <Globe className="size-4.5" />
             </div>
             <div className="text-start">
-              <div className="text-body font-semibold text-ink">
+              <div className="text-body font-semibold text-ink leading-tight">
                 {t('language')}
               </div>
-              <div className="text-caption text-ink-muted">
+              <div className="text-caption text-ink-muted leading-tight">
                 {locale === 'ar' ? 'العربية' : 'English'}
               </div>
             </div>
           </div>
-          <span className="text-caption font-semibold px-2.5 py-1 rounded-lg bg-surface-2 text-ink">
+          <span className="text-caption font-semibold px-2 py-0.5 rounded-lg bg-surface-2 text-ink">
             {locale === 'ar' ? 'English' : 'عربي'}
           </span>
         </div>
@@ -168,17 +168,17 @@ export default function SettingsPage() {
           tabIndex={0}
           onClick={handleDownloadCsv}
           onKeyDown={(e) => e.key === 'Enter' && handleDownloadCsv()}
-          className="flex items-center justify-between p-4 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
+          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
         >
-          <div className="flex items-center gap-3.5">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/12 text-blue-600 dark:text-blue-400">
-              <Download className="size-5" />
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/12 text-blue-600 dark:text-blue-400">
+              <Download className="size-4.5" />
             </div>
             <div className="text-start">
-              <div className="text-body font-semibold text-ink">
+              <div className="text-body font-semibold text-ink leading-tight">
                 {t('download')}
               </div>
-              <div className="text-caption text-ink-muted">
+              <div className="text-caption text-ink-muted leading-tight">
                 CSV (Excel)
               </div>
             </div>
@@ -193,16 +193,16 @@ export default function SettingsPage() {
 
       {/* Family Section */}
       <div className="bg-surface rounded-card border border-line/40 shadow-card">
-        <div className="flex items-center justify-between p-4 select-none">
-          <div className="flex items-center gap-3.5">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/12 text-indigo-600 dark:text-indigo-400">
-              <Users className="size-5" />
+        <div className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 select-none">
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-indigo-500/12 text-indigo-600 dark:text-indigo-400">
+              <Users className="size-4.5" />
             </div>
             <div>
-              <div className="text-body font-semibold text-ink">
+              <div className="text-body font-semibold text-ink leading-tight">
                 {t('family')}
               </div>
-              <div className="text-caption text-ink-muted">
+              <div className="text-caption text-ink-muted leading-tight">
                 ماما · بابا
               </div>
             </div>
@@ -215,11 +215,11 @@ export default function SettingsPage() {
         <button
           type="button"
           onClick={() => toast.info(t('signOut'))}
-          className="w-full flex items-center justify-between p-4 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
+          className="w-full flex min-h-[48px] items-center justify-between px-3.5 py-2.5 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
         >
-          <div className="flex items-center gap-3.5">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-expense-soft text-expense">
-              <LogOut className="size-5 rtl:rotate-180" />
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-expense-soft text-expense">
+              <LogOut className="size-4.5 rtl:rotate-180" />
             </div>
             <span className="text-body font-semibold text-expense">
               {t('signOut')}
