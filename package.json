@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "check-rtl": "node scripts/check-rtl.mjs",
-    "ui:check": "node scripts/ui-check.mjs"
+    "ui:check": "node scripts/ui-check.mjs",
+    "ui:flows": "node scripts/ui-flows.mjs"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
