@@ -81,7 +81,7 @@ Order top → bottom:
    - Step 3 **Items:** large list rows, "+ جديد" row last. Selecting an item → Review.
    - Transfer mode replaces steps with two WalletPickers: "من" → "إلى".
 4. **AmountPad** (visible while amount is focused/empty): 4×3 keys, 64px tall, Western digits 0–9 in both languages, "." decimal, backspace. Keys `bg-surface-2`, pressed state darker, no iOS keyboard ever.
-5. **Review strip:** chips for Date (اليوم / امبارح / اختار…), Wallet (last used), Note (optional, opens a single-line input).
+5. **Review strip:** chips for Date (اليوم / امبارح / اختار…), Wallet (last used), Note (optional, opens a single-line input), **Photo** (optional, opens the camera; shows a small thumbnail once taken; tap for a full-screen viewer with Replace / Remove).
 6. **Save** — full-width `h-14` accent button, disabled until amount > 0 and an item (or both wallets) are chosen. On save: checkmark animation, sheet closes, toast "اتسجل ✓" with **تراجع** (Undo).
 Edit mode: same sheet, prefilled, title "تعديل", plus a text button "حذف" at the bottom (soft delete + Undo toast).
 
