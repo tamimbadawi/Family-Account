@@ -54,7 +54,7 @@ _(write what you observed here: every hesitation, question, or complaint)_
 
 | Step | Workflow | Owner | Branch | Status |
 |---|---|---|---|---|
-| B1 | `/b1-database` — migrations, smoke test, advisors, types | AG-1 | `step/b1-database` | |
+| B1 | `/b1-database` — migrations, smoke test, advisors, types | AG-1 | `step/b1-database` | ✅ |
 | B2 | `/b2-auth` — Supabase auth, proxy, welcome, family | AG-1 | `step/b2-auth` | |
 | B5 | `/b5-keepalive-backups` — keep-alive, backups, CSV | AG-2 | `step/b5-keepalive` | |
 | B3 | `/b3-live-sync` — live repository + offline sync | AG-1 | `step/b3-live-sync` | |
@@ -72,3 +72,4 @@ _(write what you observed here: every hesitation, question, or complaint)_
 | 2026-10-06 | A5b-logic | AG-2: pure `pivot()`, 5 presets, `pivotToCsv()` with tests (PR #4) |
 | 2026-10-06 | A7a | AG-2: Serwist (Turbopack) service worker, manifest, icons + iOS splash from `design/icon.png`, `/~offline` (PR #7) |
 | 2026-10-06 | A1, A2b, A3a, A3b | AG-1: design system + styleguide, shell/tab bar/Home, entry parts, Add/Edit sheet. Merged together on the user's "speed up" (look-and-feel review moves to one combined preview). Known: Home crashes on a fresh device until AG-2's seed fix lands |
+| 2026-10-06 | B1 (early) | Claude: Supabase project `family-accounts` (ref zzbbniffrdigluisvxxb, eu-west-1). Applied 0001, 0002 (pg_cron purge), new 0003 (advisor fixes: lock rls_auto_enable, FK indexes). RLS smoke test 15/15 PASS. Types in src/lib/supabase/database.types.ts. App stays on mock data until the family gate. ABRD_Website paused to free the free-plan slot |
