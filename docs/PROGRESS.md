@@ -42,7 +42,7 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 
 | 12 | Home money | Place `OurMoneyRow` (from A2c) on Home, keeping Home within one screen | A2c | `step/home-our-money` |  |
 
-### Claude builder queue · folder `C:\Devamily-accounts\cl`
+### Claude builder queue · folder `C:Devamily-accounts`
 
 Owns `src/components/entry/**` until A3c is merged (nobody else edits the entry sheet).
 
