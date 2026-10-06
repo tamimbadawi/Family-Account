@@ -1,0 +1,17 @@
+{
+  "title": "Settings",
+  "categories": "Categories",
+  "wallets": "Wallets",
+  "family": "Family",
+  "language": "Language",
+  "digits": "Number style",
+  "download": "Download my data",
+  "recentlyDeleted": "Recently deleted",
+  "needsAttention": "Needs attention",
+  "signOut": "Sign out",
+  "archive": "Hide",
+  "archiveHint": "It disappears from the choices; past entries stay exactly as they are.",
+  "showArchived": "Show hidden",
+  "reorder": "Reorder",
+  "addFamilyMember": "Add a family member"
+}

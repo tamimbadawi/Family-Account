@@ -177,6 +177,52 @@ end $$;
 create trigger transactions_kind before insert or update on public.transactions
   for each row execute function public.check_txn_kind();
 
+-- A category's kind never changes, and groups/items only move under a parent of the
+-- same kind, so existing entries can never end up contradicting their item.
+create or replace function public.guard_category_kind()
+returns trigger language plpgsql set search_path = ''
+as $$
+begin
+  if new.kind <> old.kind then
+    raise exception 'A category''s kind cannot change' using errcode = '23514';
+  end if;
+  return new;
+end $$;
+
+create or replace function public.guard_subcategory_move()
+returns trigger language plpgsql set search_path = ''
+as $$
+begin
+  if new.category_id <> old.category_id and
+     (select kind from public.categories where id = new.category_id)
+       is distinct from (select kind from public.categories where id = old.category_id) then
+    raise exception 'Cannot move a group to a category of the other kind' using errcode = '23514';
+  end if;
+  return new;
+end $$;
+
+create or replace function public.guard_item_move()
+returns trigger language plpgsql set search_path = ''
+as $$
+begin
+  if new.subcategory_id <> old.subcategory_id and
+     (select c.kind from public.subcategories s join public.categories c on c.id = s.category_id
+       where s.id = new.subcategory_id)
+       is distinct from
+     (select c.kind from public.subcategories s join public.categories c on c.id = s.category_id
+       where s.id = old.subcategory_id) then
+    raise exception 'Cannot move an item to a category of the other kind' using errcode = '23514';
+  end if;
+  return new;
+end $$;
+
+create trigger categories_kind_guard before update of kind on public.categories
+  for each row execute function public.guard_category_kind();
+create trigger subcategories_move_guard before update of category_id on public.subcategories
+  for each row execute function public.guard_subcategory_move();
+create trigger items_move_guard before update of subcategory_id on public.items
+  for each row execute function public.guard_item_move();
+
 -- ---------- Row Level Security ----------
 alter table public.households        enable row level security;
 alter table public.household_members enable row level security;

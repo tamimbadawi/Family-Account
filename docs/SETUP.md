@@ -17,8 +17,11 @@ git push -u origin main
 ```
 The repo already contains one commit. Keep the repo **private** — backups will contain their finances.
 
-## 3. Antigravity
-1. Open this folder as the workspace. Antigravity reads `AGENTS.md` and `.agents/rules/*.md` automatically;
+## 3. Antigravity (two builder agents) + Claude Code (orchestrator)
+Read [`ORCHESTRATION.md`](ORCHESTRATION.md) first. Each Antigravity agent gets its **own folder** (a git worktree);
+never point two agents at the same folder. Claude Code keeps `P:\App Builds\Accounting App` for merging.
+
+1. Open `P:\App Builds\family-accounts-ag1` as AG-1's workspace and `P:\App Builds\family-accounts-ag2` as AG-2's. Antigravity reads `AGENTS.md` and `.agents/rules/*.md` automatically;
    the workflows in `.agents/workflows/` appear as slash commands (`/a0-scaffold`, …, `/design-review`).
 2. Connect MCP servers (Agent panel → ⋯ → MCP Servers → MCP Store, or edit the raw config).
    Prefer the store entries; `docs/mcp_config.example.json` shows the shape for reference.
@@ -29,8 +32,9 @@ The repo already contains one commit. Keep the repo **private** — backups will
 4. Agent settings: start in "Agent-assisted" / review mode so you approve terminal commands and file changes for the first few steps.
 
 ## 4. Run the build
-- Open `docs/PROGRESS.md`. Start a new agent conversation and run `/a0-scaffold`.
-- After each step: open the Vercel preview link on your iPhone. Fix anything you dislike in the same conversation before moving on.
+- Claude Code (the orchestrator) gives you a paste-ready prompt for each agent. Paste it into a **new** conversation for that agent.
+- When an agent finishes, tell Claude "AG-x finished <step>". Claude reviews, merges, and hands you the next prompts.
+- Open preview links on your iPhone whenever you like; tell Claude anything you dislike and it becomes a fix prompt.
 - One step per conversation keeps the agent's context small and focused.
 
 ## 5. Local tools (only if you want to run things yourself)

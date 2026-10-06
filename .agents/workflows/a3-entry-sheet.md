@@ -9,7 +9,7 @@ Read `AGENTS.md` and `docs/DESIGN.md` §4 "Add / Edit entry" carefully — follo
 Build in `src/components/entry/`:
 1. `EntrySheet` (vaul drawer, 92% height, grab handle, opens from the Home/History Add button; `mode: 'add' | 'edit'`).
 2. `TypeToggle` — segmented control expense/income/transfer; switching type filters categories by kind and recolours the amount.
-3. `AmountDisplay` + `AmountPad` — custom 4×3 keypad, 64px keys, locale digits, decimal, backspace, max 2 decimals, max 9,999,999.99. The iOS keyboard must never open for the amount.
+3. `AmountDisplay` + `AmountPad` — custom 4×3 keypad, 64px keys, Western digits 0–9 in both languages, "." decimal, backspace, max 2 decimals, max 9,999,999.99. The iOS keyboard must never open for the amount.
 4. `CategoryPicker` — Recents chips (6 most-used items, one tap → Review) → category tiles (3-col) → subcategory rows → item rows; breadcrumb back; animated horizontal slide between steps (direction-aware for RTL). "+ جديد" at each level opens a small inline form (name + icon/colour for categories) and selects the new node.
 5. Transfer mode: `WalletPicker` from → to (cannot be the same).
 6. `DateChips` (Today / Yesterday / Pick → native `<input type="date">`, font-size ≥ 16px), `WalletChip` (defaults to last used), optional note (single line, 500 chars).

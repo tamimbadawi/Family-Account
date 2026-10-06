@@ -1,0 +1,20 @@
+{
+  "addTitle": "تسجيل جديد",
+  "editTitle": "تعديل",
+  "expense": "مصروف",
+  "income": "دخل",
+  "transfer": "تحويل",
+  "amount": "المبلغ",
+  "recents": "بتستخدمهم كتير",
+  "chooseCategory": "اختار القسم",
+  "chooseSubcategory": "اختار الفرع",
+  "chooseItem": "اختار البند",
+  "from": "من",
+  "to": "إلى",
+  "wallet": "المحفظة",
+  "note": "ملاحظة (اختياري)",
+  "saved": "اتسجل",
+  "updated": "اتعدّل",
+  "deleted": "اتحذف",
+  "sameWallet": "اختار محفظتين مختلفتين"
+}

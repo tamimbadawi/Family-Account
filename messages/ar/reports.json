@@ -1,0 +1,40 @@
+{
+  "title": "التقارير",
+  "overview": "نظرة عامة",
+  "breakdown": "تفصيل",
+  "spent": "مصروفات",
+  "income": "دخل",
+  "net": "الصافي",
+  "byCategory": "حسب القسم",
+  "lastSixMonths": "آخر 6 شهور",
+  "walletBalances": "رصيد المحافظ",
+  "show": "اعرض",
+  "splitBy": "قسّم حسب",
+  "across": "على",
+  "period": "الفترة",
+  "total": "الإجمالي",
+  "dim": {
+    "category": "القسم",
+    "subcategory": "الفرع",
+    "item": "البند",
+    "wallet": "المحفظة",
+    "person": "الشخص",
+    "month": "الشهور",
+    "week": "الأسابيع",
+    "none": "بدون"
+  },
+  "periods": {
+    "thisMonth": "الشهر ده",
+    "last3": "آخر 3 شهور",
+    "last6": "آخر 6 شهور",
+    "thisYear": "السنة دي",
+    "custom": "اختار"
+  },
+  "presets": {
+    "whereDidItGo": "فلوسنا راحت فين؟",
+    "monthByMonth": "شهر بشهر",
+    "bills": "متابعة الفواتير",
+    "whichWallet": "أي محفظة؟",
+    "whoSpent": "مين صرف إيه"
+  }
+}

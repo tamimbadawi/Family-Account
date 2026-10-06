@@ -1,0 +1,11 @@
+{
+  "greetingMorning": "صباح الخير، {name}",
+  "greetingEvening": "مساء الخير، {name}",
+  "spentThisMonth": "صرفنا الشهر ده",
+  "incomeShort": "دخل {amount}",
+  "leftShort": "باقي {amount}",
+  "topCategories": "أكتر حاجات صرفنا عليها",
+  "recent": "آخر المصاريف",
+  "emptyTitle": "ابدأ بتسجيل أول مصروف",
+  "emptyBody": "سجّل أي مبلغ صرفته النهارده، وهنرتّبه لك."
+}

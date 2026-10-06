@@ -7,12 +7,15 @@ works offline; zero running costs.
 **Stack:** Next.js 16 · Tailwind CSS v4 · shadcn/ui · next-intl · Dexie · Supabase · Serwist · Vercel
 
 ## Status
-Planning complete — no app code yet. The app is built step by step by an AI agent (Antigravity)
+Personal family use only: it is installed from Safari ("Add to Home Screen"), never published to the App Store.
+
+Planning complete — no app code yet. The app is built step by step by two Antigravity agents, coordinated by Claude Code
 using the workflows in `.agents/workflows/`. Track progress in [`docs/PROGRESS.md`](docs/PROGRESS.md).
 
 ## Start here
 1. [`docs/SETUP.md`](docs/SETUP.md) — accounts, pushing this repo, connecting Antigravity + MCP (once).
-2. [`docs/PROGRESS.md`](docs/PROGRESS.md) — run `/a0-scaffold`, then each next step in a new conversation.
+2. [`docs/ORCHESTRATION.md`](docs/ORCHESTRATION.md) — two Antigravity agents build in parallel, Claude Code reviews and merges.
+3. [`docs/PROGRESS.md`](docs/PROGRESS.md) — who is on which step right now.
 
 ## What's in this repo
 | Path | Purpose |

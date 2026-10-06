@@ -1,6 +1,6 @@
 # Design spec — حساباتنا · Family Accounts
 
-The bar: **it should look like it came from the App Store.** Calm, warm, spacious, obviously easy.
+The bar: **it should look like it came from the App Store** (it is never published there: personal family use, installed from Safari with "Add to Home Screen"). Calm, warm, spacious, obviously easy.
 Two older people who have never used a finance app must log an expense with no help on day one.
 
 Tokens: `design/tokens.css` (copied to `src/app/tokens.css`). This file explains how to use them.
@@ -13,7 +13,8 @@ Tokens: `design/tokens.css` (copied to `src/app/tokens.css`). This file explains
 2. **Recognition over reading.** Colour + icon identify a category before its name is read.
 3. **Forgiving.** Everything is undoable. No "Are you sure?" for reversible actions.
 4. **Quietly reliable.** Offline is normal. The only sync signal is a small dot.
-5. **Arabic is the original, not a translation.** Design in Arabic first, then check English.
+5. **English is the default; Arabic wording is first-class.** Design in English first, then check Arabic (RTL). Arabic copy must read as natural Egyptian Arabic, never a literal translation. Screen labels below are quoted in Arabic; the English equivalents live in `messages/en/`.
+6. **Western digits everywhere.** Numbers, amounts and dates use 0–9 in both languages, including Arabic. With `ar-EG`, always pass `numberingSystem: 'latn'` to `Intl`.
 
 ## 2. Foundations
 
@@ -57,7 +58,7 @@ All amounts: `tabular-nums`. Currency suffix "ج.م" (ar) / "EGP" (en) at 60% si
 
 ### Home
 1. Greeting: "صباح الخير، ماما" (time-of-day + display name), `text-heading`, ink-muted.
-2. **Hero card:** "صرفنا الشهر ده" label → amount `text-hero` → small line "دخل ٥٬٠٠٠ · باقي ٤٬٦٤٩" (income · net). Tapping goes to Reports.
+2. **Hero card:** "صرفنا الشهر ده" label → amount `text-hero` → small line "دخل 5,000 · باقي 4,649" (income · net). Tapping goes to Reports.
 3. **Top categories this month:** 3 horizontal pills with icon, name, amount.
 4. **Recent entries:** last 5 as EntryRow (icon circle, item name, sub-line "category · wallet", amount at the inline end coloured by type). "عرض الكل" → History.
 5. Empty state (no entries yet): friendly illustration + "ابدأ بتسجيل أول مصروف" + big Add button.
@@ -65,21 +66,21 @@ All amounts: `tabular-nums`. Currency suffix "ج.م" (ar) / "EGP" (en) at 60% si
 ### Add / Edit entry — the most important screen (bottom sheet, vaul, 92% height)
 Order top → bottom:
 1. Grab handle, then **TypeToggle**: segmented control مصروف / دخل / تحويل (expense default). Changing type re-colours the amount.
-2. **Amount display**, `text-display`, centred, placeholder "٠". Caret-free; shows formatted value live.
+2. **Amount display**, `text-display`, centred, placeholder "0". Caret-free; shows formatted value live.
 3. **Step area** (animated slide between steps, breadcrumb above it: "المنزل ‹ المرافق"):
    - Step 0 **Recents row:** up to 6 most-used items as chips with icon — one tap selects item and jumps to Review.
    - Step 1 **Category tiles:** 3-column grid of tiles (48px icon circle + name below), "+ جديد" tile last.
    - Step 2 **Subcategories:** large list rows (56px), "+ جديد" row last.
    - Step 3 **Items:** large list rows, "+ جديد" row last. Selecting an item → Review.
    - Transfer mode replaces steps with two WalletPickers: "من" → "إلى".
-4. **AmountPad** (visible while amount is focused/empty): 4×3 keys, 64px tall, digits in current locale, "٫" decimal, backspace. Keys `bg-surface-2`, pressed state darker, no iOS keyboard ever.
+4. **AmountPad** (visible while amount is focused/empty): 4×3 keys, 64px tall, Western digits 0–9 in both languages, "." decimal, backspace. Keys `bg-surface-2`, pressed state darker, no iOS keyboard ever.
 5. **Review strip:** chips for Date (اليوم / امبارح / اختار…), Wallet (last used), Note (optional, opens a single-line input).
 6. **Save** — full-width `h-14` accent button, disabled until amount > 0 and an item (or both wallets) are chosen. On save: checkmark animation, sheet closes, toast "اتسجل ✓" with **تراجع** (Undo).
 Edit mode: same sheet, prefilled, title "تعديل", plus a text button "حذف" at the bottom (soft delete + Undo toast).
 
 ### History
-- Month switcher at top (‹ أكتوبر ٢٠٢٦ ›), filter chips: الكل / مصروفات / دخل.
-- Days as groups: sticky header "النهارده · الإثنين ٥ أكتوبر" with the day total at the inline end.
+- Month switcher at top (‹ أكتوبر 2026 ›), filter chips: الكل / مصروفات / دخل.
+- Days as groups: sticky header "النهارده · الإثنين 5 أكتوبر" with the day total at the inline end.
 - EntryRow as on Home; swipe is NOT used (hard for older users) — tap opens Edit.
 - Empty month: calm illustration + "مفيش مصاريف الشهر ده".
 
@@ -117,7 +118,7 @@ Words to avoid in UI: transaction, ledger, debit, credit, record, submit, error 
 - [ ] Only tokens; no hard-coded colours; light and dark both look intentional.
 - [ ] RTL mirrored correctly; icons flipped; no `left/right` utilities.
 - [ ] All text ≥ 15px, body 17px; tap targets ≥ 48px; contrast WCAG AA.
-- [ ] Amounts tabular, aligned, formatted via `money()`.
+- [ ] Amounts tabular, aligned, formatted via `money()`; Western digits (0–9) in both languages.
 - [ ] Long Arabic names truncate gracefully.
 - [ ] Empty, loading (skeleton), and offline states designed.
 - [ ] Motion subtle; reduced-motion respected.

@@ -1,0 +1,20 @@
+{
+  "addTitle": "New entry",
+  "editTitle": "Edit",
+  "expense": "Money out",
+  "income": "Money in",
+  "transfer": "Move",
+  "amount": "Amount",
+  "recents": "Used often",
+  "chooseCategory": "Choose a category",
+  "chooseSubcategory": "Choose a group",
+  "chooseItem": "Choose an item",
+  "from": "From",
+  "to": "To",
+  "wallet": "Wallet",
+  "note": "Note (optional)",
+  "saved": "Saved",
+  "updated": "Updated",
+  "deleted": "Deleted",
+  "sameWallet": "Pick two different wallets"
+}

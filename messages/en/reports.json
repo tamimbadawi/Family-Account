@@ -1,0 +1,40 @@
+{
+  "title": "Reports",
+  "overview": "Overview",
+  "breakdown": "Breakdown",
+  "spent": "Spent",
+  "income": "Money in",
+  "net": "Left over",
+  "byCategory": "By category",
+  "lastSixMonths": "Last 6 months",
+  "walletBalances": "Wallet balances",
+  "show": "Show",
+  "splitBy": "Split by",
+  "across": "Across",
+  "period": "Period",
+  "total": "Total",
+  "dim": {
+    "category": "Category",
+    "subcategory": "Group",
+    "item": "Item",
+    "wallet": "Wallet",
+    "person": "Person",
+    "month": "Months",
+    "week": "Weeks",
+    "none": "Nothing"
+  },
+  "periods": {
+    "thisMonth": "This month",
+    "last3": "Last 3 months",
+    "last6": "Last 6 months",
+    "thisYear": "This year",
+    "custom": "Custom"
+  },
+  "presets": {
+    "whereDidItGo": "Where did our money go?",
+    "monthByMonth": "Month by month",
+    "bills": "Bills tracker",
+    "whichWallet": "Which wallet?",
+    "whoSpent": "Who spent what"
+  }
+}

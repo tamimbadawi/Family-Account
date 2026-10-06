@@ -63,6 +63,20 @@ begin
 
   ok := false;
   begin
+    update public.categories set kind = 'income' where household_id = hid and name_en = 'Household';
+  exception when others then ok := true; end;
+  r := r || format(E'\n%s category kind cannot change', case when ok then 'PASS' else 'FAIL' end);
+
+  ok := false;
+  begin
+    update public.items set subcategory_id = (
+      select id from public.subcategories where household_id = hid and name_en = 'Regular')
+    where id = elec;
+  exception when others then ok := true; end;
+  r := r || format(E'\n%s item cannot move to an income group', case when ok then 'PASS' else 'FAIL' end);
+
+  ok := false;
+  begin
     delete from public.transactions where household_id = hid;
   exception when insufficient_privilege then ok := true; end;
   r := r || format(E'\n%s hard delete is blocked', case when ok then 'PASS' else 'FAIL' end);

@@ -4,8 +4,9 @@ You are building a bilingual (English-first, LTR default with Arabic RTL support
 older family members who will use it **only on iPhones**. They have zero spreadsheet skills.
 If a screen would confuse someone who has never used a finance app, it is wrong.
 
-**Read before every task:** this file → `docs/PROGRESS.md` (where we are) → the section of
-`docs/PLAN.md` / `docs/DESIGN.md` that your workflow names. Do only the current step.
+**Read before every task:** this file → `docs/ORCHESTRATION.md` (how the agents share the work) →
+`docs/PROGRESS.md` (find the step assigned to you) → the section of `docs/PLAN.md` / `docs/DESIGN.md`
+that your workflow names. Do only the step assigned to you, on its branch, in your own folder.
 
 ---
 
@@ -48,7 +49,8 @@ Never use `next-pwa` (unmaintained, webpack-only).
 - Font: IBM Plex Sans Arabic for both scripts; `tabular-nums` on every amount.
 - Body text ≥ 17px, tap targets ≥ 48px, one primary action per screen.
 - **RTL:** only logical utilities — `ms-/me-/ps-/pe-/start-/end-/text-start/text-end/rounded-s/rounded-e`. Never `ml-/mr-/pl-/pr-/left-/right-/text-left/text-right`. Directional icons (chevrons, arrows) flip with `rtl:rotate-180`.
-- No raw strings in components — every user-facing string comes from `messages/ar.json` + `messages/en.json` (add both every time).
+- No raw strings in components — every user-facing string comes from `messages/en/<namespace>.json` + `messages/ar/<namespace>.json` (add both every time).
+- **Western digits (0–9) everywhere, in both languages.** Arabic is for wording only. Format with `numberingSystem: 'latn'`.
 - Amount entry uses the custom on-screen `AmountPad` — never the iOS keyboard. Normalise Arabic-Indic digits (٠-٩) and `٫` with `normalizeDigits()` anywhere text becomes a number.
 - Feedback: Undo toasts (6 s) instead of "Are you sure?" dialogs. Offline is never an error.
 - Motion 150–250 ms, ease-out; honour `prefers-reduced-motion`.
@@ -71,9 +73,10 @@ Supabase work goes through the **Supabase MCP** (`apply_migration`, `execute_sql
 ```
 docs/PLAN.md        full build plan (architecture, schema, offline, PWA, roadmap)
 docs/DESIGN.md      design system + screen-by-screen spec  ← read for any UI task
-docs/PROGRESS.md    step checklist — update it at the end of every step
+docs/ORCHESTRATION.md  who does what, branches, folders, shared-file ownership
+docs/PROGRESS.md    step checklist + assignments — edited only by the orchestrator
 design/tokens.css   source of truth for colour/type/radius tokens
-messages/*.json     all UI strings (ar, en)
+messages/en|ar/     all UI strings, one JSON file per namespace (screen)
 supabase/migrations SQL — applied in Phase B via MCP, never edited after being applied
 supabase/tests      RLS smoke test (runs inside a rolled-back transaction)
 .agents/workflows   one workflow per roadmap step: /a0-scaffold … /b6-handover, /design-review
@@ -85,14 +88,16 @@ src/lib/reports     pivot() and report helpers — pure, unit-tested
 ## 7. Definition of done (every step)
 
 1. `npm run build`, `npm run lint`, `npm run typecheck`, `npm test` all pass.
-2. Run the **/design-review** workflow on every screen you touched (390×844 and 430×932, `/ar` and `/en`, light and dark). Fix what it finds.
-3. Commit with a clear message (`feat(entry): amount pad and category picker`), push, and report the **Vercel preview URL**.
-4. Tick the step in `docs/PROGRESS.md` and add one line of notes (what changed, anything deferred).
-5. Report back: what you built, screenshots, the preview URL, and any open question. Keep it short.
+2. Run the **/design-review** workflow on every screen you touched (390×844 and 430×932, `/en` and `/ar`, light and dark). Fix what it finds.
+3. Commit on your step branch with a clear message (`feat(entry): amount pad and category picker`), push the branch, and open a pull request into `main` using the PR template.
+4. Put the one-line notes (what changed, anything deferred, the **Vercel preview URL**) in the PR description. **Do not edit `docs/PROGRESS.md`.** Where a workflow says "tick PROGRESS.md" or "commit and push", this rule replaces it.
+5. Report back: what you built, screenshots, the preview URL, the PR link, and any open question. Keep it short. Then stop: the orchestrator reviews and merges.
 
 ## 8. Never
 
-- Never start the next roadmap step on your own.
+- Never start the next roadmap step on your own, and never work on a step assigned to another agent.
+- Never commit to `main`, merge pull requests, or rebase/force-push someone else's branch. Only the orchestrator merges.
+- Never edit a shared file you don't own (see `docs/ORCHESTRATION.md` §4). Write the change you need in your PR description instead.
 - Never install a UI kit other than shadcn/ui, or a state library (React context + Dexie live queries are enough).
 - Never add analytics, trackers, or third-party scripts.
 - Never cache `*.supabase.co` responses in the service worker.

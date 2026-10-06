@@ -39,7 +39,7 @@ jobs:
       - name: Forbid non-logical (RTL-breaking) Tailwind classes
         if: steps.app.outputs.exists == 'true'
         run: |
-          if grep -rEn --include='*.tsx' '(^|[" ])(ml|mr|pl|pr)-[0-9a-z]|(^|[" ])text-(left|right)([" ]|$)' src/; then
+          if grep -rEn --include='*.tsx' --include='*.ts' '(^|["'"'"' `:])-?(ml|mr|pl|pr|left|right)-[0-9a-z[]|(^|["'"'"' `:])(text-(left|right)|rounded-(l|r|tl|tr|bl|br)|border-(l|r))([-"'"'"' `]|$)' src/; then
             echo "::error::Use logical utilities (ms/me/ps/pe/text-start/text-end) — see .agents/rules/02-rtl-i18n.md"
             exit 1
           fi

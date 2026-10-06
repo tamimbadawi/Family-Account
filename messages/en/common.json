@@ -1,0 +1,19 @@
+{
+  "add": "Add",
+  "new": "New",
+  "save": "Save",
+  "cancel": "Cancel",
+  "undo": "Undo",
+  "delete": "Delete",
+  "restore": "Restore",
+  "edit": "Edit",
+  "back": "Back",
+  "done": "Done",
+  "seeAll": "See all",
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "pickDate": "Pick a day",
+  "currency": "EGP",
+  "loading": "Loading…",
+  "share": "Share"
+}

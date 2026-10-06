@@ -1,0 +1,17 @@
+{
+  "title": "الإعدادات",
+  "categories": "الأقسام",
+  "wallets": "المحافظ",
+  "family": "العائلة",
+  "language": "اللغة",
+  "digits": "شكل الأرقام",
+  "download": "تنزيل بياناتي",
+  "recentlyDeleted": "المحذوفات",
+  "needsAttention": "محتاج انتباه",
+  "signOut": "تسجيل الخروج",
+  "archive": "إخفاء",
+  "archiveHint": "هيختفي من الاختيارات، والمصاريف القديمة هتفضل زي ما هي.",
+  "showArchived": "عرض المخفي",
+  "reorder": "ترتيب",
+  "addFamilyMember": "إضافة فرد من العيلة"
+}
