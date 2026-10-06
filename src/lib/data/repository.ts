@@ -193,4 +193,7 @@ export interface Repository {
   ): Promise<CategoryTotal[]>;
   entriesForPivot(period: PivotPeriod | { startDate: string; endDate: string }): Promise<PivotEntry[]>;
   syncStatus(): Promise<SyncStatus>;
+
+  // Seeding / Initialization
+  ensureSeeded?(): Promise<void>;
 }

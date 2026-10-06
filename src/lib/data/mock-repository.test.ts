@@ -1,4 +1,5 @@
 import 'fake-indexeddb/auto';
+import { liveQuery } from 'dexie';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { FamilyAccountsDB } from '../offline/db';
 import { MockRepository } from './mock-repository';
@@ -213,5 +214,101 @@ describe('MockRepository with fake-indexeddb', () => {
     expect(sample.week).toMatch(/^\d{4}-W\d{2}$/);
     expect(sample.categoryNameAr || sample.categoryNameEn).toBeDefined();
     expect(sample.accountNameAr || sample.accountNameEn).toBeDefined();
+  });
+
+  it('runs read methods inside Dexie liveQuery against an empty database without ReadOnlyError', async () => {
+    const emptyDb = new FamilyAccountsDB(`test-empty-${Math.random().toString(36).substring(2, 9)}`);
+    const freshRepo = new MockRepository(emptyDb);
+
+    const runInLiveQuery = <T>(querier: () => Promise<T>): Promise<T> => {
+      return new Promise<T>((resolve, reject) => {
+        const observable = liveQuery(querier);
+        const subscription = observable.subscribe({
+          next: (val) => {
+            subscription.unsubscribe();
+            resolve(val);
+          },
+          error: (err) => {
+            subscription.unsubscribe();
+            reject(err);
+          },
+        });
+      });
+    };
+
+    // 1. syncStatus (the exact querier that caused the crash in bug report)
+    const syncStatus = await runInLiveQuery(() => freshRepo.syncStatus());
+    expect(syncStatus).toEqual({
+      status: 'synced',
+      lastSyncedAt: null,
+      pendingCount: 0,
+    });
+
+    // 2. Household & Members
+    const household = await runInLiveQuery(() => freshRepo.getHousehold());
+    expect(household).toBeNull();
+
+    const members = await runInLiveQuery(() => freshRepo.getMembers());
+    expect(members).toEqual([]);
+
+    // 3. Wallets & Balances
+    const wallets = await runInLiveQuery(() => freshRepo.getWallets());
+    expect(wallets).toEqual([]);
+
+    const balances = await runInLiveQuery(() => freshRepo.walletBalances());
+    expect(balances).toEqual([]);
+
+    // 4. Categories, Subcategories, Items
+    const categories = await runInLiveQuery(() => freshRepo.getCategories());
+    expect(categories).toEqual([]);
+
+    const subcategories = await runInLiveQuery(() => freshRepo.getSubcategories());
+    expect(subcategories).toEqual([]);
+
+    const items = await runInLiveQuery(() => freshRepo.getItems());
+    expect(items).toEqual([]);
+
+    // 5. Entries & Aggregations
+    const entries = await runInLiveQuery(() => freshRepo.listEntries());
+    expect(entries).toEqual([]);
+
+    const entry = await runInLiveQuery(() => freshRepo.getEntry('unknown-id'));
+    expect(entry).toBeNull();
+
+    const recent = await runInLiveQuery(() => freshRepo.recentItems());
+    expect(recent).toEqual([]);
+
+    const summary = await runInLiveQuery(() => freshRepo.monthSummary('2026-10'));
+    expect(summary).toEqual({
+      month: '2026-10',
+      income: 0,
+      expense: 0,
+      net: 0,
+    });
+
+    const totals = await runInLiveQuery(() => freshRepo.categoryTotals('2026-10', 'expense', 'category'));
+    expect(totals).toEqual([]);
+
+    const pivot = await runInLiveQuery(() => freshRepo.entriesForPivot('this-month'));
+    expect(pivot).toEqual([]);
+  });
+
+  it('ensures ensureSeeded is idempotent and safe under concurrent calls (StrictMode)', async () => {
+    const testDb = new FamilyAccountsDB(`test-strict-${Math.random().toString(36).substring(2, 9)}`);
+    const testRepo = new MockRepository(testDb);
+
+    // Call ensureSeeded concurrently multiple times as React StrictMode does
+    await Promise.all([
+      testRepo.ensureSeeded(),
+      testRepo.ensureSeeded(),
+      testRepo.ensureSeeded(),
+    ]);
+
+    const household = await testRepo.getHousehold();
+    expect(household).not.toBeNull();
+    expect(household?.name).toBe('عائلتنا');
+
+    const entries = await testRepo.listEntries();
+    expect(entries.length).toBeGreaterThan(0);
   });
 });
