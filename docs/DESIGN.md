@@ -112,7 +112,7 @@ Grouped inset list (iOS style): الأقسام (Categories) · المحافظ (W
 - **Colour & icon picker:** 12 preset colours (the seed palette + 6 more), 40 curated Lucide icons in a grid.
 
 ### Login · Welcome · Install
-- Login: logo, app name, two large fields (email, password), show-password toggle, primary button. Link "إزاي أنزّل التطبيق على الموبايل؟" → Install.
+- Login: logo, app name, two large fields (**username**, password), show-password toggle, primary button. Username, not email: lowercase, no spaces, autocapitalize off, autocorrect off. No sign-up and no "forgot password" link (the owner resets passwords in Supabase). Link "إزاي أنزّل التطبيق على الموبايل؟" → Install.
 - Welcome (first run): "سمّوا بيتكم" household name field + your name; creates household and default categories.
 - Install guide (shown when iOS Safari and not standalone): 3 illustrated steps — Share icon → "إضافة إلى الشاشة الرئيسية" → "إضافة". Large illustrations, one step per card.
 
