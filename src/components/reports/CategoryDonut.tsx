@@ -155,11 +155,11 @@ export function CategoryDonut({
       </ResponsiveContainer>
 
       {/* Center Total: Stacked number and unit to prevent clipping */}
-      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-1">
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-1">
         <span className="text-body font-bold tabular-nums text-ink leading-tight">
           {center.value}
         </span>
-        <span className="text-[11px] font-medium text-ink-muted leading-none">
+        <span className="text-caption font-medium text-ink-muted leading-none">
           {center.unit}
         </span>
       </div>

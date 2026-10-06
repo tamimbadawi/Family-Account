@@ -52,5 +52,14 @@
     "bills": "متابعة الفواتير",
     "whichWallet": "أي محفظة؟",
     "whoSpent": "مين صرف إيه"
-  }
+  },
+  "share": "مشاركة",
+  "shareCsv": "تصدير CSV",
+  "sharePng": "مشاركة صورة",
+  "shareSuccess": "تمت المشاركة بنجاح",
+  "cellEntries": "الحركات",
+  "emptyEntries": "لا توجد حركات",
+  "all": "الكل",
+  "custom": "مخصص",
+  "tapRowToDrill": "اضغط على أي بند للتفصيل"
 }

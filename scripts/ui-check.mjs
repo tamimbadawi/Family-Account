@@ -33,14 +33,15 @@ function audit() {
   // Any element that directly holds text (the app uses divs for most text, not only p/span).
   const ownText = (e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
   const textEls = [...document.querySelectorAll('body *')].filter(
-    (e) => !['SCRIPT', 'STYLE', 'NOSCRIPT', 'svg'].includes(e.tagName) && visible(e) && ownText(e),
+    (e) => !['SCRIPT', 'STYLE', 'NOSCRIPT', 'svg'].includes(e.tagName) && !e.closest('svg') && visible(e) && ownText(e),
   );
-  const label = (e) => e.innerText.trim().split('\n')[0].slice(0, 28);
+  const label = (e) => (e.innerText || e.textContent || '').trim().split('\n')[0].slice(0, 28);
   const inSheet = (e) => !!e.closest('[data-slot=drawer-content],[role=dialog]');
   const scrollParent = (e) => {
     for (let p = e.parentElement; p; p = p.parentElement) {
       const s = getComputedStyle(p);
       if (/(auto|scroll)/.test(s.overflowY) && p.scrollHeight > p.clientHeight + 2) return p;
+      if (/(auto|scroll)/.test(s.overflowX) && p.scrollWidth > p.clientWidth + 2) return p;
     }
     return null;
   };
@@ -77,7 +78,7 @@ function audit() {
   const covered = [];
   const cutBottom = [];
   for (const t of textEls) {
-    if (inSheet(t)) continue;
+    if (inSheet(t) || scrollParent(t)) continue;
     const r = t.getBoundingClientRect();
     if (r.width < 2 || r.height < 2) continue;
     const y = r.top + r.height / 2;
@@ -122,7 +123,7 @@ for (const route of routes) {
       await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 45000 }).catch((e) => consoleErrors.push('load: ' + e.message.slice(0, 80)));
       await page.waitForTimeout(1200);
       const a = await page.evaluate(audit).catch((e) => ({ errors: ['audit: ' + e.message] }));
-      const name = `${route.replace(/^\//, '').replace(/\//g, '_') || 'root'}__${w}x${h}__${theme}.png`;
+      const name = `${route.replace(/^\//, '').replace(/[/?&=]/g, '_') || 'root'}__${w}x${h}__${theme}.png`;
       await page.screenshot({ path: path.join(OUT, name) });
       const problems = [];
       if (a.pageScrolls) problems.push('PAGE SCROLLS');
