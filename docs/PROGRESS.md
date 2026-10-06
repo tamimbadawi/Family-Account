@@ -37,7 +37,7 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 | 4 | A7a | `/a7a-pwa-plumbing` — service worker, manifest, icons and splash from `design/icon.png`, offline page | A0 | `step/a7a-pwa` | ✅ |
 | 5 | A7b | `/a7b-login-install` — Login, Welcome and Install screens | **A1**, A7a | `step/a7b-login-install` | ✅ |
 | 6 | A5 | `/a5-reports-overview` — Reports overview, donut, drill-down, trends | **A2b** | `step/a5-reports` | ✅ |
-| 7 | A5b | `/a5b-breakdown-ui` — Breakdown tab: pivot table, chips, presets, share | A5, A5b-logic | `step/a5b-breakdown-ui` |  |
+| 7 | A5b | `/a5b-breakdown-ui` — Breakdown tab: pivot table, chips, presets, share | A5, A5b-logic | `step/a5b-breakdown-ui` | ✅ |
 | + | A5c | `/a5c-report-library` part A5c: Reports hub (Overview · All reports · Breakdown) + 6 Money-flow reports | A5b | `step/a5c-report-hub` |  |
 | + | A2c | `/a2c-wallets` — Cash at home + 3 banks in sample data, Our money sheet, Update balance | A5b | `step/a2c-wallets` |  |
 | + | A5d | `/a5c-report-library` part A5d: 5 Banks & cash reports | A5c, A2c | `step/a5d-wallet-reports` |  |
@@ -88,3 +88,4 @@ _(write what you observed here: every hesitation, question, or complaint)_
 | 2026-10-06 | 0005 | Claude: new households get "Cash at home" + Adjustments/Balance correction items (seed_corrections); smoke test 2/2 PASS. Queued A3d calculator (AG-1), A2c wallets (AG-2), Home money row (AG-1) |
 | 2026-10-06 | Reports library | User wants all reports as a library: 17 reports in 3 groups (A5c hub + money flow, A5d banks & cash: AG-2; A5e planning: AG-1). Reports bank card opens Our money sheet |
 | 2026-10-06 | Handover plan | Owner = Injy (her Gmail). Tamim stays as emergency maintainer with NO data access: Supabase transferred to her org, repo transferred (Tamim collaborator), production environment needs her approval, backups encrypted with her passphrase. Family management in-app (B2 edge function), forced password change on first sign-in |
+| 2026-10-06 | A5b | AG-2: Breakdown pivot table, presets, drill-down, sharing (PR #17). Gate: ui:check 24/24 ok on the preview. Follow-up: period chip clipped by the filter button. Reverted AG-2 loosening of ui-check (covered check inside scroll areas) |
