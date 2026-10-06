@@ -14,10 +14,10 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 | # | Step | Workflow | Needs merged first | Branch | Status |
 |---|---|---|---|---|---|
 | 1 | A0 | `/a0-scaffold` — Next.js 16 + next-intl scaffold | — | `step/a0-scaffold` | ✅ |
-| 2 | A1 | `/a1-design-system` — fonts, tokens, restyled shadcn/ui, format helpers, styleguide | A0 | `step/a1-design-system` |  |
-| 3 | A2b | `/a2b-shell-home` — tab bar shell, sync dot, Home | A1, **A2a** | `step/a2b-shell-home` |  |
-| 4 | A3a | `/a3a-entry-parts` — amount pad, type toggle, category picker, wallet/date parts | A1, **A2a** | `step/a3a-entry-parts` |  |
-| 5 | A3b | `/a3b-entry-sheet` — assemble the Add/Edit entry sheet ⭐ | A2b, A3a | `step/a3b-entry-sheet` |  |
+| 2 | A1 | `/a1-design-system` — fonts, tokens, restyled shadcn/ui, format helpers, styleguide | A0 | `step/a1-design-system` | ✅ |
+| 3 | A2b | `/a2b-shell-home` — tab bar shell, sync dot, Home | A1, **A2a** | `step/a2b-shell-home` | ✅ |
+| 4 | A3a | `/a3a-entry-parts` — amount pad, type toggle, category picker, wallet/date parts | A1, **A2a** | `step/a3a-entry-parts` | ✅ |
+| 5 | A3b | `/a3b-entry-sheet` — assemble the Add/Edit entry sheet ⭐ | A2b, A3a | `step/a3b-entry-sheet` | ✅ |
 | 6 | A4 | `/a4-history` — History, edit, soft delete, Recently deleted | A3b | `step/a4-history` |  |
 | 7 | A6 | `/a6-settings-categories` — Settings, category & wallet managers, language | A2b | `step/a6-settings` |  |
 | 8 | A8 | `/a8-polish-pass` — full design QA | **all of Phase A** | `step/a8-polish` |  |
@@ -71,3 +71,4 @@ _(write what you observed here: every hesitation, question, or complaint)_
 | 2026-10-06 | A2a | AG-2: types, Repository, Dexie `fa-mock`/`fa-live`, seed of ~120 entries, hooks, 27 tests (PR #3). Follow-up for B3: drop duplicate `getWalletBalances`/`walletBalances`; `getDbName()` must not depend on `typeof process` in the browser |
 | 2026-10-06 | A5b-logic | AG-2: pure `pivot()`, 5 presets, `pivotToCsv()` with tests (PR #4) |
 | 2026-10-06 | A7a | AG-2: Serwist (Turbopack) service worker, manifest, icons + iOS splash from `design/icon.png`, `/~offline` (PR #7) |
+| 2026-10-06 | A1, A2b, A3a, A3b | AG-1: design system + styleguide, shell/tab bar/Home, entry parts, Add/Edit sheet. Merged together on the user's "speed up" (look-and-feel review moves to one combined preview). Known: Home crashes on a fresh device until AG-2's seed fix lands |
