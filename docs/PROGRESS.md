@@ -20,7 +20,8 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 | 5 | A3b | `/a3b-entry-sheet` — assemble the Add/Edit entry sheet ⭐ | A2b, A3a | `step/a3b-entry-sheet` | ✅ |
 | 6 | A4 | `/a4-history` — History, edit, soft delete, Recently deleted | A3b | `step/a4-history` | ✅ |
 | 7 | A6 | `/a6-settings-categories` — Settings, category & wallet managers, language | A2b | `step/a6-settings` | ✅ |
-| 8 | A8 | `/a8-polish-pass` — full design QA | **all of Phase A** | `step/a8-polish` |  |
+| 6 | A8a | `/a8-polish-pass` on what is merged: Login, Home, Add sheet, History, Settings | A4, A6, A7b | `step/a8a-polish` |  |
+| 7 | A8b | `/a8-polish-pass` on Reports (Overview + Breakdown) and a last full sweep | **A5, A5b** | `step/a8b-polish` |  |
 
 ### AG-2 queue · account-two, folder `C:\Dev\family-accounts\ag2`, port 3002
 
