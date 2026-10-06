@@ -3,7 +3,7 @@
 **Edited only by the orchestrator (Claude Code).** Builders find their assignment here and report in their PR.
 How the agents share the work: [`docs/ORCHESTRATION.md`](ORCHESTRATION.md).
 
-Production URL: _(filled in after A0 is merged)_
+Production URL: https://family-account-sigma.vercel.app (Vercel project `family-account`, team ASA_Contracting; every branch push gets a preview)
 
 Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 
@@ -14,10 +14,10 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 | # | Step | Workflow | Needs merged first | Branch | Status |
 |---|---|---|---|---|---|
 | 1 | A0 | `/a0-scaffold` — Next.js 16 + next-intl scaffold | — | `step/a0-scaffold` | ✅ |
-| 2 | A1 | `/a1-design-system` — fonts, tokens, restyled shadcn/ui, format helpers, styleguide | A0 | `step/a1-design-system` |  |
-| 3 | A2b | `/a2b-shell-home` — tab bar shell, sync dot, Home | A1, **A2a** | `step/a2b-shell-home` |  |
-| 4 | A3a | `/a3a-entry-parts` — amount pad, type toggle, category picker, wallet/date parts | A1, **A2a** | `step/a3a-entry-parts` |  |
-| 5 | A3b | `/a3b-entry-sheet` — assemble the Add/Edit entry sheet ⭐ | A2b, A3a | `step/a3b-entry-sheet` |  |
+| 2 | A1 | `/a1-design-system` — fonts, tokens, restyled shadcn/ui, format helpers, styleguide | A0 | `step/a1-design-system` | ✅ |
+| 3 | A2b | `/a2b-shell-home` — tab bar shell, sync dot, Home | A1, **A2a** | `step/a2b-shell-home` | ✅ |
+| 4 | A3a | `/a3a-entry-parts` — amount pad, type toggle, category picker, wallet/date parts | A1, **A2a** | `step/a3a-entry-parts` | ✅ |
+| 5 | A3b | `/a3b-entry-sheet` — assemble the Add/Edit entry sheet ⭐ | A2b, A3a | `step/a3b-entry-sheet` | ✅ |
 | 6 | A4 | `/a4-history` — History, edit, soft delete, Recently deleted | A3b | `step/a4-history` |  |
 | 7 | A6 | `/a6-settings-categories` — Settings, category & wallet managers, language | A2b | `step/a6-settings` |  |
 | 8 | A8 | `/a8-polish-pass` — full design QA | **all of Phase A** | `step/a8-polish` |  |
@@ -29,9 +29,10 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 | 1 | A7-icon | app icon (final: `design/icon.png`) | — | `step/a7-icon` | ✅ |
 | 2 | A2a | `/a2a-data-layer` — types, repository, Dexie mock + sample data, hooks | A0 | `step/a2a-data-layer` | ✅ |
 | 3 | A5b-logic | `/a5b-pivot-logic` — pure pivot engine + presets + CSV, with tests | A2a | `step/a5b-pivot-logic` | ✅ |
-| 4 | A7 | `/a7-pwa-onboarding` — PWA, icons, splash, install guide, login/welcome visuals | **A1** | `step/a7-pwa` |  |
-| 5 | A5 | `/a5-reports-overview` — Reports overview, donut, drill-down, trends | **A2b** | `step/a5-reports` |  |
-| 6 | A5b | `/a5b-breakdown-ui` — Breakdown tab: pivot table, chips, presets, share | A5, A5b-logic | `step/a5b-breakdown-ui` |  |
+| 4 | A7a | `/a7a-pwa-plumbing` — service worker, manifest, icons and splash from `design/icon.png`, offline page | A0 | `step/a7a-pwa` | ✅ |
+| 5 | A7b | `/a7b-login-install` — Login, Welcome and Install screens | **A1**, A7a | `step/a7b-login-install` |  |
+| 6 | A5 | `/a5-reports-overview` — Reports overview, donut, drill-down, trends | **A2b** | `step/a5-reports` |  |
+| 7 | A5b | `/a5b-breakdown-ui` — Breakdown tab: pivot table, chips, presets, share | A5, A5b-logic | `step/a5b-breakdown-ui` |  |
 
 **Bold** = owned by the other agent (the only reason you might have to wait).
 
@@ -53,7 +54,7 @@ _(write what you observed here: every hesitation, question, or complaint)_
 
 | Step | Workflow | Owner | Branch | Status |
 |---|---|---|---|---|
-| B1 | `/b1-database` — migrations, smoke test, advisors, types | AG-1 | `step/b1-database` | |
+| B1 | `/b1-database` — migrations, smoke test, advisors, types | AG-1 | `step/b1-database` | ✅ |
 | B2 | `/b2-auth` — Supabase auth, proxy, welcome, family | AG-1 | `step/b2-auth` | |
 | B5 | `/b5-keepalive-backups` — keep-alive, backups, CSV | AG-2 | `step/b5-keepalive` | |
 | B3 | `/b3-live-sync` — live repository + offline sync | AG-1 | `step/b3-live-sync` | |
@@ -69,3 +70,6 @@ _(write what you observed here: every hesitation, question, or complaint)_
 | 2026-10-06 | A0 | AG-1: Next.js 16.3 + next-intl 4 (en default, ar RTL), proxy.ts, per-namespace messages, vitest (PR #2) |
 | 2026-10-06 | A2a | AG-2: types, Repository, Dexie `fa-mock`/`fa-live`, seed of ~120 entries, hooks, 27 tests (PR #3). Follow-up for B3: drop duplicate `getWalletBalances`/`walletBalances`; `getDbName()` must not depend on `typeof process` in the browser |
 | 2026-10-06 | A5b-logic | AG-2: pure `pivot()`, 5 presets, `pivotToCsv()` with tests (PR #4) |
+| 2026-10-06 | A7a | AG-2: Serwist (Turbopack) service worker, manifest, icons + iOS splash from `design/icon.png`, `/~offline` (PR #7) |
+| 2026-10-06 | A1, A2b, A3a, A3b | AG-1: design system + styleguide, shell/tab bar/Home, entry parts, Add/Edit sheet. Merged together on the user's "speed up" (look-and-feel review moves to one combined preview). Known: Home crashes on a fresh device until AG-2's seed fix lands |
+| 2026-10-06 | B1 (early) | Claude: Supabase project `family-accounts` (ref zzbbniffrdigluisvxxb, eu-west-1). Applied 0001, 0002 (pg_cron purge), new 0003 (advisor fixes: lock rls_auto_enable, FK indexes). RLS smoke test 15/15 PASS. Types in src/lib/supabase/database.types.ts. App stays on mock data until the family gate. ABRD_Website paused to free the free-plan slot |
