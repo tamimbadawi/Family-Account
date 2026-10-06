@@ -31,7 +31,7 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 
 | # | Step | Workflow | Needs merged first | Branch | Status |
 |---|---|---|---|---|---|
-| 1 | A7-icon | app icon + logo SVG only (part of `/a7-pwa-onboarding` step 3) | — | `step/a7-icon` | ⏳ |
+| 1 | A7-icon | app icon (final: `design/icon.png`) | — | `step/a7-icon` | ✅ |
 | 2 | A2a | `/a2a-data-layer` — types, repository, Dexie mock + sample data, hooks | **A0** | `step/a2a-data-layer` |  |
 | 3 | A5 | `/a5-reports-overview` — Reports overview, donut, drill-down, trends | **A2b** | `step/a5-reports` |  |
 | 4 | A5b | `/a5b-breakdown-ui` — Breakdown tab: pivot table, chips, presets, share | A5, **A5b-logic** | `step/a5b-breakdown-ui` |  |
@@ -75,3 +75,4 @@ _(write what you observed here: every hesitation, question, or complaint)_
 |---|---|---|
 | 2026-10-05 | Setup | Repo created with plan, rules, workflows, schema (smoke-tested locally: 13/13 PASS) |
 | 2026-10-06 | Setup | English default, Western digits, messages split per namespace, kind guards in schema, orchestration (2 Antigravity builders + Claude orchestrator) |
+| 2026-10-06 | A7-icon | Final icon `design/icon.png` (1024, house + wallet, made in Gemini, chosen by the user). Login logo = same icon with rounded corners. |
