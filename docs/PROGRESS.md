@@ -70,6 +70,35 @@ _(write what you observed here: every hesitation, question, or complaint)_
 
 ## Phase B — Real data
 
+### Before B3 (from the 2026-10-06 plan review) · must be closed before real data
+| # | Item | Where | Status |
+|---|---|---|---|
+| P1 | Balance corrections must not be a delta computed from the phone's local (possibly unsynced) balance. Store the target ("balance is X on date Y") and derive the correction amount from synced data, or recompute it at push time | B3 design | |
+| P2 | Receipt photos need their own upload queue: photo uploads first, then `photo_path` syncs on the entry; retry on failure; never sync a path whose file is missing | B3 | |
+| P3 | Orphan receipts: the 30-day purge hard-deletes entries but not their Storage files. Add cleanup through the Storage API (scheduled edge function or the backup workflow), since SQL cannot delete Storage objects | B5 | |
+| P4 | `remove_member` RPC (owner only) + smoke test: removed member reads/writes nothing and sees no receipts; their entries stay | `0006` written, **apply in B2** | 🔍 |
+| P5 | Backups encrypted with `BACKUP_PASSPHRASE` (Injy only); job fails rather than upload plain SQL | `backup.yml` | ✅ |
+| P6 | Money: add a test that client report totals equal the server views (`v_monthly_summary`, `v_account_balances`) to the piaster on the same data | B4 | |
+| P7 | Dates: `localISODate()` in `lib/format`; never `toISOString().slice(0,10)` | fixed in balance corrections + export names | ✅ |
+
+### B3 definition of done · two real phones
+B3 is not done until each passes on two iPhones against the production project:
+1. Phone A offline: add 3 entries, edit one → reconnect → each reaches Supabase exactly once; Phone B shows them after open/focus.
+2. Same entry edited on both phones → the later push wins, no duplicate, no crash.
+3. Entry deleted on one phone while edited on the other → result is consistent on both after sync.
+4. Category and wallet created offline and used at once → both sync in order (no FK error).
+5. Receipt added offline → uploads after reconnect; receipt replaced offline → new photo shown on both.
+6. App killed / Safari closed mid-sync → nothing lost, nothing duplicated on next open.
+7. Connection drops halfway through a sync → resumes cleanly.
+8. Sign out with pending entries → user is warned; nothing is silently dropped.
+9. Fresh install / new phone → full household downloads; sync dot reaches "synced".
+10. Balance correction made offline on a stale phone → correct final balance on both phones (see P1).
+
+### After launch (not before)
+Quick-repeat and favourite entries · smart category suggestion from the note · recurring expenses · monthly budgets ·
+savings goals. Not planned: AI, notifications, bank feeds, investments, multi-currency.
+
+
 | Step | Workflow | Owner | Branch | Status |
 |---|---|---|---|---|
 | B1 | `/b1-database` — migrations, smoke test, advisors, types | AG-1 | `step/b1-database` | ✅ |
@@ -104,3 +133,4 @@ _(write what you observed here: every hesitation, question, or complaint)_
 | 2026-10-06 | Untangle | A5c merged (AG-2). Three chats were editing the entry sheet: the wallet-preselect fix now goes only into A3d (Claude builder), and AG-1's fix/save-flows is dropped. A5e screens move to AG-1; Home money row moves to AG-2 (it needs A2c); A3c moves to the Claude builder (entry owner) |
 | 2026-10-06 | Reports flows | AG-2: ui:flows reports_tabs/library/sheets (en+ar, 3 sizes) + fixes: library links keep the locale, ?tab= read via useSearchParams. Merged with orchestrator lint fix (setState in effect -> derive during render). Gate on local main: reports flows 18/18, ui:check 42/42, build ok. Remaining ui:flows failures are the known entry-sheet ones (A3d). Follow-up: reports_sheets skips silently when a button is missing; biggest-expenses step looks for the wrong label |
 | 2026-10-06 | A2c PR 1 | AG-2 was stuck 40 min (installed eslint-plugin-react, hunted a non-existent SEED_VERSION); re-prompted with A2c split in 2 PRs. PR 1 merged with orchestrator fixes: no hard-coded Arabic note on corrections, no silent fallback to a random item, test conflict with A3c resolved, cash wallet named Cash/كاش ("Cash at home" truncated History/Home rows). Gate on local main: ui:check 42/42, ui:flows 40/40 (income/expense save now pass), build ok, 129 tests |
+| 2026-10-06 | Plan review | Claude: reviewed the external roadmap against the repo; most of it was already in PLAN.md. Added "Before B3" items P1–P7 and the two-phone B3 definition of done above. Fixed UTC date in balance corrections (`localISODate`), README rewritten (was "no app code yet"), backups now gpg-encrypted, `0006_remove_member` + smoke test written (not yet applied). Rejected from the review: versioned conflicts (LWW is enough for 3 people), 100k-row load tests, monitoring/notification phases, a separate ROADMAP.md |
