@@ -9,6 +9,7 @@ import { RankedCategories } from '@/components/reports/RankedCategories';
 import { SixMonthTrends } from '@/components/reports/SixMonthTrends';
 import { WalletBalancesCard } from '@/components/reports/WalletBalancesCard';
 import { BreakdownTab } from '@/components/reports/BreakdownTab';
+import { AllReportsTab } from '@/components/reports/AllReportsTab';
 import { useMonthSummary } from '@/lib/data/provider';
 import type { CategoryTotal } from '@/lib/data/types';
 import { Card } from '@/components/ui/card';
@@ -18,9 +19,12 @@ export default function ReportsPage() {
   const t = useTranslations('reports');
   const isRtl = locale.startsWith('ar');
 
-  const [activeTab, setActiveTab] = React.useState<'overview' | 'breakdown'>(() => {
+  const [activeTab, setActiveTab] = React.useState<'overview' | 'all' | 'breakdown'>(() => {
     if (typeof window !== 'undefined') {
       const search = new URLSearchParams(window.location.search);
+      if (search.get('tab') === 'all') {
+        return 'all';
+      }
       if (search.get('tab') === 'breakdown') {
         return 'breakdown';
       }
@@ -78,12 +82,12 @@ export default function ReportsPage() {
   return (
     <div className="flex h-full flex-col justify-between select-none">
       <div className="space-y-1.5">
-        {/* 1. Tabs Segmented Control: Overview / Breakdown */}
+        {/* 1. Tabs Segmented Control: Overview / All reports / Breakdown */}
         <div className="flex rounded-full bg-surface-2 p-1 text-caption font-semibold">
           <button
             type="button"
             onClick={() => setActiveTab('overview')}
-            className={`flex-1 rounded-full py-1.5 transition-all ${
+            className={`flex-1 rounded-full py-1.5 transition-all text-center truncate px-1 ${
               activeTab === 'overview'
                 ? 'bg-surface text-ink shadow-xs'
                 : 'text-ink-muted hover:text-ink'
@@ -93,8 +97,19 @@ export default function ReportsPage() {
           </button>
           <button
             type="button"
+            onClick={() => setActiveTab('all')}
+            className={`flex-1 rounded-full py-1.5 transition-all text-center truncate px-1 ${
+              activeTab === 'all'
+                ? 'bg-surface text-ink shadow-xs'
+                : 'text-ink-muted hover:text-ink'
+            }`}
+          >
+            {t('allReports')}
+          </button>
+          <button
+            type="button"
             onClick={() => setActiveTab('breakdown')}
-            className={`flex-1 rounded-full py-1.5 transition-all ${
+            className={`flex-1 rounded-full py-1.5 transition-all text-center truncate px-1 ${
               activeTab === 'breakdown'
                 ? 'bg-surface text-ink shadow-xs'
                 : 'text-ink-muted hover:text-ink'
@@ -104,7 +119,9 @@ export default function ReportsPage() {
           </button>
         </div>
 
-        {activeTab === 'breakdown' ? (
+        {activeTab === 'all' ? (
+          <AllReportsTab />
+        ) : activeTab === 'breakdown' ? (
           <BreakdownTab />
         ) : (
           /* Overview Content: 2-Page View */

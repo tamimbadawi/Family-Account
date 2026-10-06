@@ -225,7 +225,7 @@ export function PivotTable({
                 return (
                   <tr
                     key={rk}
-                    className="h-[52px] transition-colors hover:bg-surface-2/20"
+                    className="h-[46px] transition-colors hover:bg-surface-2/20"
                   >
                     {/* Sticky first column: 140px (icon + name) */}
                     <td
@@ -318,7 +318,7 @@ export function PivotTable({
           {/* Footer Total Row */}
           {result.rowKeys.length > 0 && (
             <tfoot>
-              <tr className="h-[52px] border-t-2 border-line bg-surface-2/80 font-bold text-ink">
+              <tr className="h-[46px] border-t-2 border-line bg-surface-2/80 font-bold text-ink">
                 {/* Sticky Total Label: 140px */}
                 <td className="sticky start-0 z-10 w-[140px] min-w-[140px] max-w-[140px] bg-surface-2 px-3 text-start">
                   <span className="text-body font-bold text-ink truncate block">
