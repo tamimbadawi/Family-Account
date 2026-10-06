@@ -54,6 +54,13 @@ All amounts: `tabular-nums`. Currency suffix "ج.م" (ar) / "EGP" (en) at 60% si
 - **Floating Add button** on Home and History: 64px circle, accent, plus icon, sits above the tab bar at the inline end, `shadow-card`.
 - Content max width 520px, centred (for iPad / desktop previews).
 
+**It must feel like a native app, never like a web page:**
+- The shell is a fixed full-screen frame (`h-dvh`, `overflow-hidden` on `html`/`body`). The page itself **never scrolls, bounces or rubber-bands**. Header and tab bar never move.
+- Only the content area between them may scroll, with iOS momentum and `overscroll-behavior: contain`, and only when the content is a list (History, long category lists). No visible scrollbars.
+- Home, the Add-entry sheet, Reports → Overview's top section and every Settings screen are designed to **fit 390×844 without scrolling**. If they don't fit, simplify; don't scroll.
+- No pinch-zoom, no double-tap zoom, no text selection or long-press callout on buttons, tabs, tiles or amounts (`select-none`, `-webkit-touch-callout: none`, `touch-action: manipulation`).
+- Screen changes are app transitions (slide/fade, 180–250 ms), never a white page flash. Sheets slide up from the bottom.
+
 ## 4. Screens
 
 ### Home
@@ -115,6 +122,7 @@ Words to avoid in UI: transaction, ledger, debit, credit, record, submit, error 
 
 ## 6. Review checklist (used by /design-review)
 - [ ] One hero, one primary action; nothing competes with them.
+- [ ] Feels like an app: page never scrolls or bounces; header and tab bar fixed; screen fits 390×844 unless it is a list.
 - [ ] Only tokens; no hard-coded colours; light and dark both look intentional.
 - [ ] RTL mirrored correctly; icons flipped; no `left/right` utilities.
 - [ ] All text ≥ 15px, body 17px; tap targets ≥ 48px; contrast WCAG AA.

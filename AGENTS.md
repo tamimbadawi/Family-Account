@@ -55,6 +55,7 @@ Never use `next-pwa` (unmaintained, webpack-only).
 - Feedback: Undo toasts (6 s) instead of "Are you sure?" dialogs. Offline is never an error.
 - Motion 150–250 ms, ease-out; honour `prefers-reduced-motion`.
 - Light and dark mode both first-class (follow iOS setting).
+- **Feels like a native app:** fixed full-screen shell, the page never scrolls or bounces; only list content scrolls inside it. Home, the entry sheet and Settings fit 390×844 with no scrolling (DESIGN.md §3).
 
 ## 5. Commands
 
