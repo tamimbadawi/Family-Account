@@ -184,3 +184,15 @@ export function shiftMonth(yearMonth: string, delta: number): string {
   return `${y}-${m}`;
 }
 
+
+/**
+ * Today's date (or the given date) as YYYY-MM-DD in the phone's local time zone.
+ * Never use `toISOString().slice(0, 10)` for this: that is UTC and, in Cairo,
+ * lands on yesterday between midnight and 3 am (PLAN.md · Offline strategy rule 12).
+ */
+export function localISODate(date: Date = new Date()): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
