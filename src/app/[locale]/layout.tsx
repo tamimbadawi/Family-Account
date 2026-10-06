@@ -1,13 +1,36 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
+import { SerwistProvider } from '@serwist/turbopack/react';
 import { type Locale, routing } from '@/i18n/routing';
+import { STARTUP_IMAGES } from '../startup-images';
 import '../globals.css';
 
 export const metadata: Metadata = {
   title: 'Family Accounts',
-  description: 'Household money, made simple'
+  description: 'Household money, made simple',
+  applicationName: 'Family Accounts',
+  appleWebApp: {
+    capable: true,
+    title: 'Family Accounts',
+    statusBarStyle: 'default',
+    startupImage: STARTUP_IMAGES,
+  },
+  formatDetection: { telephone: false },
+  icons: {
+    apple: '/icons/apple-touch-icon.png',
+  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#FAF8F5' },
+    { media: '(prefers-color-scheme: dark)', color: '#121110' },
+  ],
 };
 
 export function generateStaticParams() {
@@ -37,9 +60,24 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+      <head>
+        {STARTUP_IMAGES.map((img) => (
+          <link
+            key={img.url}
+            rel="apple-touch-startup-image"
+            href={img.url}
+            media={img.media}
+          />
+        ))}
+      </head>
       <body className="antialiased font-sans">
         <NextIntlClientProvider locale={locale} messages={messages}>
-          {children}
+          <SerwistProvider
+            swUrl="/serwist/sw.js"
+            disable={process.env.NODE_ENV !== 'production'}
+          >
+            {children}
+          </SerwistProvider>
         </NextIntlClientProvider>
       </body>
     </html>
