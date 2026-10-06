@@ -78,13 +78,19 @@ function audit() {
   const covered = [];
   const cutBottom = [];
   for (const t of textEls) {
-    if (inSheet(t) || scrollParent(t)) continue;
+    if (inSheet(t)) continue;
     const r = t.getBoundingClientRect();
     if (r.width < 2 || r.height < 2) continue;
+    // Inside a scroll area, points scrolled out of the area's visible box are legitimately hidden (e.g. pivot
+    // columns off to the side, list rows below the fold): skip those points. Points that ARE on screen inside the
+    // area are still checked, so a floating button covering a visible row is always caught.
+    const sp = scrollParent(t);
+    const box = sp ? sp.getBoundingClientRect() : null;
     const y = r.top + r.height / 2;
     const xs = [r.left + 3, r.left + r.width / 2, r.right - 3];
     let blocker = null, offscreen = false;
     for (const x of xs) {
+      if (box && (x < box.left || x > box.right || y < box.top || y > box.bottom)) continue;
       if (y >= innerHeight || x < 0 || x >= innerWidth) { offscreen = true; continue; }
       const top = document.elementFromPoint(x, y);
       if (top && !(t === top || t.contains(top) || top.contains(t))) { blocker = top; break; }
