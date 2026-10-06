@@ -8,7 +8,7 @@
 // =========================================================
 
 import { useLiveQuery } from 'dexie-react-hooks';
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { mockRepository } from './mock-repository';
 import type { ListEntriesParams, Repository } from './repository';
 import type {
@@ -52,6 +52,41 @@ export interface RepositoryProviderProps {
 
 export function RepositoryProvider({ children, repository }: RepositoryProviderProps) {
   const activeRepo = useMemo(() => repository ?? getDefaultRepository(), [repository]);
+  const [isReady, setIsReady] = useState(
+    () => typeof activeRepo.ensureSeeded !== 'function'
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (typeof activeRepo.ensureSeeded === 'function') {
+      activeRepo
+        .ensureSeeded()
+        .then(() => {
+          if (!cancelled) {
+            setIsReady(true);
+          }
+        })
+        .catch((err) => {
+          console.error('[RepositoryProvider] Failed to seed repository:', err);
+          if (!cancelled) {
+            setIsReady(true);
+          }
+        });
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeRepo]);
+
+  if (!isReady) {
+    return (
+      <RepositoryContext.Provider value={activeRepo}>
+        <div className="fixed inset-0 bg-canvas" aria-hidden="true" />
+      </RepositoryContext.Provider>
+    );
+  }
 
   return (
     <RepositoryContext.Provider value={activeRepo}>

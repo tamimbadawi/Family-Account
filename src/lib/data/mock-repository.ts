@@ -73,6 +73,7 @@ export function getIsoWeek(dateStr: string): string {
 }
 
 export class MockRepository implements Repository {
+  private static seedPromises = new WeakMap<FamilyAccountsDB, Promise<void>>();
   private db: FamilyAccountsDB;
   private seedPromise: Promise<void> | null = null;
 
@@ -80,22 +81,35 @@ export class MockRepository implements Repository {
     this.db = customDb ?? defaultDb;
   }
 
-  // Ensures database is seeded on first access
+  // Ensures database is seeded on first access (idempotent, StrictMode-safe via shared promise)
   async ensureSeeded(): Promise<void> {
-    if (this.seedPromise) {
-      return this.seedPromise;
+    if (typeof window === 'undefined' && typeof indexedDB === 'undefined') {
+      return;
     }
 
-    this.seedPromise = (async () => {
-      const seeded = await this.db.meta.get('seeded');
-      if (seeded && seeded.value === true) {
-        return;
-      }
+    let promise = MockRepository.seedPromises.get(this.db) ?? this.seedPromise;
+    if (promise) {
+      return promise;
+    }
 
-      await this.seed();
+    promise = (async () => {
+      try {
+        const seeded = await this.db.meta.get('seeded');
+        if (seeded && seeded.value === true) {
+          return;
+        }
+
+        await this.seed();
+      } catch (err) {
+        MockRepository.seedPromises.delete(this.db);
+        this.seedPromise = null;
+        throw err;
+      }
     })();
 
-    return this.seedPromise;
+    MockRepository.seedPromises.set(this.db, promise);
+    this.seedPromise = promise;
+    return promise;
   }
 
   // Seeds database with default household, wallets, categories, and sample entries
@@ -150,6 +164,7 @@ export class MockRepository implements Repository {
 
   // Resets the mock database
   async reset(): Promise<void> {
+    MockRepository.seedPromises.delete(this.db);
     this.seedPromise = null;
     await this.seed();
   }
@@ -157,13 +172,11 @@ export class MockRepository implements Repository {
   // ---------- Household & Members ----------
 
   async getHousehold(): Promise<Household | null> {
-    await this.ensureSeeded();
     const row = await this.db.households.get(DEMO_HOUSEHOLD_ID);
     return row ? toHousehold(row) : null;
   }
 
   async getMembers(): Promise<Member[]> {
-    await this.ensureSeeded();
     const rows = await this.db.household_members.toArray();
     return rows.map(toMember);
   }
@@ -171,7 +184,6 @@ export class MockRepository implements Repository {
   // ---------- Wallets (Accounts) ----------
 
   async getWallets(includeArchived = false): Promise<Wallet[]> {
-    await this.ensureSeeded();
     let rows = await this.db.accounts.toArray();
     if (!includeArchived) {
       rows = rows.filter((w) => !w.is_archived);
@@ -181,7 +193,6 @@ export class MockRepository implements Repository {
   }
 
   async getWallet(id: string): Promise<Wallet | null> {
-    await this.ensureSeeded();
     const row = await this.db.accounts.get(id);
     return row ? toWallet(row) : null;
   }
@@ -251,7 +262,6 @@ export class MockRepository implements Repository {
   }
 
   async walletBalances(): Promise<WalletBalance[]> {
-    await this.ensureSeeded();
     const wallets = await this.getWallets(true);
     const transactions = await this.db.transactions
       .filter((t) => t.deleted_at === null)
@@ -284,7 +294,6 @@ export class MockRepository implements Repository {
   // ---------- Categories ----------
 
   async getCategories(kind?: CategoryKind, includeArchived = false): Promise<Category[]> {
-    await this.ensureSeeded();
     let rows = await this.db.categories.toArray();
     if (kind) {
       rows = rows.filter((c) => c.kind === kind);
@@ -297,7 +306,6 @@ export class MockRepository implements Repository {
   }
 
   async getCategory(id: string): Promise<Category | null> {
-    await this.ensureSeeded();
     const row = await this.db.categories.get(id);
     return row ? toCategory(row) : null;
   }
@@ -359,7 +367,6 @@ export class MockRepository implements Repository {
   // ---------- Subcategories ----------
 
   async getSubcategories(categoryId?: string, includeArchived = false): Promise<Subcategory[]> {
-    await this.ensureSeeded();
     let rows = await this.db.subcategories.toArray();
     if (categoryId) {
       rows = rows.filter((s) => s.category_id === categoryId);
@@ -372,7 +379,6 @@ export class MockRepository implements Repository {
   }
 
   async getSubcategory(id: string): Promise<Subcategory | null> {
-    await this.ensureSeeded();
     const row = await this.db.subcategories.get(id);
     return row ? toSubcategory(row) : null;
   }
@@ -430,7 +436,6 @@ export class MockRepository implements Repository {
   // ---------- Items ----------
 
   async getItems(subcategoryId?: string, includeArchived = false): Promise<Item[]> {
-    await this.ensureSeeded();
     let rows = await this.db.items.toArray();
     if (subcategoryId) {
       rows = rows.filter((i) => i.subcategory_id === subcategoryId);
@@ -443,7 +448,6 @@ export class MockRepository implements Repository {
   }
 
   async getItem(id: string): Promise<Item | null> {
-    await this.ensureSeeded();
     const row = await this.db.items.get(id);
     return row ? toItem(row) : null;
   }
@@ -546,7 +550,6 @@ export class MockRepository implements Repository {
   }
 
   async listEntries(params?: ListEntriesParams): Promise<EnrichedEntry[]> {
-    await this.ensureSeeded();
     let rows = await this.db.transactions.toArray();
 
     // Soft delete filtering
@@ -623,7 +626,6 @@ export class MockRepository implements Repository {
   }
 
   async getEntry(id: string): Promise<EnrichedEntry | null> {
-    await this.ensureSeeded();
     const row = await this.db.transactions.get(id);
     if (!row) return null;
     const enriched = await this.enrichTransactions([row]);
@@ -749,7 +751,6 @@ export class MockRepository implements Repository {
   // ---------- Aggregations & Reports ----------
 
   async recentItems(limit = 6): Promise<RecentItem[]> {
-    await this.ensureSeeded();
     const [txs, items, subcategories, categories] = await Promise.all([
       this.db.transactions
         .filter((t) => t.deleted_at === null && (t.type === 'expense' || t.type === 'income') && t.item_id !== null)
@@ -808,7 +809,6 @@ export class MockRepository implements Repository {
   }
 
   async monthSummary(month: string): Promise<MonthSummary> {
-    await this.ensureSeeded();
     const txs = await this.db.transactions
       .filter((t) => t.deleted_at === null && t.occurred_on.startsWith(month))
       .toArray();
@@ -838,7 +838,6 @@ export class MockRepository implements Repository {
     level: CategoryLevel,
     parentId?: string
   ): Promise<CategoryTotal[]> {
-    await this.ensureSeeded();
     const [txs, items, subcategories, categories] = await Promise.all([
       this.db.transactions
         .filter(
@@ -959,8 +958,6 @@ export class MockRepository implements Repository {
   async entriesForPivot(
     period: PivotPeriod | { startDate: string; endDate: string }
   ): Promise<PivotEntry[]> {
-    await this.ensureSeeded();
-
     let startDate: string | undefined;
     let endDate: string | undefined;
     const now = new Date();
@@ -1021,7 +1018,6 @@ export class MockRepository implements Repository {
   }
 
   async syncStatus(): Promise<SyncStatus> {
-    await this.ensureSeeded();
     const lastSyncedMeta = await this.db.meta.get('lastSyncedAt');
     const pendingCount = await this.db.outbox.count();
 
