@@ -87,6 +87,17 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
   const [note, setNote] = React.useState(defaultNote);
   const [selectedItem, setSelectedItem] = React.useState<Item | null>(defaultItem);
 
+  // Wallets may still be loading at mount: once they arrive, preselect them for a new entry.
+  // Only fills empty slots, so the user's choice and an edited entry's wallets are never replaced.
+  if (!editingEntry && wallets && wallets.length > 0) {
+    const fromId = selectedWalletId ?? wallets[0].id;
+    if (selectedWalletId === null) setSelectedWalletId(fromId);
+    if (selectedToWalletId === null) {
+      const other = wallets.find((w) => w.id !== fromId);
+      if (other) setSelectedToWalletId(other.id);
+    }
+  }
+
   const [isNoteOpen, setIsNoteOpen] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
