@@ -35,5 +35,6 @@
   "minus": "ناقص",
   "multiply": "ضرب",
   "divide": "قسمة",
-  "invalidAmount": "المجموع لازم يكون أكبر من صفر"
+  "invalidAmount": "المجموع لازم يكون أكبر من صفر",
+  "noteShort": "ملاحظة"
 }

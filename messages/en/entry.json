@@ -35,5 +35,6 @@
   "minus": "Minus",
   "multiply": "Times",
   "divide": "Divided by",
-  "invalidAmount": "Total must be more than 0"
+  "invalidAmount": "Total must be more than 0",
+  "noteShort": "Note"
 }

@@ -64,7 +64,7 @@ export function AmountDisplay({
   return (
     <div
       aria-label={t('amount')}
-      className={`flex min-h-18 flex-col items-center justify-center text-center select-none ${className}`}
+      className={`flex min-h-16 flex-col items-center justify-center text-center select-none ${className}`}
     >
       {isExpression && (
         <span
@@ -75,7 +75,7 @@ export function AmountDisplay({
           {tailOf(formatExpression(value))}
         </span>
       )}
-      <div className={`flex items-baseline justify-center gap-1.5 ${isExpression ? '' : 'py-4'}`}>
+      <div className={`flex items-baseline justify-center gap-1.5 ${isExpression ? '' : 'py-2'}`}>
         <span
           data-amount
           className={`text-display font-semibold tabular-nums tracking-tight ${

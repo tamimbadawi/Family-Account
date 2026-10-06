@@ -1,9 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { motion, AnimatePresence } from 'motion/react';
-import { Check, Trash2 } from 'lucide-react';
+import { ArrowRight, Check, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import type {
@@ -13,9 +13,7 @@ import type {
 } from '@/lib/data/types';
 import { useRepository, useWallets } from '@/lib/data/provider';
 import { validateEntry } from '@/lib/validation/entry';
-import { pickName } from '@/lib/format';
 import { previewValue } from '@/lib/format/expression';
-import { CategoryIcon } from '@/components/ui/category-icon';
 
 import {
   Drawer,
@@ -28,10 +26,8 @@ import { Button } from '@/components/ui/button';
 import { TypeToggle } from './TypeToggle';
 import { AmountDisplay } from './AmountDisplay';
 import { AmountPad } from './AmountPad';
-import { CategoryPicker } from './CategoryPicker';
-import { WalletPicker } from './WalletPicker';
-import { DateChips } from './DateChips';
-import { NoteField } from './NoteField';
+import { CategoryRow } from './CategoryRow';
+import { DateChip, NoteChip, WalletSelect } from './DetailsRow';
 import { useEntrySheet } from './EntrySheetContext';
 
 function getLocalDateString(d: Date): string {
@@ -51,7 +47,6 @@ interface EntrySheetFormProps {
 function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheetFormProps) {
   const t = useTranslations('entry');
   const tCommon = useTranslations('common');
-  const locale = useLocale();
   const repo = useRepository();
   const wallets = useWallets();
 
@@ -92,6 +87,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
   const [note, setNote] = React.useState(defaultNote);
   const [selectedItem, setSelectedItem] = React.useState<Item | null>(defaultItem);
 
+  const [isNoteOpen, setIsNoteOpen] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -217,98 +213,71 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
     }
   };
 
-  const selectedItemLabel = selectedItem
-    ? pickName({ name_ar: selectedItem.nameAr, name_en: selectedItem.nameEn }, locale)
-    : null;
-
   return (
-    <div className="space-y-4 px-5 pb-8 select-none">
-      {/* Everything in one sheet: type, amount, category, pad, details, save */}
+    <div className="flex flex-col gap-3 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] select-none">
+      {/* One sheet that fits an iPhone screen: type, amount, category, pad, details, save */}
       <TypeToggle value={type} onChange={handleTypeChange} />
 
       <AmountDisplay value={amountStr} type={type} />
 
-      {/* CategoryPicker or Wallets */}
       {isTransfer ? (
-        <div className="space-y-3 rounded-card bg-surface p-4 shadow-card">
-          <div className="space-y-1.5">
-            <span className="text-caption font-semibold text-ink-muted">{t('from')}</span>
-            <WalletPicker
-              value={selectedWalletId}
-              onChange={setSelectedWalletId}
-              exclude={selectedToWalletId}
-            />
-          </div>
-          <div className="space-y-1.5 pt-2 border-t border-line">
-            <span className="text-caption font-semibold text-ink-muted">{t('to')}</span>
-            <WalletPicker
-              value={selectedToWalletId}
-              onChange={setSelectedToWalletId}
-              exclude={selectedWalletId}
-            />
-          </div>
+        <div className="flex items-center gap-2">
+          <WalletSelect
+            label={t('from')}
+            value={selectedWalletId}
+            onChange={setSelectedWalletId}
+            exclude={selectedToWalletId}
+          />
+          <ArrowRight className="size-5 shrink-0 text-ink-muted rtl:rotate-180" />
+          <WalletSelect
+            label={t('to')}
+            value={selectedToWalletId}
+            onChange={setSelectedToWalletId}
+            exclude={selectedWalletId}
+          />
         </div>
       ) : (
-        <div className="space-y-3">
-          {selectedItemLabel ? (
-            <div className="flex items-center justify-between rounded-card bg-surface p-4 shadow-card">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
-                  <CategoryIcon className="size-5" />
-                </div>
-                <span className="truncate text-body font-semibold text-ink">
-                  {selectedItemLabel}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedItem(null)}
-                className="shrink-0 text-caption font-semibold text-accent hover:underline ps-2 cursor-pointer"
-              >
-                {t('change')}
-              </button>
-            </div>
-          ) : (
-            <div className="rounded-card bg-surface p-4 shadow-card">
-              <CategoryPicker
-                kind={type === 'income' ? 'income' : 'expense'}
-                onPick={handlePickCategoryItem}
-              />
-            </div>
-          )}
-        </div>
+        <CategoryRow
+          kind={type === 'income' ? 'income' : 'expense'}
+          selected={selectedItem}
+          onPick={handlePickCategoryItem}
+          onClear={() => setSelectedItem(null)}
+        />
       )}
 
       <AmountPad value={amountStr} onChange={setAmountStr} />
 
-      {/* Review strip */}
-      <div className="space-y-3 pt-1">
-        {/* Wallet for expense/income */}
-        {!isTransfer && (
-          <div className="space-y-1.5">
-            <span className="text-caption font-semibold text-ink-muted">{t('wallet')}</span>
-            <WalletPicker
-              value={selectedWalletId}
-              onChange={setSelectedWalletId}
-            />
-          </div>
+      {/* Wallet · date · note on one line */}
+      <div className="flex items-center gap-2">
+        {isNoteOpen ? (
+          <NoteChip value={note} onChange={setNote} isOpen onOpenChange={setIsNoteOpen} />
+        ) : (
+          <>
+            {!isTransfer && (
+              <WalletSelect label={t('wallet')} value={selectedWalletId} onChange={setSelectedWalletId} />
+            )}
+            <DateChip value={occurredOn} onChange={setOccurredOn} />
+            <NoteChip value={note} onChange={setNote} isOpen={false} onOpenChange={setIsNoteOpen} />
+          </>
         )}
-
-        {/* Date Chips */}
-        <div className="space-y-1.5">
-          <DateChips value={occurredOn} onChange={setOccurredOn} />
-        </div>
-
-        {/* Note Field */}
-        <NoteField value={note} onChange={setNote} />
       </div>
 
-      {/* Save Button */}
-      <div className="pt-2 space-y-2">
+      <div className="flex gap-2">
+        {/* Edit mode: Delete next to Save so the sheet still fits */}
+        {mode === 'edit' && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            aria-label={tCommon('delete')}
+            className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-danger/10 text-danger transition-transform active:scale-95 cursor-pointer"
+          >
+            <Trash2 className="size-6" />
+          </button>
+        )}
         <Button
           onClick={handleSave}
           disabled={!canSave}
-          className="relative w-full h-14 rounded-2xl text-heading font-semibold text-accent-ink overflow-hidden cursor-pointer"
+          className="relative h-14 flex-1 rounded-2xl text-heading font-semibold text-accent-ink overflow-hidden cursor-pointer"
         >
           <AnimatePresence mode="wait">
             {isSuccess ? (
@@ -332,18 +301,6 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
             )}
           </AnimatePresence>
         </Button>
-
-        {/* Edit mode: Delete button */}
-        {mode === 'edit' && (
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="flex h-12 w-full items-center justify-center gap-1.5 rounded-2xl text-body font-semibold text-danger transition-colors hover:bg-danger/10 active:scale-98 cursor-pointer"
-          >
-            <Trash2 className="size-5" />
-            <span>{tCommon('delete')}</span>
-          </button>
-        )}
       </div>
     </div>
   );
@@ -355,8 +312,8 @@ export function EntrySheet() {
 
   return (
     <Drawer open={isOpen} onOpenChange={(open) => !open && close()} repositionInputs>
-      <DrawerContent className="max-h-[92dvh] overflow-y-auto">
-        <DrawerHeader className="pb-2">
+      <DrawerContent className="max-h-[96dvh] overflow-y-auto">
+        <DrawerHeader className="px-4 pt-1 pb-2">
           <DrawerTitle className="text-title font-bold text-ink">
             {mode === 'edit' ? t('editTitle') : t('addTitle')}
           </DrawerTitle>

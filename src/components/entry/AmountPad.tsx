@@ -39,14 +39,14 @@ export function AmountPad({ value, onChange, className = '' }: AmountPadProps) {
     <div
       role="group"
       aria-label={t('keypad')}
-      className={`grid grid-cols-4 gap-2 select-none ${className}`}
+      className={`grid grid-cols-4 gap-1.5 select-none [@media(min-height:740px)]:gap-2 ${className}`}
     >
       {KEYS.map((key) => {
         const isBackspace = key === 'backspace';
         const op = key in OPERATOR_ICONS ? OPERATOR_ICONS[key as OperatorKey] : null;
 
         const base =
-          'flex h-16 items-center justify-center rounded-2xl shadow-xs transition-transform active:scale-[0.97] focus:outline-none';
+          'flex h-12 items-center [@media(min-height:740px)]:h-14 [@media(min-height:840px)]:h-15 justify-center rounded-2xl shadow-xs transition-transform active:scale-[0.97] focus:outline-none';
         const look = op
           ? 'bg-accent-soft text-accent active:bg-accent-soft/70'
           : 'bg-surface-2 text-display font-semibold text-ink active:bg-line/70';
