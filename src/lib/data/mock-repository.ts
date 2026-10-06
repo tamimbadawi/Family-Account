@@ -112,6 +112,7 @@ export class MockRepository implements Repository {
           seedVersion &&
           seedVersion.value === SEED_VERSION
         ) {
+          await this.renameArabicSampleMembers();
           return;
         }
 
@@ -179,6 +180,19 @@ export class MockRepository implements Repository {
         await this.db.meta.put({ key: 'lastSyncedAt', value: new Date().toISOString() });
       }
     );
+  }
+
+  // Sample members were first seeded as ماما / بابا. Names are now English: rename them in place
+  // (only those exact defaults), so phones keep their practice entries.
+  private async renameArabicSampleMembers(): Promise<void> {
+    const renames: Record<string, string> = { 'ماما': 'Mama', 'بابا': 'Baba' };
+    const rows = await this.db.household_members.toArray();
+    for (const row of rows) {
+      const english = renames[row.display_name];
+      if (english) {
+        await this.db.household_members.update([row.household_id, row.user_id], { display_name: english });
+      }
+    }
   }
 
   // Resets the mock database

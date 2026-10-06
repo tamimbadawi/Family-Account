@@ -2,7 +2,7 @@
 // Mock Seed Data  ·  Family Accounts (حساباتنا)
 // Bilingual category tree from seed_defaults in 0001_schema.sql
 // Wallets: Cash (كاش) & Bank (البنك)
-// Members: Mama (ماما) & Baba (بابا)
+// Members: Mama & Baba (member names are always in English)
 // ~120 realistic Egyptian household entries over the last 3 months
 // =========================================================
 
@@ -42,7 +42,7 @@ export const DEFAULT_MEMBERS: HouseholdMemberRow[] = [
   {
     household_id: DEMO_HOUSEHOLD_ID,
     user_id: USER_MAMA_ID,
-    display_name: 'ماما',
+    display_name: 'Mama',
     role: 'owner',
     locale: 'ar',
     created_at: '2026-06-01T00:00:00.000Z',
@@ -50,7 +50,7 @@ export const DEFAULT_MEMBERS: HouseholdMemberRow[] = [
   {
     household_id: DEMO_HOUSEHOLD_ID,
     user_id: USER_BABA_ID,
-    display_name: 'بابا',
+    display_name: 'Baba',
     role: 'member',
     locale: 'ar',
     created_at: '2026-06-01T00:00:00.000Z',

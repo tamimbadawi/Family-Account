@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Member } from '@/lib/data/types';
-import { memberInitial, memberSlot, orderMembers } from './index';
+import { isEnglishName, memberInitial, memberSlot, orderMembers } from './index';
 
 const m = (userId: string, createdAt: string, displayName = userId): Member => ({
   householdId: 'h',
@@ -28,6 +28,15 @@ describe('members', () => {
     expect(memberSlot('5', many)).toBe(0);
     expect(memberSlot('zz', members)).toBeNull();
     expect(memberSlot(null, members)).toBeNull();
+  });
+
+  it('accepts English names only', () => {
+    expect(isEnglishName('Mama')).toBe(true);
+    expect(isEnglishName(' Injy ')).toBe(true);
+    expect(isEnglishName("Mary-Ann O'Neil")).toBe(true);
+    expect(isEnglishName('ماما')).toBe(false);
+    expect(isEnglishName('')).toBe(false);
+    expect(isEnglishName('Mama2')).toBe(false);
   });
 
   it('takes the first letter of Arabic and English names', () => {

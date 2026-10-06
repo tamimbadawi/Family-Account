@@ -20,6 +20,13 @@ export function memberSlot(userId: string | null | undefined, members: readonly 
   return index < 0 ? null : index % MEMBER_SLOTS;
 }
 
+/** Family member names are written in English letters (decided 2026-10-06), e.g. "Mama", "Injy". */
+export const ENGLISH_NAME = /^[A-Za-z][A-Za-z .'-]{0,29}$/;
+
+export function isEnglishName(name: string): boolean {
+  return ENGLISH_NAME.test(name.trim());
+}
+
 /** First visible letter of a name ("ماما" → "م", "injy" → "I"); "?" when empty. */
 export function memberInitial(name: string | null | undefined): string {
   const trimmed = (name ?? '').trim();
