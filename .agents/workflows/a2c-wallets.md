@@ -20,7 +20,7 @@ You own the data layer. AG-1 owns Home and adds the "Our money" row to it, using
    (text-hero, tabular-nums), then one 56px row per wallet: type icon in a tinted circle, name, balance at the
    inline end. Grouped as "Cash" then "Banks". Tapping a row opens that wallet's entries in History (filter by
    wallet). It fits 390x844; scroll only inside the sheet if there are more than 6 wallets.
-   Also export `OurMoneyRow` (one line: "Our money", total, chevron, 56px) for AG-1 to place on Home.
+   Also export `OurMoneyRow` (one line: "Our money", total, chevron, 56px) for AG-1 to place on Home, and make the wallet/bank card on Reports → Overview open this same sheet.
 4. Settings → Wallets: every wallet row gets "Update balance": an AmountPad sheet titled "How much is in <wallet>
    now?" → `adjustWalletBalance` → Undo toast. Adding a wallet asks for name, type (Cash / Bank / Card) and
    current balance.

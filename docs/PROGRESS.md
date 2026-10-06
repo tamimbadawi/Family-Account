@@ -23,6 +23,7 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 | 6 | A8a | `/a8-polish-pass` on what is merged: Login, Home, Add sheet, History, Settings | A4, A6, A7b | `step/a8a-polish` |  |
 | + | A3d | `/a3d-calculator-pad` — + − × ÷ in the number pad with live result | fix/fit-and-income | `step/a3d-calculator` |  |
 | + | Home money | Place `OurMoneyRow` (from A2c) on Home, keeping Home within one screen | **A2c** | `step/home-our-money` |  |
+| + | A5e | `/a5c-report-library` part A5e: 6 Planning reports | **A5c** | `step/a5e-planning-reports` |  |
 | 7 | A3c | `/a3c-receipt-photo` — optional receipt photo on an entry (camera, compression, thumbnail, viewer) | A3b, A4 | `step/a3c-receipt-photo` |  |
 | 8 | A8b | `/a8-polish-pass` on Reports (Overview + Breakdown) and a last full sweep | **A5, A5b** | `step/a8b-polish` |  |
 
@@ -37,7 +38,9 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 | 5 | A7b | `/a7b-login-install` — Login, Welcome and Install screens | **A1**, A7a | `step/a7b-login-install` | ✅ |
 | 6 | A5 | `/a5-reports-overview` — Reports overview, donut, drill-down, trends | **A2b** | `step/a5-reports` | ✅ |
 | 7 | A5b | `/a5b-breakdown-ui` — Breakdown tab: pivot table, chips, presets, share | A5, A5b-logic | `step/a5b-breakdown-ui` |  |
+| + | A5c | `/a5c-report-library` part A5c: Reports hub (Overview · All reports · Breakdown) + 6 Money-flow reports | A5b | `step/a5c-report-hub` |  |
 | + | A2c | `/a2c-wallets` — Cash at home + 3 banks in sample data, Our money sheet, Update balance | A5b | `step/a2c-wallets` |  |
+| + | A5d | `/a5c-report-library` part A5d: 5 Banks & cash reports | A5c, A2c | `step/a5d-wallet-reports` |  |
 
 **Bold** = owned by the other agent (the only reason you might have to wait).
 
@@ -83,3 +86,4 @@ _(write what you observed here: every hesitation, question, or complaint)_
 | 2026-10-06 | A5 | AG-2: Reports Overview as two swipe pages (totals, donut, top 4 + See all drill-down; 6-month trends + wallet balances), recharts (PR #14). Screenshots removed from repo (now gitignored); kept main's dialog/drawer RTL fix |
 | 2026-10-06 | A5 fix | AG-2: Reports readable sizes (body text 17px: 22 body vs 13 caption uses, was 5 vs 20), top 3 + See all, donut shrinks instead of text (PR #15) |
 | 2026-10-06 | 0005 | Claude: new households get "Cash at home" + Adjustments/Balance correction items (seed_corrections); smoke test 2/2 PASS. Queued A3d calculator (AG-1), A2c wallets (AG-2), Home money row (AG-1) |
+| 2026-10-06 | Reports library | User wants all reports as a library: 17 reports in 3 groups (A5c hub + money flow, A5d banks & cash: AG-2; A5e planning: AG-1). Reports bank card opens Our money sheet |
