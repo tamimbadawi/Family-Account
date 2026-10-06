@@ -9,7 +9,7 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 
 ## Phase A — Interface on sample data
 
-### AG-1 queue · account-one, chat 1, folder `family-accounts-ag1`, port 3001
+### AG-1 queue · account-one, chat 1, folder `C:\Dev\family-accounts\ag1`, port 3001
 
 | # | Step | Workflow | Needs merged first | Branch | Status |
 |---|---|---|---|---|---|
@@ -20,14 +20,14 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 | 5 | A4 | `/a4-history` — History, edit, soft delete, Recently deleted | A3b | `step/a4-history` |  |
 | 6 | A8 | `/a8-polish-pass` — full design QA | **all of Phase A** | `step/a8-polish` |  |
 
-### AG-1B queue · account-one, chat 2, folder `family-accounts-ag1b`, port 3003
+### AG-1B queue · account-one, chat 2, folder `C:\Dev\family-accounts\ag1b`, port 3003
 
 | # | Step | Workflow | Needs merged first | Branch | Status |
 |---|---|---|---|---|---|
 | 1 | A3a | `/a3a-entry-parts` — amount pad, type toggle, category picker, wallet/date parts | **A1**, **A2a** | `step/a3a-entry-parts` |  |
 | 2 | A6 | `/a6-settings-categories` — Settings, category & wallet managers, language | **A2b** | `step/a6-settings` |  |
 
-### AG-2 queue · account-two, chat 1, folder `family-accounts-ag2`, port 3002
+### AG-2 queue · account-two, chat 1, folder `C:\Dev\family-accounts\ag2`, port 3002
 
 | # | Step | Workflow | Needs merged first | Branch | Status |
 |---|---|---|---|---|---|
@@ -36,7 +36,7 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 | 3 | A5 | `/a5-reports-overview` — Reports overview, donut, drill-down, trends | **A2b** | `step/a5-reports` |  |
 | 4 | A5b | `/a5b-breakdown-ui` — Breakdown tab: pivot table, chips, presets, share | A5, **A5b-logic** | `step/a5b-breakdown-ui` |  |
 
-### AG-2B queue · account-two, chat 2, folder `family-accounts-ag2b`, port 3004
+### AG-2B queue · account-two, chat 2, folder `C:\Dev\family-accounts\ag2b`, port 3004
 
 | # | Step | Workflow | Needs merged first | Branch | Status |
 |---|---|---|---|---|---|

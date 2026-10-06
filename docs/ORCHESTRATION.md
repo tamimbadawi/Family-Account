@@ -4,11 +4,11 @@
 
 | Chat | Account | Folder (its own git worktree) | Dev server | Queue |
 |---|---|---|---|---|
-| **AG-1** | account-one | `P:\App Builds\family-accounts-ag1` | `npm run dev -- -p 3001` | AG-1 in `docs/PROGRESS.md` |
-| **AG-1B** | account-one | `P:\App Builds\family-accounts-ag1b` | `npm run dev -- -p 3003` | AG-1B |
-| **AG-2** | account-two | `P:\App Builds\family-accounts-ag2` | `npm run dev -- -p 3002` | AG-2 |
-| **AG-2B** | account-two | `P:\App Builds\family-accounts-ag2b` | `npm run dev -- -p 3004` | AG-2B |
-| **Claude** | Claude Code | `P:\App Builds\Accounting App` (`main`) | `npm run dev` (3000) | reviewing, merging, `PROGRESS.md`, **all Vercel and Supabase configuration** |
+| **AG-1** | account-one | `C:\Dev\family-accounts\ag1` | `npm run dev -- -p 3001` | AG-1 in `docs/PROGRESS.md` |
+| **AG-1B** | account-one | `C:\Dev\family-accounts\ag1b` | `npm run dev -- -p 3003` | AG-1B |
+| **AG-2** | account-two | `C:\Dev\family-accounts\ag2` | `npm run dev -- -p 3002` | AG-2 |
+| **AG-2B** | account-two | `C:\Dev\family-accounts\ag2b` | `npm run dev -- -p 3004` | AG-2B |
+| **Claude** | Claude Code | `C:\Dev\family-accounts\main` (`main`) | `npm run dev` (3000) | reviewing, merging, `PROGRESS.md`, **all Vercel and Supabase configuration** |
 
 Builders use Supabase only through the MCP calls their workflow names (B1+).
 
@@ -17,6 +17,7 @@ Builders use Supabase only through the MCP calls their workflow names (B1+).
 Two chats in one folder overwrite each other's files. Each chat opens **only its own folder** as its workspace.
 All folders are worktrees of the same repository, so branches and commits are shared instantly without pushing.
 Each folder needs its own `npm install` once, and uses its own dev-server port (table above).
+The old folders on `P:` (pCloud) are retired: never open or work in them. Sync drives corrupt git repos and are slow.
 
 ## 2. Queue mode: work through your queue without waiting
 

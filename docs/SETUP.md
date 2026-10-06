@@ -19,9 +19,9 @@ The repo already contains one commit. Keep the repo **private** — backups will
 
 ## 3. Antigravity (two builder agents) + Claude Code (orchestrator)
 Read [`ORCHESTRATION.md`](ORCHESTRATION.md) first. Each Antigravity agent gets its **own folder** (a git worktree);
-never point two agents at the same folder. Claude Code keeps `P:\App Builds\Accounting App` for merging.
+never point two agents at the same folder. Claude Code keeps `C:\Dev\family-accounts\main` for merging.
 
-1. Open `P:\App Builds\family-accounts-ag1` as AG-1's workspace and `P:\App Builds\family-accounts-ag2` as AG-2's. Antigravity reads `AGENTS.md` and `.agents/rules/*.md` automatically;
+1. Open `C:\Dev\family-accounts\ag1` as AG-1's workspace and `C:\Dev\family-accounts\ag2` as AG-2's. Antigravity reads `AGENTS.md` and `.agents/rules/*.md` automatically;
    the workflows in `.agents/workflows/` appear as slash commands (`/a0-scaffold`, …, `/design-review`).
 2. Connect MCP servers (Agent panel → ⋯ → MCP Servers → MCP Store, or edit the raw config).
    Prefer the store entries; `docs/mcp_config.example.json` shows the shape for reference.
