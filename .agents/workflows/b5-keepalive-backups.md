@@ -12,4 +12,6 @@ Read `AGENTS.md` and `docs/PLAN.md` "Keep-alive and backups". The workflow files
    - GitHub repo secrets: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_DB_URL` (Session pooler string).
    - Vercel env: `CRON_SECRET` (generate a random 32-byte hex for me).
 4. After I add them: trigger `keepalive.yml` and `backup.yml` manually (GitHub MCP or `gh workflow run`) and confirm both succeed and an artifact exists; call `/api/keepalive` with the secret; check `select pinged_at from heartbeat` via `execute_sql`.
-5. Definition of Done.
+5. **Encrypt backups** in `backup.yml`: after `supabase db dump`, run `gpg --batch --yes --pinentry-mode loopback --symmetric --cipher-algo AES256 --passphrase "$BACKUP_PASSPHRASE"` on each file, upload ONLY the `.gpg` files, and fail if `BACKUP_PASSPHRASE` is missing. The passphrase is a repo secret that only the owner (Injy) sets and keeps; the maintainer never sees it. Document decryption (`gpg -d file.gpg > file.sql`) in docs/HANDOVER.md.
+6. Add `.github/workflows/stay-alive.yml`: on the 1st of every month, commit an empty commit "chore: keep scheduled workflows alive" so GitHub never disables the keep-alive and backup schedules after 60 quiet days.
+7. Definition of Done.

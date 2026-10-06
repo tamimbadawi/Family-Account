@@ -571,3 +571,21 @@ Handover means the family's accounts own everything, the app runs with no one to
 | Forgotten password | Medium | Owner resets it from the Supabase dashboard (Auth → Users) using the family Gmail |
 
 The one thing that can never be automated away is a forgotten password. Keep the family Gmail login somewhere they can find it.
+
+## Handover to Injy (owner) · Tamim stays as emergency maintainer with no data access
+
+Decided 2026-10-06. Injy (the user's sister-in-law) owns the app and the data; Tamim can fix and update the code but can never read the family's data.
+
+**Before handover:** only sample data exists (Phase A is mock), so Tamim never sees real data. Real data starts on handover day.
+
+**Accounts (all with Injy's own Gmail):** Supabase, GitHub, Vercel (Hobby).
+
+**Handover day, in order:**
+1. Injy creates her Supabase account and an organization; Tamim joins it temporarily and transfers the `family-accounts` project (Project Settings → General → Transfer project). Tamim then **leaves Injy's organization** and removes the project's MCP connection from his tools. Result: only Injy can open the database.
+2. Transfer the GitHub repo `Family-Account` to Injy's GitHub account (Settings → Transfer). Injy adds Tamim back as a **collaborator** (code only). It must be **private**. Injy sets the secret `BACKUP_PASSPHRASE` (Tamim never sees it), plus `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_DB_URL`.
+3. Protect database access in CI: create the GitHub environment `production` with **Injy as required reviewer**; any workflow that uses a Supabase access token (migrations, edge-function deploys) runs only in that environment, so Tamim can propose changes but nothing touches the database without Injy's approval click.
+4. Transfer the Vercel project to Injy's Vercel account (Hobby has no team members; pushes to `main` keep deploying automatically, so Tamim's fixes still go live after review). Env vars hold only the publishable key and `CRON_SECRET`.
+5. Tamim creates **only Injy's app login** (username `injy`, temporary password, `must_change_password`). On first sign-in she chooses her own password, names the household, and adds the parents from Settings → Family. She can later reset passwords or remove members herself.
+6. Install on the parents' iPhones (Safari → Share → Add to Home Screen), Injy signs them in.
+
+**What Tamim keeps:** GitHub collaborator (code, pull requests), the ability to propose migrations (applied only after Injy approves). **What Tamim loses:** Supabase dashboard and SQL access, backup contents (encrypted), Vercel settings, any app login.
