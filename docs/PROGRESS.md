@@ -20,11 +20,8 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 | 5 | A3b | `/a3b-entry-sheet` — assemble the Add/Edit entry sheet ⭐ | A2b, A3a | `step/a3b-entry-sheet` | ✅ |
 | 6 | A4 | `/a4-history` — History, edit, soft delete, Recently deleted | A3b | `step/a4-history` | ✅ |
 | 7 | A6 | `/a6-settings-categories` — Settings, category & wallet managers, language | A2b | `step/a6-settings` | ✅ |
-| 6 | A8a | `/a8-polish-pass` on what is merged: Login, Home, Add sheet, History, Settings | A4, A6, A7b | `step/a8a-polish` |  |
-| + | A3d (Claude) | `/a3d-calculator-pad` — + − × ÷ in the number pad with live result | fix/fit-and-income | `step/a3d-calculator` |  |
-| + | Home money | Place `OurMoneyRow` (from A2c) on Home, keeping Home within one screen | **A2c** | `step/home-our-money` |  |
-| + | A5e (Claude: logic ✅, screens after A5c) | `/a5c-report-library` part A5e: 6 Planning reports | **A5c** | `step/a5e-planning-reports` |  |
-| 7 | A3c | `/a3c-receipt-photo` — optional receipt photo on an entry (camera, compression, thumbnail, viewer) | A3b, A4 | `step/a3c-receipt-photo` |  |
+| 8 | A5e screens | `/a5c-report-library` part A5e: 6 Planning report screens on the merged logic (`src/lib/reports/planning.ts`), same pattern as A5c | A5c ✅ | `step/a5e-planning-reports` | ⏳ |
+| 9 | A8a | `/a8-polish-pass` on what is merged: Login, Home, Add sheet, History, Settings | **A3d, A3c (Claude)** | `step/a8a-polish` |  |
 | 8 | A8b | `/a8-polish-pass` on Reports (Overview + Breakdown) and a last full sweep | **A5, A5b** | `step/a8b-polish` |  |
 
 ### AG-2 queue · account-two, folder `C:\Dev\family-accounts\ag2`, port 3002
@@ -38,9 +35,21 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 | 5 | A7b | `/a7b-login-install` — Login, Welcome and Install screens | **A1**, A7a | `step/a7b-login-install` | ✅ |
 | 6 | A5 | `/a5-reports-overview` — Reports overview, donut, drill-down, trends | **A2b** | `step/a5-reports` | ✅ |
 | 7 | A5b | `/a5b-breakdown-ui` — Breakdown tab: pivot table, chips, presets, share | A5, A5b-logic | `step/a5b-breakdown-ui` | ✅ |
-| + | A5c | `/a5c-report-library` part A5c: Reports hub (Overview · All reports · Breakdown) + 6 Money-flow reports | A5b | `step/a5c-report-hub` |  |
-| + | A2c | `/a2c-wallets` — Cash at home + 3 banks in sample data, Our money sheet, Update balance | A5b | `step/a2c-wallets` |  |
-| + | A5d | `/a5c-report-library` part A5d: 5 Banks & cash reports | A5c, A2c | `step/a5d-wallet-reports` |  |
+| 8 | A5c | `/a5c-report-library` part A5c: Reports hub (Overview · All reports · Breakdown) + 6 Money-flow reports | A5b | `step/a5c-report-hub` | ✅ |
+| 9 | Reports flows | ui:flows tests for the Reports hub, library and sheets | A5c ✅ | `test/reports-flows` | ⏳ |
+| 10 | A2c | `/a2c-wallets` — Cash at home + 3 banks in sample data, Our money sheet, Update balance | A5b | `step/a2c-wallets` |  |
+| 11 | A5d | `/a5c-report-library` part A5d: 5 Banks & cash reports | A5c, A2c | `step/a5d-wallet-reports` |  |
+
+| 12 | Home money | Place `OurMoneyRow` (from A2c) on Home, keeping Home within one screen | A2c | `step/home-our-money` |  |
+
+### Claude builder queue · folder `C:\Devamily-accounts\cl`
+
+Owns `src/components/entry/**` until A3c is merged (nobody else edits the entry sheet).
+
+| # | Step | Workflow | Needs merged first | Branch | Status |
+|---|---|---|---|---|---|
+| 1 | A3d + save fix | calculator pad + one popup + wallet preselected once wallets load (Save works for income/expense) | — | `step/a3d-calculator` | ⏳ |
+| 2 | A3c | `/a3c-receipt-photo` — optional receipt photo on an entry | A3d | `step/a3c-receipt-photo` |  |
 
 **Bold** = owned by the other agent (the only reason you might have to wait).
 
@@ -91,4 +100,4 @@ _(write what you observed here: every hesitation, question, or complaint)_
 | 2026-10-06 | A5b | AG-2: Breakdown pivot table, presets, drill-down, sharing (PR #17). Gate: ui:check 24/24 ok on the preview. Follow-up: period chip clipped by the filter button. Reverted AG-2 loosening of ui-check (covered check inside scroll areas) |
 | 2026-10-06 | Speed-up | User: Claude builds too; agents on Gemini 3.8 Flash Medium. Claude owns: + New form fix, A3d calculator, A5e planning reports. A5e logic merged (6 functions, 12 tests). AG-1 ships fix PR 1 then A8a |
 | 2026-10-06 | fix PR 1 | AG-1: screens fit (ui:check 66/66 ok on preview). ui:flows found: no wallet preselected so Save stays disabled (income/expense cannot be saved), new-group overlay stays on top. Sent back to AG-1 |
-| 2026-10-06 | fix PR 1 | AG-1: screens fit (ui:check 66/66 ok on preview). ui:flows found: no wallet preselected so Save stays disabled (income/expense cannot be saved), new-group overlay stays on top. Sent back to AG-1 |
+| 2026-10-06 | Untangle | A5c merged (AG-2). Three chats were editing the entry sheet: the wallet-preselect fix now goes only into A3d (Claude builder), and AG-1's fix/save-flows is dropped. A5e screens move to AG-1; Home money row moves to AG-2 (it needs A2c); A3c moves to the Claude builder (entry owner) |
