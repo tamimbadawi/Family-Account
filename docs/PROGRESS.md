@@ -27,8 +27,8 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 | # | Step | Workflow | Needs merged first | Branch | Status |
 |---|---|---|---|---|---|
 | 1 | A7-icon | app icon (final: `design/icon.png`) | — | `step/a7-icon` | ✅ |
-| 2 | A2a | `/a2a-data-layer` — types, repository, Dexie mock + sample data, hooks | A0 | `step/a2a-data-layer` |  |
-| 3 | A5b-logic | `/a5b-pivot-logic` — pure pivot engine + presets + CSV, with tests | A2a | `step/a5b-pivot-logic` |  |
+| 2 | A2a | `/a2a-data-layer` — types, repository, Dexie mock + sample data, hooks | A0 | `step/a2a-data-layer` | ✅ |
+| 3 | A5b-logic | `/a5b-pivot-logic` — pure pivot engine + presets + CSV, with tests | A2a | `step/a5b-pivot-logic` | ✅ |
 | 4 | A7 | `/a7-pwa-onboarding` — PWA, icons, splash, install guide, login/welcome visuals | **A1** | `step/a7-pwa` |  |
 | 5 | A5 | `/a5-reports-overview` — Reports overview, donut, drill-down, trends | **A2b** | `step/a5-reports` |  |
 | 6 | A5b | `/a5b-breakdown-ui` — Breakdown tab: pivot table, chips, presets, share | A5, A5b-logic | `step/a5b-breakdown-ui` |  |
@@ -67,3 +67,5 @@ _(write what you observed here: every hesitation, question, or complaint)_
 | 2026-10-06 | Setup | English default, Western digits, messages split per namespace, kind guards in schema, orchestration (2 Antigravity builders + Claude orchestrator) |
 | 2026-10-06 | A7-icon | Final icon `design/icon.png` (1024, house + wallet, made in Gemini, chosen by the user). Login logo = same icon with rounded corners. |
 | 2026-10-06 | A0 | AG-1: Next.js 16.3 + next-intl 4 (en default, ar RTL), proxy.ts, per-namespace messages, vitest (PR #2) |
+| 2026-10-06 | A2a | AG-2: types, Repository, Dexie `fa-mock`/`fa-live`, seed of ~120 entries, hooks, 27 tests (PR #3). Follow-up for B3: drop duplicate `getWalletBalances`/`walletBalances`; `getDbName()` must not depend on `typeof process` in the browser |
+| 2026-10-06 | A5b-logic | AG-2: pure `pivot()`, 5 presets, `pivotToCsv()` with tests (PR #4) |
