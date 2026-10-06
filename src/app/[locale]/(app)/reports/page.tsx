@@ -12,25 +12,32 @@ import { BreakdownTab } from '@/components/reports/BreakdownTab';
 import { AllReportsTab } from '@/components/reports/AllReportsTab';
 import { useMonthSummary } from '@/lib/data/provider';
 import type { CategoryTotal } from '@/lib/data/types';
+import { useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 
-export default function ReportsPage() {
+function ReportsContent() {
   const locale = useLocale();
   const t = useTranslations('reports');
   const isRtl = locale.startsWith('ar');
 
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
+
   const [activeTab, setActiveTab] = React.useState<'overview' | 'all' | 'breakdown'>(() => {
-    if (typeof window !== 'undefined') {
-      const search = new URLSearchParams(window.location.search);
-      if (search.get('tab') === 'all') {
-        return 'all';
-      }
-      if (search.get('tab') === 'breakdown') {
-        return 'breakdown';
-      }
-    }
+    if (tabParam === 'all') return 'all';
+    if (tabParam === 'breakdown') return 'breakdown';
     return 'overview';
   });
+
+  React.useEffect(() => {
+    if (tabParam === 'all') {
+      setActiveTab('all');
+    } else if (tabParam === 'breakdown') {
+      setActiveTab('breakdown');
+    } else if (tabParam === 'overview') {
+      setActiveTab('overview');
+    }
+  }, [tabParam]);
   const [selectedMonth, setSelectedMonth] = React.useState(() => {
     return new Date().toISOString().slice(0, 7);
   });
@@ -227,5 +234,13 @@ export default function ReportsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ReportsPage() {
+  return (
+    <React.Suspense fallback={null}>
+      <ReportsContent />
+    </React.Suspense>
   );
 }
