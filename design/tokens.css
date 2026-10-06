@@ -33,6 +33,12 @@
   --warning: #b45309;
   --danger: #b91c1c;        /* only for destructive confirms */
 
+  /* Family members (who added an entry). Kept away from income green / expense terracotta. */
+  --member-1: #4338ca;  --member-1-soft: #e0e7ff;  /* indigo */
+  --member-2: #be185d;  --member-2-soft: #fce7f3;  /* rose */
+  --member-3: #0369a1;  --member-3-soft: #e0f2fe;  /* sky */
+  --member-4: #7e22ce;  --member-4-soft: #f3e8ff;  /* violet */
+
   /* Elevation (the only two shadows allowed) */
   --shadow-card: 0 1px 2px rgb(28 25 23 / 0.04), 0 4px 16px rgb(28 25 23 / 0.05);
   --shadow-sheet: 0 -8px 32px rgb(28 25 23 / 0.12);
@@ -57,6 +63,10 @@
     --transfer: #94a3b8;
     --warning: #fbbf24;
     --danger: #f87171;
+    --member-1: #a5b4fc;  --member-1-soft: #232554;
+    --member-2: #f9a8d4;  --member-2-soft: #4a1630;
+    --member-3: #7dd3fc;  --member-3-soft: #0c2e44;
+    --member-4: #d8b4fe;  --member-4-soft: #36184d;
     --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
     --shadow-sheet: 0 -8px 32px rgb(0 0 0 / 0.5);
   }
@@ -80,6 +90,14 @@
   --color-transfer: var(--transfer);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
+  --color-member-1: var(--member-1);
+  --color-member-1-soft: var(--member-1-soft);
+  --color-member-2: var(--member-2);
+  --color-member-2-soft: var(--member-2-soft);
+  --color-member-3: var(--member-3);
+  --color-member-3-soft: var(--member-3-soft);
+  --color-member-4: var(--member-4);
+  --color-member-4-soft: var(--member-4-soft);
 
   --font-sans: var(--font-plex-arabic), ui-sans-serif, system-ui, sans-serif;
 

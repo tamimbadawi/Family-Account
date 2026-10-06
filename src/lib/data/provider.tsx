@@ -91,9 +91,23 @@ export function RepositoryProvider({ children, repository }: RepositoryProviderP
 
   return (
     <RepositoryContext.Provider value={activeRepo}>
-      {children}
+      <MembersProvider>{children}</MembersProvider>
     </RepositoryContext.Provider>
   );
+}
+
+// One live members list for the whole app, so every entry row can show who added it
+// without opening its own database subscription.
+const MembersContext = createContext<Member[]>([]);
+
+function MembersProvider({ children }: { children: React.ReactNode }) {
+  const members = useMembers();
+  return <MembersContext.Provider value={members ?? []}>{children}</MembersContext.Provider>;
+}
+
+/** Household members from the shared list (empty until loaded). */
+export function useHouseholdMembers(): Member[] {
+  return useContext(MembersContext);
 }
 
 export function useRepository(): Repository {

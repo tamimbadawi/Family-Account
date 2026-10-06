@@ -3,7 +3,7 @@ import { liveQuery } from 'dexie';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { FamilyAccountsDB } from '../offline/db';
 import { MockRepository } from './mock-repository';
-import { WALLET_BANK_ID, WALLET_CASH_ID } from './mock-seed';
+import { USER_BABA_ID, USER_MAMA_ID, WALLET_BANK_ID, WALLET_CASH_ID } from './mock-seed';
 
 describe('MockRepository with fake-indexeddb', () => {
   let db: FamilyAccountsDB;
@@ -127,6 +127,26 @@ describe('MockRepository with fake-indexeddb', () => {
     const balancesRestored = await repo.walletBalances();
     const cashRestored = balancesRestored.find((w) => w.id === WALLET_CASH_ID)!.balance;
     expect(cashRestored).toBe(cashBefore);
+  });
+
+  it('stamps who added and who last changed an entry', async () => {
+    const item = (await repo.getItems())[0];
+    const added = await repo.addEntry({
+      type: 'expense',
+      amount: 40,
+      occurredOn: '2026-10-06',
+      accountId: WALLET_CASH_ID,
+      itemId: item.id,
+    });
+    expect(added.createdBy).toBe(USER_MAMA_ID);
+
+    repo.currentUserId = USER_BABA_ID;
+    await repo.updateEntry(added.id, { amount: 45 });
+    const listed = (await repo.listEntries()).find((e) => e.id === added.id);
+    expect(listed?.createdBy).toBe(USER_MAMA_ID);
+    expect(listed?.createdByName).toBe('ماما');
+    expect(listed?.updatedBy).toBe(USER_BABA_ID);
+    expect(listed?.updatedByName).toBe('بابا');
   });
 
   it('adds and updates entries with constraint validations', async () => {

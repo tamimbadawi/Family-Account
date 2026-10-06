@@ -119,6 +119,7 @@ export interface EnrichedEntry extends Entry {
   categoryIcon?: string | null;
   categoryColor?: string | null;
   createdByName?: string | null;
+  updatedByName?: string | null;
 }
 
 // ---------- Reports & Aggregations ----------
