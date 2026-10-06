@@ -16,5 +16,14 @@
   "saved": "Saved",
   "updated": "Updated",
   "deleted": "Deleted",
-  "sameWallet": "Pick two different wallets"
+  "sameWallet": "Pick two different wallets",
+  "newCategory": "+ New Category",
+  "newSubcategory": "+ New Group",
+  "newItem": "+ New Item",
+  "nameArLabel": "Name in Arabic",
+  "nameEnLabel": "Name in English",
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "pickDay": "Pick a day",
+  "allCategories": "Categories"
 }

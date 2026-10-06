@@ -63,5 +63,13 @@
   "toastMessage": "Saved ✓",
   "toastAction": "Undo",
   "undoSuccess": "Action undone",
-  "switchLabel": "Enable detailed view"
+  "switchLabel": "Enable detailed view",
+  "entryPartsTitle": "Add-Entry Building Blocks",
+  "entryPartsSubtitle": "Standalone entry components for the upcoming bottom sheet",
+  "typeToggleSection": "1. Type Toggle",
+  "amountSection": "2. Amount Display & AmountPad",
+  "categoryPickerSection": "3. Category Picker (3 levels + recents + inline new)",
+  "walletPickerSection": "4. Wallet Picker",
+  "dateAndNoteSection": "5. Date Chips & Note Field",
+  "pickedItem": "Selected item:"
 }
