@@ -303,7 +303,7 @@ export const viewport: Viewport = {
 
 - Pad the tab bar and sheets with `env(safe-area-inset-bottom)` so they clear the home indicator.
 - Set every input's font size to at least 16 px. Smaller sizes make iOS zoom in on focus.
-- Generate iOS splash screens and icons with `npx pwa-asset-generator logo.svg public/splash --splash-only --background "#FAF8F5"`. Without them, a white flash appears on launch.
+- Generate iOS splash screens and icons with `npx pwa-asset-generator design/icon.png public/splash --splash-only --background "#FAF8F5"`. Without them, a white flash appears on launch.
 - Use `overscroll-behavior: none` on the body and no `100vh`; use `100dvh` instead.
 
 **6. Install guide screen (`/install`):** iPhones never show an automatic install prompt. Detect iOS that is not in standalone mode (`navigator.standalone !== true`). Then show a friendly 3-step illustrated guide in the user's language: tap Share → "Add to Home Screen" → Add. Link it from the login page.
