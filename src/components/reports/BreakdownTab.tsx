@@ -334,46 +334,40 @@ export function BreakdownTab() {
 
   return (
     <div className="flex flex-col gap-2 select-none">
-      {/* 1. Presets Row & Action Bar */}
-      <div className="flex items-center justify-between gap-2">
-        {/* Presets Horizontal Scroll */}
-        <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-0.5">
-          {PIVOT_PRESETS.map((preset) => {
-            const Icon = getPresetIcon(preset.icon);
-            const isSelected = activePresetId === preset.id;
-            const name = locale === 'ar' ? preset.nameAr : preset.nameEn;
-
-            return (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => handleSelectPreset(preset)}
-                className={`flex shrink-0 items-center gap-1.5 h-9 px-3 rounded-full text-caption font-semibold transition-all active:scale-95 ${
-                  isSelected
-                    ? 'bg-accent text-accent-ink shadow-xs'
-                    : 'bg-surface text-ink border border-line/70 hover:bg-surface-2'
-                }`}
-              >
-                <Icon className="size-3.5 shrink-0" />
-                <span className="whitespace-nowrap">{name}</span>
-              </button>
-            );
-          })}
-        </div>
+      {/* 1. Header Action Row: Period, Customize & Share */}
+      <div className="flex items-center justify-between gap-2 px-0.5">
+        {/* Period button */}
+        <button
+          type="button"
+          onClick={() => setShowFilters((prev) => !prev)}
+          className="flex items-center gap-1.5 h-8 px-2.5 rounded-full bg-surface-2 text-ink hover:text-accent active:scale-95 transition-all text-caption font-medium"
+        >
+          <Calendar className="size-3.5 text-accent shrink-0" />
+          <span>
+            {activePresetId
+              ? PIVOT_PRESETS.find((p) => p.id === activePresetId)?.periodPreset === 'last-6-months'
+                ? t('periods.last6')
+                : PIVOT_PRESETS.find((p) => p.id === activePresetId)?.periodPreset === 'this-year'
+                ? t('periods.thisYear')
+                : t('periods.thisMonth')
+              : t('period')}
+          </span>
+        </button>
 
         {/* Action Buttons: Filter Toggle & Share */}
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             onClick={() => setShowFilters((prev) => !prev)}
             aria-label={t('customize')}
-            className={`flex size-9 items-center justify-center rounded-full transition-all active:scale-95 ${
+            className={`flex items-center gap-1.5 h-8 px-2.5 rounded-full text-caption font-medium transition-all active:scale-95 ${
               showFilters
                 ? 'bg-accent text-accent-ink shadow-xs'
                 : 'bg-surface-2 text-ink-muted hover:text-ink'
             }`}
           >
-            <Filter className="size-4" />
+            <Filter className="size-3.5" />
+            <span>{t('customize')}</span>
           </button>
 
           <div className="relative">
@@ -381,9 +375,10 @@ export function BreakdownTab() {
               type="button"
               onClick={() => setShareMenuOpen((prev) => !prev)}
               aria-label={t('share')}
-              className="flex size-9 items-center justify-center rounded-full bg-surface-2 text-ink-muted hover:text-ink active:scale-95 transition-all"
+              className="flex items-center gap-1.5 h-8 px-2.5 rounded-full bg-surface-2 text-ink-muted hover:text-ink active:scale-95 transition-all text-caption font-medium"
             >
-              <Share2 className="size-4" />
+              <Share2 className="size-3.5" />
+              <span>{t('share')}</span>
             </button>
 
             {/* Share dropdown popover */}
@@ -393,7 +388,7 @@ export function BreakdownTab() {
                   className="fixed inset-0 z-30"
                   onClick={() => setShareMenuOpen(false)}
                 />
-                <div className="absolute end-0 top-11 z-40 w-44 rounded-2xl bg-surface p-1.5 shadow-card border border-line text-ink divide-y divide-line/40">
+                <div className="absolute end-0 top-10 z-40 w-44 rounded-2xl bg-surface p-1.5 shadow-card border border-line text-ink divide-y divide-line/40">
                   <button
                     type="button"
                     onClick={handleSharePng}
@@ -415,6 +410,31 @@ export function BreakdownTab() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* 2. Wrapped Presets Chips (Always complete, never clipped) */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {PIVOT_PRESETS.map((preset) => {
+          const Icon = getPresetIcon(preset.icon);
+          const isSelected = activePresetId === preset.id;
+          const name = locale === 'ar' ? preset.nameAr : preset.nameEn;
+
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => handleSelectPreset(preset)}
+              className={`flex items-center gap-1.5 h-8 px-2.5 rounded-full text-caption font-semibold transition-all active:scale-95 ${
+                isSelected
+                  ? 'bg-accent text-accent-ink shadow-xs'
+                  : 'bg-surface text-ink border border-line/70 hover:bg-surface-2'
+              }`}
+            >
+              <Icon className="size-3.5 shrink-0" />
+              <span>{name}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* 2. Expandable Filter Chips (Show / Split by / Across / Period) */}
