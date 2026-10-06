@@ -12,7 +12,7 @@ import path from 'node:path';
 
 const BASE = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
 const CHROME = process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const SIZES = (process.env.UI_SIZES || '390x844,375x667').split(',').map((s) => s.split('x').map(Number));
+const SIZES = (process.env.UI_SIZES || '390x844,375x667,412x700').split(',').map((s) => s.split('x').map(Number));
 const THEMES = (process.env.UI_THEMES || 'light,dark').split(',');
 // Screens that are lists may scroll inside their content area; every other screen must fit with no scrolling.
 const LIST_ROUTES = ['/history', '/settings/categories', '/settings/deleted'];
