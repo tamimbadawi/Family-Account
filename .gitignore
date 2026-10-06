@@ -32,3 +32,6 @@ coverage/
 *.dump
 schema.sql
 data.sql
+
+# screenshots go in PR descriptions, not the repo
+docs/screenshots/
