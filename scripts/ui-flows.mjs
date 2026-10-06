@@ -176,6 +176,61 @@ const FLOWS = {
     await sleep(700); // let the sheet finish sliding up
     await assertUsable(page, btn(page, 'View receipt photo'), 'photo thumbnail when editing');
   },
+  async date(page) {
+    await openSheet(page);
+    // The app's own calendar (the hidden native date input did not open inside the sheet)
+    await tap(page, 'Pick a day');
+    const dialog = page.getByRole('dialog', { name: 'Pick a day' });
+    await assertUsable(page, dialog.getByRole('button', { name: 'Yesterday', exact: true }), 'Yesterday in the calendar');
+    await dialog.getByRole('button', { name: 'Yesterday', exact: true }).click();
+    await sleep(400);
+    const chip = btn(page, 'Pick a day');
+    if ((await chip.innerText()).trim() !== 'Yesterday') throw new Error(`date chip shows "${await chip.innerText()}" (should be "Yesterday")`);
+    // Pick the 1st of this month from the grid (never a future day)
+    await tap(page, 'Pick a day');
+    const first = dialog.getByRole('button', { name: '1', exact: true });
+    await assertUsable(page, first, 'day 1 in the calendar');
+    await first.click();
+    await sleep(400);
+    const shown = (await chip.innerText()).trim();
+    const today = new Date();
+    const expected = today.getDate() === 1 ? 'Today' : today.getDate() === 2 ? 'Yesterday' : null;
+    if (expected ? shown !== expected : !/^[A-Z][a-z]{2} 1$/.test(shown)) throw new Error(`date chip shows "${shown}" after picking the 1st`);
+    await dialog.waitFor({ state: 'hidden', timeout: 4000 }).catch(() => { throw new Error('calendar stayed open after picking a day'); });
+    await sleep(300);
+    await assertOnePopup(page, '0');
+  },
+  async bank(page) {
+    await openSheet(page);
+    await typeAmount(page, ['7', '5']);
+    await tap(page, 'Food');
+    await tap(page, 'Groceries');
+    await tap(page, 'Supermarket');
+    // Wallet → Bank → "Which bank?" → add a new bank by name; the chip then names it
+    await tap(page, 'Wallet');
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('button', { name: /^Bank/ }).click();
+    await page.getByText('Which bank?').waitFor({ timeout: 8000 });
+    const name = dialog.getByRole('textbox', { name: 'Bank name' });
+    await assertUsable(page, name, 'bank name field');
+    await name.click();
+    await name.fill('Test Bank');
+    await dialog.getByRole('button', { name: 'Add', exact: true }).click();
+    await sleep(600);
+    const chip = btn(page, 'Wallet');
+    if (!(await chip.innerText()).includes('Test Bank')) throw new Error(`wallet chip shows "${await chip.innerText()}" (should name the new bank)`);
+    // The bank is now listed under Bank, and the entry saves on it
+    await tap(page, 'Wallet');
+    await dialog.getByRole('button', { name: /^Bank/ }).click();
+    await assertUsable(page, dialog.getByRole('button', { name: 'Test Bank', exact: true }), 'the new bank in the bank list');
+    await dialog.getByRole('button', { name: 'Test Bank', exact: true }).click();
+    await sleep(400);
+    const save = await saveButton(page);
+    await assertUsable(page, save, 'Save button');
+    await save.click();
+    await sleep(1500);
+    await assertUsable(page, page.getByText('Food · Test Bank').first(), 'the entry saved on the new bank');
+  },
 };
 
 const selected = process.argv.slice(2).filter((a) => FLOWS[a]);

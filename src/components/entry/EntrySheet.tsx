@@ -367,26 +367,30 @@ export function EntrySheet() {
   return (
     <Drawer open={isOpen} onOpenChange={(open) => !open && close()} repositionInputs>
       <DrawerContent
-        className="max-h-[96dvh] overflow-y-auto"
+        className="max-h-[96dvh]"
         // Tapping Undo on a toast must not close the sheet
         onPointerDownOutside={keepOpenForToasts}
         onInteractOutside={keepOpenForToasts}
       >
-        <DrawerHeader className="px-4 pt-1 pb-2">
-          <DrawerTitle className="text-title font-bold text-ink">
-            {mode === 'edit' ? t('editTitle') : t('addTitle')}
-          </DrawerTitle>
-        </DrawerHeader>
+        {/* Only this inner box may scroll: vaul hangs a 200%-tall strip under the sheet, which made the sheet itself
+            scrollable, so tapping a lower chip slid the type toggle and amount out of view */}
+        <div className="min-h-0 overflow-y-auto">
+          <DrawerHeader className="px-4 pt-1 pb-2">
+            <DrawerTitle className="text-title font-bold text-ink">
+              {mode === 'edit' ? t('editTitle') : t('addTitle')}
+            </DrawerTitle>
+          </DrawerHeader>
 
-        {isOpen && (
-          <EntrySheetForm
-            key={editingEntry?.id ?? (initialType ?? 'new')}
-            mode={mode}
-            editingEntry={editingEntry}
-            initialType={initialType}
-            onClose={close}
-          />
-        )}
+          {isOpen && (
+            <EntrySheetForm
+              key={editingEntry?.id ?? (initialType ?? 'new')}
+              mode={mode}
+              editingEntry={editingEntry}
+              initialType={initialType}
+              onClose={close}
+            />
+          )}
+        </div>
       </DrawerContent>
     </Drawer>
   );

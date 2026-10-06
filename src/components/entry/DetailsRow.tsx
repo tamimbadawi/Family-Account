@@ -26,7 +26,8 @@ export interface WalletSelectProps {
   label: string;
 }
 
-// The entry sheet underneath pulls focus back to itself; without this, tapping a text field here closes the picker
+// The entry sheet underneath pulls focus back to itself (tapping a text field here would close the picker), and
+// handing focus back to the chip on close scrolls the sheet so its top slides out of view
 const keepFocus = (e: Event) => e.preventDefault();
 
 const OPTION =
@@ -82,7 +83,7 @@ export function WalletSelect({ value, onChange, exclude, label }: WalletSelectPr
         <span className="truncate">{current ? nameOf(current) : label}</span>
         </button>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent showCloseButton={false} onFocusOutside={keepFocus} className="max-w-[calc(100%-1.5rem)] gap-3 p-4">
+        <DialogContent showCloseButton={false} onFocusOutside={keepFocus} onCloseAutoFocus={keepFocus} className="max-w-[calc(100%-1.5rem)] gap-3 p-4">
           {step === 'kind' ? (
             <>
               <DialogTitle>{label}</DialogTitle>
@@ -190,7 +191,7 @@ export function DateChip({ value, onChange }: { value: string; onChange: (date: 
         <span className="truncate tabular-nums">{label}</span>
       </button>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent showCloseButton={false} onFocusOutside={keepFocus} className="max-w-[calc(100%-1.5rem)] gap-3 p-4">
+        <DialogContent showCloseButton={false} onFocusOutside={keepFocus} onCloseAutoFocus={keepFocus} className="max-w-[calc(100%-1.5rem)] gap-3 p-4">
           <DialogTitle>{t('pickDay')}</DialogTitle>
           <div className="flex gap-2">
             {quick(today, t('today'))}
