@@ -9,29 +9,41 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 
 ## Phase A — Interface on sample data
 
-### AG-1 queue
+### AG-1 queue · account-one, chat 1, folder `family-accounts-ag1`, port 3001
 
 | # | Step | Workflow | Needs merged first | Branch | Status |
 |---|---|---|---|---|---|
 | 1 | A0 | `/a0-scaffold` — Next.js 16 + next-intl scaffold | — | `step/a0-scaffold` | ⏳ |
-| 2 | A1 | `/a1-design-system` — fonts, tokens, restyled shadcn/ui, format helpers, styleguide | A0 | `step/a1-design-system` | |
-| 3 | A2b | `/a2b-shell-home` — tab bar shell, sync dot, Home | A1, **A2a** | `step/a2b-shell-home` | |
-| 4 | A3 | `/a3-entry-sheet` — Add/Edit entry sheet ⭐ most important screen | A2b | `step/a3-entry-sheet` | |
-| 5 | A4 | `/a4-history` — History, edit, soft delete, Recently deleted | A3 | `step/a4-history` | |
-| 6 | A6 | `/a6-settings-categories` — Settings, category & wallet managers, language | A2b | `step/a6-settings` | |
-| 7 | A8 | `/a8-polish-pass` — full design QA (both queues finished) | **all of Phase A** | `step/a8-polish` | |
+| 2 | A1 | `/a1-design-system` — fonts, tokens, restyled shadcn/ui, format helpers, styleguide | A0 | `step/a1-design-system` |  |
+| 3 | A2b | `/a2b-shell-home` — tab bar shell, sync dot, Home | A1, **A2a** | `step/a2b-shell-home` |  |
+| 4 | A3b | `/a3b-entry-sheet` — assemble the Add/Edit entry sheet ⭐ | A2b, **A3a** | `step/a3b-entry-sheet` |  |
+| 5 | A4 | `/a4-history` — History, edit, soft delete, Recently deleted | A3b | `step/a4-history` |  |
+| 6 | A8 | `/a8-polish-pass` — full design QA | **all of Phase A** | `step/a8-polish` |  |
 
-### AG-2 queue
+### AG-1B queue · account-one, chat 2, folder `family-accounts-ag1b`, port 3003
+
+| # | Step | Workflow | Needs merged first | Branch | Status |
+|---|---|---|---|---|---|
+| 1 | A3a | `/a3a-entry-parts` — amount pad, type toggle, category picker, wallet/date parts | **A1**, **A2a** | `step/a3a-entry-parts` |  |
+| 2 | A6 | `/a6-settings-categories` — Settings, category & wallet managers, language | **A2b** | `step/a6-settings` |  |
+
+### AG-2 queue · account-two, chat 1, folder `family-accounts-ag2`, port 3002
 
 | # | Step | Workflow | Needs merged first | Branch | Status |
 |---|---|---|---|---|---|
 | 1 | A7-icon | app icon + logo SVG only (part of `/a7-pwa-onboarding` step 3) | — | `step/a7-icon` | ⏳ |
-| 2 | A2a | `/a2a-data-layer` — types, repository, Dexie mock + sample data, hooks | **A0** | `step/a2a-data-layer` | |
-| 3 | A7 | `/a7-pwa-onboarding` — PWA, icons, splash, install guide, login/welcome visuals | **A1**, A7-icon | `step/a7-pwa` | |
-| 4 | A5 | `/a5-reports-overview` — Reports overview, donut, drill-down, trends | **A2b** | `step/a5-reports` | |
-| 5 | A5b | `/a5b-breakdown-pivots` — Breakdown pivot tables | A5 | `step/a5b-pivots` | |
+| 2 | A2a | `/a2a-data-layer` — types, repository, Dexie mock + sample data, hooks | **A0** | `step/a2a-data-layer` |  |
+| 3 | A5 | `/a5-reports-overview` — Reports overview, donut, drill-down, trends | **A2b** | `step/a5-reports` |  |
+| 4 | A5b | `/a5b-breakdown-ui` — Breakdown tab: pivot table, chips, presets, share | A5, **A5b-logic** | `step/a5b-breakdown-ui` |  |
 
-**Bold** = owned by the other agent (the only reason you might have to wait).
+### AG-2B queue · account-two, chat 2, folder `family-accounts-ag2b`, port 3004
+
+| # | Step | Workflow | Needs merged first | Branch | Status |
+|---|---|---|---|---|---|
+| 1 | A5b-logic | `/a5b-pivot-logic` — pure pivot engine + presets + CSV, with tests | **A2a** | `step/a5b-pivot-logic` |  |
+| 2 | A7 | `/a7-pwa-onboarding` — PWA, icons, splash, install guide, login/welcome visuals | **A1**, **A7-icon** | `step/a7-pwa` |  |
+
+**Bold** = owned by another chat (the only reason you might have to wait).
 
 ### 🚦 Gate: Family approval (human step)
 - [ ] Installed on both iPhones from the **production URL** (not a preview link: those require a Vercel login, and an installed app is tied to its address)
