@@ -152,6 +152,11 @@ export interface Repository {
   archiveWallet(id: string, archive?: boolean): Promise<void>;
   getWalletBalances(): Promise<WalletBalance[]>;
   walletBalances(): Promise<WalletBalance[]>;
+  adjustWalletBalance(
+    walletId: string,
+    actualBalance: number,
+    occurredOn?: string
+  ): Promise<Entry | null>;
 
   // Categories
   getCategories(kind?: CategoryKind, includeArchived?: boolean): Promise<Category[]>;
