@@ -67,7 +67,8 @@ All amounts: `tabular-nums`. Currency suffix "ج.م" (ar) / "EGP" (en) at 60% si
 1. Greeting: "صباح الخير، ماما" (time-of-day + display name), `text-heading`, ink-muted.
 2. **Hero card:** "صرفنا الشهر ده" label → amount `text-hero` → small line "دخل 5,000 · باقي 4,649" (income · net). Tapping goes to Reports.
 3. **Top categories this month:** 3 horizontal pills with icon, name, amount.
-4. **Recent entries:** last 5 as EntryRow (icon circle, item name, sub-line "category · wallet", amount at the inline end coloured by type). "عرض الكل" → History.
+4. **Our money** row (56px): "Our money" + total of all wallets + chevron → sheet listing Cash at home and each bank with its balance.
+5. **Recent entries:** last 5 as EntryRow (icon circle, item name, sub-line "category · wallet", amount at the inline end coloured by type). "عرض الكل" → History.
 5. Empty state (no entries yet): friendly illustration + "ابدأ بتسجيل أول مصروف" + big Add button.
 
 ### Add / Edit entry — the most important screen (bottom sheet, vaul, 92% height)
@@ -80,7 +81,7 @@ Order top → bottom:
    - Step 2 **Subcategories:** large list rows (56px), "+ جديد" row last.
    - Step 3 **Items:** large list rows, "+ جديد" row last. Selecting an item → Review.
    - Transfer mode replaces steps with two WalletPickers: "من" → "إلى".
-4. **AmountPad** (visible while amount is focused/empty): 4×3 keys, 64px tall, Western digits 0–9 in both languages, "." decimal, backspace. Keys `bg-surface-2`, pressed state darker, no iOS keyboard ever.
+4. **AmountPad** (visible while amount is focused/empty): 4×4 keys, digits plus an operator column **÷ × − +** (simple arithmetic: the expression shows in a small line above, the big amount shows the live result, Save stores the result),, 64px tall, Western digits 0–9 in both languages, "." decimal, backspace. Keys `bg-surface-2`, pressed state darker, no iOS keyboard ever.
 5. **Review strip:** chips for Date (اليوم / امبارح / اختار…), Wallet (last used), Note (optional, opens a single-line input), **Photo** (optional, opens the camera; shows a small thumbnail once taken; tap for a full-screen viewer with Replace / Remove).
 6. **Save** — full-width `h-14` accent button, disabled until amount > 0 and an item (or both wallets) are chosen. On save: checkmark animation, sheet closes, toast "اتسجل ✓" with **تراجع** (Undo).
 Edit mode: same sheet, prefilled, title "تعديل", plus a text button "حذف" at the bottom (soft delete + Undo toast).
