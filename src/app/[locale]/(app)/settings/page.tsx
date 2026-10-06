@@ -1,92 +1,241 @@
 'use client';
 
 import * as React from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   ChevronRight,
+  Download,
   FolderTree,
   Globe,
+  Hash,
   LogOut,
   Trash2,
   Users,
   Wallet,
 } from 'lucide-react';
-import { Link } from '@/i18n/navigation';
+import { toast } from 'sonner';
+import { Link, usePathname, useRouter } from '@/i18n/navigation';
+import { useRepository } from '@/lib/data/provider';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
+  const locale = useLocale();
+  const router = useRouter();
+  const pathname = usePathname();
+  const repo = useRepository();
 
-  const navItems = [
-    {
-      href: '/settings',
-      label: t('categories'),
-      icon: FolderTree,
-      color: 'text-accent',
-      bgColor: 'bg-accent/12',
-    },
-    {
-      href: '/settings',
-      label: t('wallets'),
-      icon: Wallet,
-      color: 'text-income',
-      bgColor: 'bg-income-soft',
-    },
-    {
-      href: '/settings',
-      label: t('family'),
-      icon: Users,
-      color: 'text-indigo-600 dark:text-indigo-400',
-      bgColor: 'bg-indigo-500/12',
-    },
-    {
-      href: '/settings',
-      label: t('language'),
-      icon: Globe,
-      color: 'text-amber-600 dark:text-amber-400',
-      bgColor: 'bg-amber-500/12',
-    },
-    {
-      href: '/settings/deleted',
-      label: t('recentlyDeleted'),
-      icon: Trash2,
-      color: 'text-expense',
-      bgColor: 'bg-expense-soft',
-    },
-  ];
+  const [isExporting, setIsExporting] = React.useState(false);
+
+  const handleLanguageToggle = () => {
+    const nextLocale = locale === 'ar' ? 'en' : 'ar';
+    router.replace(pathname, { locale: nextLocale });
+  };
+
+  const handleDownloadCsv = async () => {
+    try {
+      setIsExporting(true);
+      const entries = await repo.listEntries({ includeDeleted: true });
+      const BOM = '\uFEFF';
+      const headers = [
+        'Date',
+        'Type',
+        'Amount',
+        'Category (AR)',
+        'Category (EN)',
+        'Item (AR)',
+        'Item (EN)',
+        'Wallet',
+        'To Wallet',
+        'Note',
+      ];
+      const rows = entries.map((e) => [
+        e.occurredOn,
+        e.type,
+        e.amount.toFixed(2),
+        `"${(e.categoryNameAr || '').replace(/"/g, '""')}"`,
+        `"${(e.categoryNameEn || '').replace(/"/g, '""')}"`,
+        `"${(e.itemNameAr || '').replace(/"/g, '""')}"`,
+        `"${(e.itemNameEn || '').replace(/"/g, '""')}"`,
+        `"${(e.accountNameEn || e.accountNameAr || '').replace(/"/g, '""')}"`,
+        `"${(e.toAccountNameEn || e.toAccountNameAr || '').replace(/"/g, '""')}"`,
+        `"${(e.note || '').replace(/"/g, '""')}"`,
+      ]);
+
+      const csvContent =
+        BOM + [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `family-accounts-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success(t('downloadSuccess'));
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to export CSV');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto overscroll-contain px-5 py-3 pb-24">
-      {/* iOS style inset grouped card */}
+    <div className="flex flex-col h-full overflow-y-auto overscroll-contain px-5 py-3 pb-24 space-y-4">
+      {/* Primary Inset Group */}
       <div className="bg-surface rounded-card border border-line/40 shadow-sm divide-y divide-line/30 overflow-hidden">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.label}
-              href={item.href}
-              className="flex items-center justify-between p-4 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
-            >
-              <div className="flex items-center gap-3.5">
-                <div
-                  className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${item.bgColor} ${item.color}`}
-                >
-                  <Icon className="size-5" />
-                </div>
-                <span className="text-body font-semibold text-ink">
-                  {item.label}
-                </span>
+        {/* Categories */}
+        <Link
+          href="/settings/categories"
+          className="flex items-center justify-between p-4 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/12 text-accent">
+              <FolderTree className="size-5" />
+            </div>
+            <span className="text-body font-semibold text-ink">
+              {t('categories')}
+            </span>
+          </div>
+          <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
+        </Link>
+
+        {/* Wallets */}
+        <Link
+          href="/settings/wallets"
+          className="flex items-center justify-between p-4 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-income-soft text-income">
+              <Wallet className="size-5" />
+            </div>
+            <span className="text-body font-semibold text-ink">
+              {t('wallets')}
+            </span>
+          </div>
+          <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
+        </Link>
+
+        {/* Recently Deleted */}
+        <Link
+          href="/settings/deleted"
+          className="flex items-center justify-between p-4 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-expense-soft text-expense">
+              <Trash2 className="size-5" />
+            </div>
+            <span className="text-body font-semibold text-ink">
+              {t('recentlyDeleted')}
+            </span>
+          </div>
+          <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
+        </Link>
+      </div>
+
+      {/* Preferences & Tools Group */}
+      <div className="bg-surface rounded-card border border-line/40 shadow-sm divide-y divide-line/30 overflow-hidden">
+        {/* Language switch */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={handleLanguageToggle}
+          onKeyDown={(e) => e.key === 'Enter' && handleLanguageToggle()}
+          className="flex items-center justify-between p-4 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/12 text-amber-600 dark:text-amber-400">
+              <Globe className="size-5" />
+            </div>
+            <div className="text-start">
+              <div className="text-body font-semibold text-ink">
+                {t('language')}
               </div>
-              <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
-            </Link>
-          );
-        })}
+              <div className="text-caption text-ink-muted">
+                {locale === 'ar' ? 'العربية' : 'English'}
+              </div>
+            </div>
+          </div>
+          <span className="text-caption font-semibold px-2.5 py-1 rounded-lg bg-surface-2 text-ink">
+            {locale === 'ar' ? 'English' : 'عربي'}
+          </span>
+        </div>
+
+        {/* Digit style (informative row) */}
+        <div className="flex items-center justify-between p-4 select-none">
+          <div className="flex items-center gap-3.5">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-ink-muted">
+              <Hash className="size-5" />
+            </div>
+            <div>
+              <div className="text-body font-semibold text-ink">
+                {t('digits')}
+              </div>
+              <div className="text-caption text-ink-muted">
+                {t('digitsWestern')}
+              </div>
+            </div>
+          </div>
+          <span className="text-caption font-mono font-semibold text-ink-muted px-2 py-0.5 rounded bg-surface-2">
+            0–9
+          </span>
+        </div>
+
+        {/* Download CSV */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={handleDownloadCsv}
+          onKeyDown={(e) => e.key === 'Enter' && handleDownloadCsv()}
+          className="flex items-center justify-between p-4 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/12 text-blue-600 dark:text-blue-400">
+              <Download className="size-5" />
+            </div>
+            <div className="text-start">
+              <div className="text-body font-semibold text-ink">
+                {t('download')}
+              </div>
+              <div className="text-caption text-ink-muted">
+                CSV (Excel)
+              </div>
+            </div>
+          </div>
+          {isExporting ? (
+            <span className="text-caption text-ink-muted">...</span>
+          ) : (
+            <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
+          )}
+        </div>
+      </div>
+
+      {/* Family Section */}
+      <div className="bg-surface rounded-card border border-line/40 shadow-sm divide-y divide-line/30 overflow-hidden">
+        <div className="flex items-center justify-between p-4 select-none">
+          <div className="flex items-center gap-3.5">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/12 text-indigo-600 dark:text-indigo-400">
+              <Users className="size-5" />
+            </div>
+            <div>
+              <div className="text-body font-semibold text-ink">
+                {t('family')}
+              </div>
+              <div className="text-caption text-ink-muted">
+                ماما · بابا
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Sign out section */}
-      <div className="mt-6 bg-surface rounded-card border border-line/40 shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-card border border-line/40 shadow-sm overflow-hidden">
         <button
           type="button"
-          onClick={() => {}}
+          onClick={() => toast.info(t('signOut'))}
           className="w-full flex items-center justify-between p-4 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
         >
           <div className="flex items-center gap-3.5">
