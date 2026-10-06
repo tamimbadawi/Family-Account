@@ -15,6 +15,7 @@ import {
 import { toast } from 'sonner';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { useRepository } from '@/lib/data/provider';
+import { localISODate } from '@/lib/format';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
@@ -66,7 +67,7 @@ export default function SettingsPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `family-accounts-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = `family-accounts-${localISODate()}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

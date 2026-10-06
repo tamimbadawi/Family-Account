@@ -5,7 +5,7 @@
 
 import type { PivotResult } from '@/lib/reports/pivot';
 import { pivotToCsv } from '@/lib/reports/export';
-import { money } from '@/lib/format';
+import { localISODate, money } from '@/lib/format';
 
 export function downloadPivotCsv(
   result: PivotResult,
@@ -16,7 +16,7 @@ export function downloadPivotCsv(
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `breakdown-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `breakdown-${localISODate()}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -238,7 +238,7 @@ export async function sharePivotPng(
         return;
       }
 
-      const filename = `breakdown-${new Date().toISOString().slice(0, 10)}.png`;
+      const filename = `breakdown-${localISODate()}.png`;
       const file = new File([blob], filename, { type: 'image/png' });
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {

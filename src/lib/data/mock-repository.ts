@@ -4,6 +4,7 @@
 // Implements the Repository interface for Phase A
 // =========================================================
 
+import { localISODate } from '../format';
 import { db as defaultDb, FamilyAccountsDB } from '../offline/db';
 import {
   roundMoney,
@@ -343,7 +344,7 @@ export class MockRepository implements Repository {
 
     const isIncome = diff > 0;
     const amount = roundMoney(Math.abs(diff));
-    const date = occurredOn ?? new Date().toISOString().slice(0, 10);
+    const date = occurredOn ?? localISODate();
     const itemId = await this.getCorrectionItemId(isIncome ? 'income' : 'expense');
 
     return this.addEntry({

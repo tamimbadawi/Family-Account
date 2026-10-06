@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDay, formatMonth, money, normalizeDigits, pickName, shiftMonth } from './index';
+import { formatDay, formatMonth, localISODate, money, normalizeDigits, pickName, shiftMonth } from './index';
 
 describe('normalizeDigits', () => {
   it('converts Arabic-Indic digits to ASCII', () => {
@@ -134,3 +134,15 @@ describe('formatMonth & shiftMonth', () => {
   });
 });
 
+
+describe('localISODate', () => {
+  it('uses local calendar fields, not UTC', () => {
+    // 00:30 local on 7 Oct is still 6 Oct in UTC for any zone east of UTC.
+    const justAfterMidnight = new Date(2026, 9, 7, 0, 30);
+    expect(localISODate(justAfterMidnight)).toBe('2026-10-07');
+  });
+
+  it('pads month and day', () => {
+    expect(localISODate(new Date(2026, 0, 5, 12))).toBe('2026-01-05');
+  });
+});
