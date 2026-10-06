@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <!-- Family Accounts (حساباتنا) — App Icon -->
-  <!-- Background: Emerald rounded square (--accent: #0f766e from design/tokens.css) -->
-  <rect width="512" height="512" rx="114" fill="#0f766e"/>
+  <!-- Background: full-bleed emerald square (iOS rounds icons itself) (--accent: #0f766e from design/tokens.css) -->
+  <rect width="512" height="512" fill="#0f766e"/>
 
   <!-- Roof: Home & Shelter (--accent-ink: #ffffff) -->
   <path d="M 120 208 L 256 108 L 392 208"
