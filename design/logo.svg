@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <!-- Family Accounts (حساباتنا) — App Logo -->
-  <!-- Transparent background, emerald mark (--accent: #0f766e from design/tokens.css) -->
+  <!-- Transparent background, emerald mark (token accent: #0f766e from design/tokens.css) -->
 
-  <!-- Roof: Home & Shelter (--accent: #0f766e) -->
+  <!-- Roof: Home & Shelter (token accent: #0f766e) -->
   <path d="M 120 208 L 256 108 L 392 208"
         fill="none"
         stroke="#0f766e"
@@ -10,10 +10,10 @@
         stroke-linecap="round"
         stroke-linejoin="round"/>
 
-  <!-- Wallet Body: Household Accounts (--accent: #0f766e) -->
+  <!-- Wallet Body: Household Accounts (token accent: #0f766e) -->
   <path d="M 168 250 H 344 A 28 28 0 0 1 372 278 V 300 H 286 A 26 26 0 0 0 286 352 H 372 V 374 A 28 28 0 0 1 344 402 H 168 A 28 28 0 0 1 140 374 V 278 A 28 28 0 0 1 168 250 Z"
         fill="#0f766e"/>
 
-  <!-- Clasp Stud / Coin (--accent: #0f766e) -->
+  <!-- Clasp Stud / Coin (token accent: #0f766e) -->
   <circle cx="314" cy="326" r="10" fill="#0f766e"/>
 </svg>
