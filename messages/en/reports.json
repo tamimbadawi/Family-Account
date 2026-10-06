@@ -116,6 +116,27 @@
     "highestDay": "Peak day",
     "incomeDistribution": "Income breakdown",
     "monthlyAvg": "Monthly average",
-    "subcategoriesBreakdown": "Breakdown by group"
+    "subcategoriesBreakdown": "Breakdown by group",
+    "billsJumped": "Jumped",
+    "billsNormal": "Normal",
+    "noBills": "No utility bills found",
+    "min": "Min",
+    "max": "Max",
+    "avg": "Average",
+    "totalSpent": "Total spent",
+    "shareOfTotal": "of total",
+    "searchPlaceholder": "Search by note, item, category...",
+    "downloadCsv": "Export CSV",
+    "noResults": "No matching entries found",
+    "resultsFound": "{count, plural, one {# entry} other {# entries}}",
+    "noUnusual": "Everything is normal",
+    "noUnusualDesc": "No categories have spiked significantly above average.",
+    "aboveAverage": "+{percent}% above normal",
+    "spentSoFar": "Spent so far",
+    "typicalByToday": "Typical by today",
+    "typicalFullMonth": "Typical month",
+    "aheadPace": "Ahead of normal pace",
+    "behindPace": "Behind normal pace",
+    "onTrackPace": "On normal pace"
   }
 }
