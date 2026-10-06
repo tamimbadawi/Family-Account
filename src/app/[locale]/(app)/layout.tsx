@@ -1,0 +1,31 @@
+'use client';
+
+import * as React from 'react';
+import { RepositoryProvider } from '@/lib/data/provider';
+import { Header } from '@/components/layout/Header';
+import { TabBar } from '@/components/layout/TabBar';
+import { FloatingAddButton } from '@/components/layout/FloatingAddButton';
+import { PageTransition } from '@/components/layout/PageTransition';
+
+export default function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <RepositoryProvider>
+      <div className="mx-auto flex h-dvh max-w-[520px] flex-col overflow-hidden bg-canvas text-ink relative shadow-2xl">
+        <Header />
+        
+        <main className="flex-1 overflow-y-auto overscroll-contain px-5 pb-6 pt-1">
+          <PageTransition>
+            {children}
+          </PageTransition>
+        </main>
+
+        <FloatingAddButton />
+        <TabBar />
+      </div>
+    </RepositoryProvider>
+  );
+}
