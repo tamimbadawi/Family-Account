@@ -9,20 +9,29 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 
 ## Phase A — Interface on sample data
 
-| Step | Workflow | Owner | Branch | Status |
-|---|---|---|---|---|
-| A0 | `/a0-scaffold` — Next.js 16 + next-intl scaffold, deployed to Vercel | AG-1 | `step/a0-scaffold` | ⏳ |
-| A7-icon | app icon + logo SVG only (part of `/a7-pwa-onboarding` step 3) | AG-2 | `step/a7-icon` | ⏳ |
-| A1 | `/a1-design-system` — fonts, tokens, restyled shadcn/ui, format helpers, styleguide | AG-1 | `step/a1-design-system` | |
-| A2a | `/a2a-data-layer` — types, repository, Dexie mock + sample data, hooks | AG-2 | `step/a2a-data-layer` | |
-| A2b | `/a2b-shell-home` — tab bar shell, sync dot, Home | AG-1 | `step/a2b-shell-home` | |
-| A7 | `/a7-pwa-onboarding` — PWA, icons, splash, install guide, login/welcome visuals | AG-2 | `step/a7-pwa` | |
-| A3 | `/a3-entry-sheet` — Add/Edit entry sheet ⭐ most important screen | AG-1 | `step/a3-entry-sheet` | |
-| A5 | `/a5-reports-overview` — Reports overview, donut, drill-down, trends | AG-2 | `step/a5-reports` | |
-| A4 | `/a4-history` — History, edit, soft delete, Recently deleted | AG-1 | `step/a4-history` | |
-| A5b | `/a5b-breakdown-pivots` — Breakdown pivot tables | AG-2 | `step/a5b-pivots` | |
-| A6 | `/a6-settings-categories` — Settings, category & wallet managers, language | AG-1 | `step/a6-settings` | |
-| A8 | `/a8-polish-pass` — full design QA | AG-1 | `step/a8-polish` | |
+### AG-1 queue
+
+| # | Step | Workflow | Needs merged first | Branch | Status |
+|---|---|---|---|---|---|
+| 1 | A0 | `/a0-scaffold` — Next.js 16 + next-intl scaffold | — | `step/a0-scaffold` | ⏳ |
+| 2 | A1 | `/a1-design-system` — fonts, tokens, restyled shadcn/ui, format helpers, styleguide | A0 | `step/a1-design-system` | |
+| 3 | A2b | `/a2b-shell-home` — tab bar shell, sync dot, Home | A1, **A2a** | `step/a2b-shell-home` | |
+| 4 | A3 | `/a3-entry-sheet` — Add/Edit entry sheet ⭐ most important screen | A2b | `step/a3-entry-sheet` | |
+| 5 | A4 | `/a4-history` — History, edit, soft delete, Recently deleted | A3 | `step/a4-history` | |
+| 6 | A6 | `/a6-settings-categories` — Settings, category & wallet managers, language | A2b | `step/a6-settings` | |
+| 7 | A8 | `/a8-polish-pass` — full design QA (both queues finished) | **all of Phase A** | `step/a8-polish` | |
+
+### AG-2 queue
+
+| # | Step | Workflow | Needs merged first | Branch | Status |
+|---|---|---|---|---|---|
+| 1 | A7-icon | app icon + logo SVG only (part of `/a7-pwa-onboarding` step 3) | — | `step/a7-icon` | ⏳ |
+| 2 | A2a | `/a2a-data-layer` — types, repository, Dexie mock + sample data, hooks | **A0** | `step/a2a-data-layer` | |
+| 3 | A7 | `/a7-pwa-onboarding` — PWA, icons, splash, install guide, login/welcome visuals | **A1**, A7-icon | `step/a7-pwa` | |
+| 4 | A5 | `/a5-reports-overview` — Reports overview, donut, drill-down, trends | **A2b** | `step/a5-reports` | |
+| 5 | A5b | `/a5b-breakdown-pivots` — Breakdown pivot tables | A5 | `step/a5b-pivots` | |
+
+**Bold** = owned by the other agent (the only reason you might have to wait).
 
 ### 🚦 Gate: Family approval (human step)
 - [ ] Installed on both iPhones from the **production URL** (not a preview link: those require a Vercel login, and an installed app is tied to its address)

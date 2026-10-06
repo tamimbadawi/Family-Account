@@ -22,17 +22,33 @@ so both agents can run the app at the same time:
 | AG-2 | `npm run dev -- -p 3002` → http://localhost:3002 |
 | Claude | `npm run dev` → http://localhost:3000 |
 
-## 2. One step = one branch = one pull request
+## 2. Queue mode: work through your queue without waiting
 
-1. The orchestrator assigns a step in `docs/PROGRESS.md` (owner + branch name) and gives you a prompt.
-2. In your folder: `git fetch origin`, then `git switch -c step/<id> origin/main`
-   (or `git switch step/<id>` if the orchestrator already created it).
-3. Run the step's workflow (`/a1-design-system`, …). Commit only on your step branch.
-4. Before opening the PR: `git fetch origin && git rebase origin/main`, then build/lint/typecheck/test again.
-5. Push the branch, open a PR into `main` with the template, and stop. Report the PR link and preview URL.
-6. The orchestrator reviews. Fix requested changes on the same branch. The orchestrator merges.
+Each agent has a **queue** in `docs/PROGRESS.md`. One step = one branch = one pull request, and you move on
+as soon as the PR is open. Never wait for a review of your own previous step.
 
-## 3. Waves (what can run in parallel)
+For each step in your queue, in order:
+1. `git fetch origin`, then read the current board with `git show origin/main:docs/PROGRESS.md`.
+   Skip steps already ✅ or that have an open PR from you.
+2. Check the step's **Needs merged first** column against `origin/main`:
+   - Everything merged → `git switch -c step/<id> origin/main`.
+   - The only thing missing is **your own** previous step → stack on it: `git switch -c step/<id> step/<previous>`
+     and write "Stacked on step/<previous>" at the top of the PR description.
+   - Something from the **other agent** is missing → try your next step that isn't blocked. If every remaining
+     step is blocked, stop and report `BLOCKED on <step>`. Don't wait or poll.
+3. Run the step's workflow. Commit only on that branch.
+4. `git fetch origin && git rebase origin/main` (stacked: rebase on your previous branch), then build/lint/typecheck/test.
+5. Push, open the PR into `main` with the template, and go straight back to 1.
+6. If the orchestrator posts review comments, fix them on that step's branch before starting your next step.
+
+**Speed rules:**
+- Per-step `/design-review` is the **quick** version: 390×844 only, `/en` light and `/ar` light. The full matrix
+  (430×932, dark mode, every state) runs once in A8.
+- Don't gold-plate. Build what the workflow and DESIGN.md say, make it look right, open the PR, move on.
+- If the conversation gets long or slow, start a new conversation with the same queue prompt.
+  The board is the memory, so you lose nothing.
+
+## 3. Waves (overview; the queues in `docs/PROGRESS.md` are the source of truth)
 
 | Wave | AG-1 | AG-2 | Depends on |
 |---|---|---|---|
@@ -63,9 +79,9 @@ and the orchestrator applies it when merging.
 
 ## 5. Orchestrator loop (Claude)
 
-When the user says "AG-x finished <step>":
-1. Fetch, check out the PR branch, `npm ci && npm run build && npm run lint && npm run typecheck && npm test`.
-2. Review the diff against `AGENTS.md`, `docs/DESIGN.md` and the step's workflow; open the preview at 390×844 (`/en` light/dark, `/ar` light).
-3. If changes are needed, give the user a paste-ready fix prompt for that agent.
-4. Otherwise merge into `main` (`--no-ff`), push, tick the step in `PROGRESS.md` with the agent's note, apply any shared-file requests.
-5. Assign the next step(s) and hand the user paste-ready prompts for each agent.
+Whenever the user says an agent opened a PR or is BLOCKED (or just "check"):
+1. `git fetch`; find every new `step/*` branch on origin. Merge in dependency order (stacked branches after their base).
+2. For each: build, lint, typecheck, test, and a quick look at the diff and preview against `AGENTS.md`, `DESIGN.md` and the workflow.
+3. Green and on-spec → merge into `main` (`--no-ff`), push, mark ✅ in `PROGRESS.md` with the agent's note, apply shared-file requests.
+4. Not OK → fix trivial issues myself during the merge; otherwise give the user a short paste-ready fix prompt for that agent.
+5. If an agent was BLOCKED and is now unblocked, tell the user to send it: "continue your queue".

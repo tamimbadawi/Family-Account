@@ -4,6 +4,9 @@ description: Screenshot every changed screen on iPhone sizes in Arabic and Engli
 
 # /design-review
 
+**Quick mode (default for every step):** only 390×844, `/en` light and `/ar` light, and skip step 6's before/after comparison.
+**Full mode (A8 only, or when asked):** everything below.
+
 1. Make sure the dev server is running (`npm run dev`). For PWA-specific checks use `npm run build && npm start`.
 2. List the routes changed in this step (from `git diff --name-only` plus the step's goal).
 3. For each route, open it in the browser at **390×844** (iPhone 15/16) and **430×932** (Pro Max):

@@ -6,7 +6,7 @@ If a screen would confuse someone who has never used a finance app, it is wrong.
 
 **Read before every task:** this file → `docs/ORCHESTRATION.md` (how the agents share the work) →
 `docs/PROGRESS.md` (find the step assigned to you) → the section of `docs/PLAN.md` / `docs/DESIGN.md`
-that your workflow names. Do only the step assigned to you, on its branch, in your own folder.
+that your workflow names. Work through **your queue** on the board, one branch per step, in your own folder.
 
 ---
 
@@ -88,14 +88,14 @@ src/lib/reports     pivot() and report helpers — pure, unit-tested
 ## 7. Definition of done (every step)
 
 1. `npm run build`, `npm run lint`, `npm run typecheck`, `npm test` all pass.
-2. Run the **/design-review** workflow on every screen you touched (390×844 and 430×932, `/en` and `/ar`, light and dark). Fix what it finds.
+2. Run the **quick /design-review** on every screen you touched (390×844, `/en` light and `/ar` light). Fix what it finds. The full matrix runs once in A8.
 3. Commit on your step branch with a clear message (`feat(entry): amount pad and category picker`), push the branch, and open a pull request into `main` using the PR template.
 4. Put the one-line notes (what changed, anything deferred, the **Vercel preview URL**) in the PR description. **Do not edit `docs/PROGRESS.md`.** Where a workflow says "tick PROGRESS.md" or "commit and push", this rule replaces it.
-5. Report back: what you built, screenshots, the preview URL, the PR link, and any open question. Keep it short. Then stop: the orchestrator reviews and merges.
+5. Report back in one or two lines (step, PR link, open questions), then **continue with the next step in your queue** (`docs/ORCHESTRATION.md` §2). Stop only when your queue is done or every remaining step is BLOCKED.
 
 ## 8. Never
 
-- Never start the next roadmap step on your own, and never work on a step assigned to another agent.
+- Never work on a step that isn't in your queue, and never on a step assigned to another agent.
 - Never commit to `main`, merge pull requests, or rebase/force-push someone else's branch. Only the orchestrator merges.
 - Never edit a shared file you don't own (see `docs/ORCHESTRATION.md` §4). Write the change you need in your PR description instead.
 - Never install a UI kit other than shadcn/ui, or a state library (React context + Dexie live queries are enough).
