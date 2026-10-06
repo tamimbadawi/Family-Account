@@ -13,6 +13,15 @@ Three agents share this repo. **The two Antigravity agents build. Claude Code co
 Two agents in one folder overwrite each other's files. Each agent opens **only its own folder** as its workspace.
 All three folders are worktrees of the same repository, so branches and commits are shared instantly without pushing.
 
+Each folder has its own `node_modules` (run `npm install` once in your folder) and its own dev-server port,
+so both agents can run the app at the same time:
+
+| Agent | Dev server |
+|---|---|
+| AG-1 | `npm run dev -- -p 3001` → http://localhost:3001 |
+| AG-2 | `npm run dev -- -p 3002` → http://localhost:3002 |
+| Claude | `npm run dev` → http://localhost:3000 |
+
 ## 2. One step = one branch = one pull request
 
 1. The orchestrator assigns a step in `docs/PROGRESS.md` (owner + branch name) and gives you a prompt.
