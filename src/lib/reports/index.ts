@@ -6,3 +6,4 @@ export * from './pivot';
 export * from './presets';
 export * from './export';
 export * from './months';
+export * from './planning';
