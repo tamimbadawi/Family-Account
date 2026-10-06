@@ -36,7 +36,7 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 | 6 | A5 | `/a5-reports-overview` — Reports overview, donut, drill-down, trends | **A2b** | `step/a5-reports` | ✅ |
 | 7 | A5b | `/a5b-breakdown-ui` — Breakdown tab: pivot table, chips, presets, share | A5, A5b-logic | `step/a5b-breakdown-ui` | ✅ |
 | 8 | A5c | `/a5c-report-library` part A5c: Reports hub (Overview · All reports · Breakdown) + 6 Money-flow reports | A5b | `step/a5c-report-hub` | ✅ |
-| 9 | Reports flows | ui:flows tests for the Reports hub, library and sheets | A5c ✅ | `test/reports-flows` | ⏳ |
+| 9 | Reports flows | ui:flows tests for the Reports hub, library and sheets | A5c ✅ | `test/reports-flows` | ✅ |
 | 10 | A2c | `/a2c-wallets` — Cash at home + 3 banks in sample data, Our money sheet, Update balance | A5b | `step/a2c-wallets` |  |
 | 11 | A5d | `/a5c-report-library` part A5d: 5 Banks & cash reports | A5c, A2c | `step/a5d-wallet-reports` |  |
 
@@ -101,3 +101,4 @@ _(write what you observed here: every hesitation, question, or complaint)_
 | 2026-10-06 | Speed-up | User: Claude builds too; agents on Gemini 3.8 Flash Medium. Claude owns: + New form fix, A3d calculator, A5e planning reports. A5e logic merged (6 functions, 12 tests). AG-1 ships fix PR 1 then A8a |
 | 2026-10-06 | fix PR 1 | AG-1: screens fit (ui:check 66/66 ok on preview). ui:flows found: no wallet preselected so Save stays disabled (income/expense cannot be saved), new-group overlay stays on top. Sent back to AG-1 |
 | 2026-10-06 | Untangle | A5c merged (AG-2). Three chats were editing the entry sheet: the wallet-preselect fix now goes only into A3d (Claude builder), and AG-1's fix/save-flows is dropped. A5e screens move to AG-1; Home money row moves to AG-2 (it needs A2c); A3c moves to the Claude builder (entry owner) |
+| 2026-10-06 | Reports flows | AG-2: ui:flows reports_tabs/library/sheets (en+ar, 3 sizes) + fixes: library links keep the locale, ?tab= read via useSearchParams. Merged with orchestrator lint fix (setState in effect -> derive during render). Gate on local main: reports flows 18/18, ui:check 42/42, build ok. Remaining ui:flows failures are the known entry-sheet ones (A3d). Follow-up: reports_sheets skips silently when a button is missing; biggest-expenses step looks for the wrong label |

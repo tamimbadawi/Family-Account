@@ -231,34 +231,229 @@ const FLOWS = {
     await sleep(1500);
     await assertUsable(page, page.getByText('Food · Test Bank').first(), 'the entry saved on the new bank');
   },
+
+  async reports_tabs(page, { locale }) {
+    await page.goto(`${BASE}/${locale}/reports`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    // 1. Switch to "All reports" tab
+    const allTab = page.getByRole('button', { name: locale === 'ar' ? 'كل التقارير' : 'All reports' });
+    await assertUsable(page, allTab, 'All reports tab');
+    await allTab.click();
+    await sleep(500);
+    await assertUsable(page, page.locator('a[href*="/reports/r/"]').first(), 'first report card in library');
+
+    // 2. Switch to "Breakdown" tab
+    const breakdownTab = page.getByRole('button', { name: locale === 'ar' ? 'تفصيل' : 'Breakdown' });
+    await assertUsable(page, breakdownTab, 'Breakdown tab');
+    await breakdownTab.click();
+    await sleep(500);
+    await assertUsable(page, page.locator('table').first(), 'Breakdown pivot table');
+
+    // Test a preset button in Breakdown
+    const presetBtn = page.getByRole('button', { name: locale === 'ar' ? /شهر.*بشهر/ : 'Month by month' });
+    await assertUsable(page, presetBtn, 'Month by month preset');
+    await presetBtn.click();
+    await sleep(400);
+
+    // Test Customize filter toggle
+    const customBtn = page.getByRole('button', { name: locale === 'ar' ? 'تخصيص' : 'Customize' });
+    await assertUsable(page, customBtn, 'Customize button');
+    await customBtn.click();
+    await sleep(400);
+    await customBtn.click();
+    await sleep(300);
+
+    // 3. Switch back to "Overview" tab
+    const overviewTab = page.getByRole('button', { name: locale === 'ar' ? 'نظرة عامة' : 'Overview' });
+    await assertUsable(page, overviewTab, 'Overview tab');
+    await overviewTab.click();
+    await sleep(500);
+  },
+
+  async reports_library(page, { locale }) {
+    await page.goto(`${BASE}/${locale}/reports?tab=all`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    const reports = [
+      'this-vs-last-month',
+      'year-summary',
+      'biggest-expenses',
+      'spending-calendar',
+      'income-sources',
+      'category-deep-dive',
+    ];
+
+    for (const rId of reports) {
+      // Find card link
+      const link = page.locator(`a[href*="/reports/r/${rId}"]`).first();
+      await assertUsable(page, link, `link to ${rId}`);
+      await link.click();
+      await page.waitForURL(`**\/reports/r/${rId}*`, { timeout: 10000 });
+      await sleep(400);
+
+      // Test month/period switcher where applicable
+      if (['this-vs-last-month', 'spending-calendar', 'category-deep-dive'].includes(rId)) {
+        const prevBtn = page.locator('button[aria-label="Previous month"], button[aria-label="الشهر السابق"]').first();
+        if (await prevBtn.isVisible()) {
+          await prevBtn.click();
+          await sleep(300);
+          const nextBtn = page.locator('button[aria-label="Next month"], button[aria-label="الشهر القادم"]').first();
+          if (await nextBtn.isVisible()) {
+            await nextBtn.click();
+            await sleep(300);
+          }
+        }
+      }
+
+      if (['biggest-expenses', 'income-sources'].includes(rId)) {
+        const p6m = page.getByRole('button', { name: locale === 'ar' ? 'آخر 6 أشهر' : 'Last 6 months' });
+        if (await p6m.isVisible()) {
+          await p6m.click();
+          await sleep(300);
+          const p1m = page.getByRole('button', { name: locale === 'ar' ? 'هذا الشهر' : 'This month' });
+          if (await p1m.isVisible()) {
+            await p1m.click();
+            await sleep(300);
+          }
+        }
+      }
+
+      // Navigate back using the back button
+      const back = page.locator('a[href*="/reports?tab=all"]').first();
+      await assertUsable(page, back, `back button on ${rId}`);
+      await back.click();
+      await page.waitForURL(`**\/reports*`, { timeout: 10000 });
+      await sleep(400);
+    }
+  },
+
+  async reports_sheets(page, { locale }) {
+    // 1. Overview "See all categories" sheet
+    await page.goto(`${BASE}/${locale}/reports`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    const seeAllOverview = page.getByRole('button', { name: locale === 'ar' ? /عرض كل الأقسام/ : /See all categories/ }).first();
+    if (await seeAllOverview.isVisible()) {
+      await seeAllOverview.click();
+      await sleep(500);
+      const drawer = page.locator('[data-slot="drawer-content"]');
+      await drawer.waitFor({ state: 'visible', timeout: 5000 });
+      await page.keyboard.press('Escape');
+      await sleep(500);
+    }
+
+    // 2. Breakdown cell sheet
+    await page.goto(`${BASE}/${locale}/reports?tab=breakdown`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    const cell = page.locator('td.tabular-nums').first();
+    if (await cell.isVisible()) {
+      await cell.click();
+      await sleep(500);
+      const drawer = page.locator('[data-slot="drawer-content"]');
+      await drawer.waitFor({ state: 'visible', timeout: 5000 });
+      await page.keyboard.press('Escape');
+      await sleep(500);
+    }
+
+    // 3. This vs last month "See all categories" sheet
+    await page.goto(`${BASE}/${locale}/reports/r/this-vs-last-month`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    const seeAllTvL = page.getByRole('button', { name: locale === 'ar' ? /عرض كل الأقسام/ : /See all categories/ }).first();
+    if (await seeAllTvL.isVisible()) {
+      await seeAllTvL.click();
+      await sleep(500);
+      const drawer = page.locator('[data-slot="drawer-content"]');
+      await drawer.waitFor({ state: 'visible', timeout: 5000 });
+      await page.keyboard.press('Escape');
+      await sleep(500);
+    }
+
+    // 4. Biggest expenses "See all entries" sheet
+    await page.goto(`${BASE}/${locale}/reports/r/biggest-expenses`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    const seeAllBig = page.getByRole('button', { name: locale === 'ar' ? /عرض كل الأقسام/ : /See all categories/ }).first();
+    if (await seeAllBig.isVisible()) {
+      await seeAllBig.click();
+      await sleep(500);
+      const drawer = page.locator('[data-slot="drawer-content"]');
+      await drawer.waitFor({ state: 'visible', timeout: 5000 });
+      await page.keyboard.press('Escape');
+      await sleep(500);
+    }
+
+    // 5. Spending calendar day sheet
+    await page.goto(`${BASE}/${locale}/reports/r/spending-calendar`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    const dayBtn = page.locator('button.cursor-pointer').filter({ hasText: /\d+/ }).first();
+    if (await dayBtn.isVisible()) {
+      await dayBtn.click();
+      await sleep(500);
+      const drawer = page.locator('[data-slot="drawer-content"]');
+      await drawer.waitFor({ state: 'visible', timeout: 5000 });
+      await page.keyboard.press('Escape');
+      await sleep(500);
+    }
+
+    // 6. Category deep dive subcategory detail sheet
+    await page.goto(`${BASE}/${locale}/reports/r/category-deep-dive`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    const subRow = page.locator('div[class*="cursor-pointer"]').filter({ hasText: / ج\.م| EGP/ }).first();
+    if (await subRow.isVisible()) {
+      await subRow.click();
+      await sleep(500);
+      const drawer = page.locator('[data-slot="drawer-content"]');
+      await drawer.waitFor({ state: 'visible', timeout: 5000 });
+      await page.keyboard.press('Escape');
+      await sleep(500);
+    }
+  },
 };
+
+const REPORT_FLOW_NAMES = ['reports_tabs', 'reports_library', 'reports_sheets'];
+const LOCALES = ['en', 'ar'];
 
 const selected = process.argv.slice(2).filter((a) => FLOWS[a]);
 const names = selected.length ? selected : Object.keys(FLOWS);
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
-const jobs = names.flatMap((name) => (name === 'newgroup' ? [...VIEWPORTS, KEYBOARD] : VIEWPORTS).map((vp) => ({ name, vp })));
+
+const jobs = names.flatMap((name) => {
+  if (REPORT_FLOW_NAMES.includes(name)) {
+    return LOCALES.flatMap((locale) =>
+      VIEWPORTS.map((vp) => ({ name, locale, vp }))
+    );
+  }
+  return (name === 'newgroup' ? [...VIEWPORTS, KEYBOARD] : VIEWPORTS).map((vp) => ({
+    name,
+    locale: 'en',
+    vp,
+  }));
+});
+
 let failures = 0;
 const started = Date.now();
 const queue = [...jobs];
 await Promise.all(Array.from({ length: 4 }, async () => {
   while (queue.length) {
-    const { name, vp: [w, h] } = queue.shift();
+    const { name, locale, vp: [w, h] } = queue.shift();
     const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
     const page = await ctx.newPage();
     const jsErrors = [];
     page.on('pageerror', (e) => jsErrors.push(e.message.slice(0, 100)));
     let error = null;
     try {
-      await page.goto(BASE + '/en', { waitUntil: 'networkidle', timeout: 45000 });
-      await sleep(1200);
-      await FLOWS[name](page);
+      if (!REPORT_FLOW_NAMES.includes(name)) {
+        await page.goto(BASE + '/en', { waitUntil: 'networkidle', timeout: 45000 });
+        await sleep(1200);
+      }
+      await FLOWS[name](page, { locale, vp: [w, h] });
       if (jsErrors.length) throw new Error('JS errors: ' + jsErrors.join(' | '));
     } catch (e) {
       error = e.message.split('\n')[0].slice(0, 220);
-      await page.screenshot({ path: path.join(OUT, `${name}__${w}x${h}.png`) }).catch(() => {});
+      await page.screenshot({ path: path.join(OUT, `${name}__${locale}__${w}x${h}.png`) }).catch(() => {});
     }
     if (error) failures++;
-    console.log(`${error ? 'FAIL' : 'ok  '} ${name} ${w}x${h}${error ? ' -> ' + error : ''}`);
+    const label = REPORT_FLOW_NAMES.includes(name) ? `${name} ${locale}` : name;
+    console.log(`${error ? 'FAIL' : 'ok  '} ${label} ${w}x${h}${error ? ' -> ' + error : ''}`);
     await ctx.close();
   }
 }));

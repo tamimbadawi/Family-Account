@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { ChevronLeft } from 'lucide-react';
 import { getReportById, REPORTS_REGISTRY } from '@/lib/reports/registry';
 import { ReportIcon } from '@/components/reports/ReportIcon';
