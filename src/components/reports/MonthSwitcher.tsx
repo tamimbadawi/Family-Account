@@ -31,7 +31,7 @@ export function MonthSwitcher({ month, onMonthChange, className = '' }: MonthSwi
         type="button"
         onClick={handlePrev}
         aria-label={t('previousMonth')}
-        className="flex size-9 items-center justify-center rounded-full text-ink-muted hover:bg-surface-2 hover:text-ink active:scale-95 transition-all"
+        className="flex size-11 items-center justify-center rounded-full text-ink-muted hover:bg-surface-2 hover:text-ink active:scale-95 transition-all"
       >
         <ChevronLeft className="size-5 rtl:rotate-180" />
       </button>
@@ -44,7 +44,7 @@ export function MonthSwitcher({ month, onMonthChange, className = '' }: MonthSwi
         type="button"
         onClick={handleNext}
         aria-label={t('nextMonth')}
-        className="flex size-9 items-center justify-center rounded-full text-ink-muted hover:bg-surface-2 hover:text-ink active:scale-95 transition-all"
+        className="flex size-11 items-center justify-center rounded-full text-ink-muted hover:bg-surface-2 hover:text-ink active:scale-95 transition-all"
       >
         <ChevronRight className="size-5 rtl:rotate-180" />
       </button>

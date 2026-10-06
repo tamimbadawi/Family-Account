@@ -31,24 +31,9 @@ export function WalletBalancesCard({ className = '' }: WalletBalancesCardProps) 
   const t = useTranslations('reports');
   const wallets = useWalletBalances();
 
-  const getTypeName = (type: WalletType) => {
-    switch (type) {
-      case 'cash':
-        return t('cash');
-      case 'bank':
-        return t('bank');
-      case 'card':
-        return t('card');
-      case 'wallet':
-        return t('digitalWallet');
-      default:
-        return type;
-    }
-  };
-
   return (
-    <Card className={`rounded-card bg-surface p-4 shadow-card select-none ${className}`}>
-      <h2 className="text-caption font-bold text-ink mb-2">
+    <Card className={`rounded-card bg-surface p-3.5 shadow-card select-none gap-0 ${className}`}>
+      <h2 className="text-heading font-semibold text-ink mb-2">
         {t('walletBalances')}
       </h2>
 
@@ -58,7 +43,7 @@ export function WalletBalancesCard({ className = '' }: WalletBalancesCardProps) 
           <div className="h-10 rounded-xl bg-surface-2 animate-pulse" />
         </div>
       ) : wallets.length === 0 ? (
-        <p className="text-caption text-ink-muted text-center py-3">
+        <p className="text-body text-ink-muted text-center py-3">
           {t('noData')}
         </p>
       ) : (
@@ -73,9 +58,9 @@ export function WalletBalancesCard({ className = '' }: WalletBalancesCardProps) 
             return (
               <div
                 key={wallet.id}
-                className="flex items-center justify-between py-2"
+                className="flex items-center justify-between gap-3 py-2"
               >
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <div
                     style={{
                       backgroundColor: `${color}18`,
@@ -85,25 +70,18 @@ export function WalletBalancesCard({ className = '' }: WalletBalancesCardProps) 
                   >
                     <Icon className="size-4" />
                   </div>
-                  <div>
-                    <p className="text-caption font-semibold text-ink leading-tight">
-                      {name}
-                    </p>
-                    <p className="text-xs text-ink-muted leading-tight mt-0.5">
-                      {getTypeName(wallet.type)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="text-end">
-                  <span
-                    className={`text-body font-bold tabular-nums ${
-                      wallet.balance >= 0 ? 'text-ink' : 'text-expense'
-                    }`}
-                  >
-                    {money(wallet.balance, locale)}
+                  <span className="text-body font-semibold text-ink truncate">
+                    {name}
                   </span>
                 </div>
+
+                <span
+                  className={`text-body font-bold tabular-nums shrink-0 ps-2 ${
+                    wallet.balance >= 0 ? 'text-ink' : 'text-expense'
+                  }`}
+                >
+                  {money(wallet.balance, locale)}
+                </span>
               </div>
             );
           })}

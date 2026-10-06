@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { money } from '@/lib/format';
 import { useCountUp } from './useCountUp';
@@ -23,13 +22,14 @@ export function HeroTotalsCard({ spent, income, net, className = '' }: HeroTotal
   const animatedNet = useCountUp(net);
 
   return (
-    <Card className={`rounded-card bg-surface p-3 shadow-card select-none ${className}`}>
+    <Card className={`rounded-card bg-surface px-3.5 py-2.5 shadow-card select-none gap-0 ${className}`}>
+      {/* Hero: Net */}
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-caption font-medium text-ink-muted">
           {t('net')}
         </span>
         <div
-          className={`text-title font-bold tabular-nums tracking-tight leading-none ${
+          className={`text-display font-bold tabular-nums tracking-tight leading-none ${
             net >= 0 ? 'text-ink' : 'text-expense'
           }`}
         >
@@ -37,25 +37,24 @@ export function HeroTotalsCard({ spent, income, net, className = '' }: HeroTotal
         </div>
       </div>
 
-      <div className="mt-2 flex items-center justify-between pt-1.5 border-t border-line text-xs font-medium">
+      {/* Subline: Spent & Income in text-body amounts */}
+      <div className="mt-1.5 grid grid-cols-2 gap-2 pt-1.5 border-t border-line">
         {/* Spent */}
-        <div className="flex items-center gap-1.5 text-expense">
-          <span className="flex size-4 items-center justify-center rounded-full bg-expense-soft">
-            <ArrowDownLeft className="size-2.5 rtl:rotate-90" />
+        <div>
+          <span className="text-caption text-ink-muted block leading-tight">
+            {t('spent')}
           </span>
-          <span className="text-ink-muted">{t('spent')}:</span>
-          <span className="font-bold tabular-nums">
+          <span className="text-body font-bold tabular-nums text-expense leading-snug">
             {money(animatedSpent, locale)}
           </span>
         </div>
 
         {/* Income */}
-        <div className="flex items-center gap-1.5 text-income">
-          <span className="flex size-4 items-center justify-center rounded-full bg-income-soft">
-            <ArrowUpRight className="size-2.5 rtl:rotate-90" />
+        <div className="text-end">
+          <span className="text-caption text-ink-muted block leading-tight">
+            {t('income')}
           </span>
-          <span className="text-ink-muted">{t('income')}:</span>
-          <span className="font-bold tabular-nums">
+          <span className="text-body font-bold tabular-nums text-income leading-snug">
             {money(animatedIncome, locale)}
           </span>
         </div>

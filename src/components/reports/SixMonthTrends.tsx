@@ -60,15 +60,15 @@ export function SixMonthTrends({
   }
 
   return (
-    <Card className={`rounded-card bg-surface p-4 shadow-card select-none ${className}`}>
+    <Card className={`rounded-card bg-surface p-3.5 shadow-card select-none gap-0 ${className}`}>
       {/* Header and Legend */}
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
-        <h2 className="text-caption font-bold text-ink">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <h2 className="text-heading font-semibold text-ink">
           {t('lastSixMonths')}
         </h2>
 
         {/* Legend */}
-        <div className="flex items-center gap-3 text-caption font-medium">
+        <div className="flex items-center gap-3 text-body font-medium">
           <div className="flex items-center gap-1.5">
             <span className="size-2.5 rounded-full bg-expense" />
             <span className="text-ink-muted">{t('spent')}</span>
@@ -81,7 +81,7 @@ export function SixMonthTrends({
       </div>
 
       {/* Chart */}
-      <div className="h-44 w-full">
+      <div className="h-36 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={chartData}

@@ -24,17 +24,41 @@ export interface CategoryDonutProps {
   className?: string;
 }
 
+function formatCenterTotal(total: number, locale: string) {
+  const isAr = locale.startsWith('ar');
+  if (total >= 1_000_000) {
+    const num = (total / 1_000_000).toFixed(1).replace(/\.0$/, '');
+    return {
+      value: num,
+      unit: isAr ? 'مليون ج.م' : 'M EGP',
+    };
+  }
+  if (total >= 1_000) {
+    const num = (total / 1_000).toFixed(1).replace(/\.0$/, '');
+    return {
+      value: num,
+      unit: isAr ? 'ألف ج.م' : 'k EGP',
+    };
+  }
+  return {
+    value: Math.round(total).toString(),
+    unit: isAr ? 'ج.م' : 'EGP',
+  };
+}
+
 export function CategoryDonut({
   data,
   total,
   onSelect,
   selectedId,
-  height = 115,
+  height = 84,
   className = '',
 }: CategoryDonutProps) {
   const locale = useLocale();
   const t = useTranslations('reports');
   const isClient = useIsClient();
+
+  const center = React.useMemo(() => formatCenterTotal(total, locale), [total, locale]);
 
   const chartData = React.useMemo(() => {
     return data.map((item, index) => ({
@@ -52,7 +76,7 @@ export function CategoryDonut({
         style={{ height }}
         className={`relative flex w-full items-center justify-center ${className}`}
       >
-        <div className="size-24 rounded-full border-4 border-surface-2 animate-pulse" />
+        <div className="size-20 rounded-full border-4 border-surface-2 animate-pulse" />
       </div>
     );
   }
@@ -63,8 +87,8 @@ export function CategoryDonut({
         style={{ height }}
         className={`flex flex-col items-center justify-center rounded-card bg-surface/50 p-2 text-center text-ink-muted ${className}`}
       >
-        <div className="size-20 rounded-full border-2 border-dashed border-line flex items-center justify-center">
-          <span className="text-xs text-ink-muted">{t('noExpenses')}</span>
+        <div className="size-16 rounded-full border-2 border-dashed border-line flex items-center justify-center">
+          <span className="text-caption text-ink-muted">{t('noExpenses')}</span>
         </div>
       </div>
     );
@@ -82,11 +106,11 @@ export function CategoryDonut({
               if (active && payload && payload.length) {
                 const item = payload[0].payload;
                 return (
-                  <div className="rounded-xl bg-surface px-2.5 py-1 shadow-card border border-line text-ink">
-                    <p className="text-caption font-semibold">{item.name}</p>
-                    <p className="text-caption font-bold tabular-nums text-expense">
+                  <div className="rounded-xl bg-surface px-3 py-1.5 shadow-card border border-line text-ink">
+                    <p className="text-body font-semibold">{item.name}</p>
+                    <p className="text-body font-bold tabular-nums text-expense">
                       {money(item.value, locale)}
-                      <span className="ms-1.5 text-xs font-normal text-ink-muted">
+                      <span className="ms-1.5 text-caption font-normal text-ink-muted">
                         ({item.percentage}%)
                       </span>
                     </p>
@@ -101,7 +125,7 @@ export function CategoryDonut({
             cx="50%"
             cy="50%"
             innerRadius="64%"
-            outerRadius="86%"
+            outerRadius="88%"
             paddingAngle={2}
             dataKey="value"
             onClick={
@@ -130,10 +154,13 @@ export function CategoryDonut({
         </PieChart>
       </ResponsiveContainer>
 
-      {/* Center Total: Single clean line without overlap */}
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-center">
-        <span className="text-caption font-bold tabular-nums text-ink leading-none">
-          {money(total, locale, { compact: true })}
+      {/* Center Total: Stacked number and unit to prevent clipping */}
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-1">
+        <span className="text-body font-bold tabular-nums text-ink leading-tight">
+          {center.value}
+        </span>
+        <span className="text-[11px] font-medium text-ink-muted leading-none">
+          {center.unit}
         </span>
       </div>
     </div>

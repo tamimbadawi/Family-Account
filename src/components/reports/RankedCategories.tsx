@@ -66,9 +66,10 @@ export function RankedCategories({
     }
   }, [rootTotals, onDataLoaded]);
 
-  const top4 = React.useMemo(() => {
+  // Show top 3 categories per DESIGN.md and user instruction
+  const top3 = React.useMemo(() => {
     if (!rootTotals) return [];
-    return rootTotals.slice(0, 4);
+    return rootTotals.slice(0, 3);
   }, [rootTotals]);
 
   const handleOpenSheetForCategory = (item: CategoryTotal) => {
@@ -111,20 +112,20 @@ export function RankedCategories({
 
   return (
     <div className={`select-none ${className}`}>
-      {/* Top 4 Categories Card */}
+      {/* Top 3 Categories Card */}
       {!rootTotals ? (
         <div className="space-y-2 rounded-card bg-surface p-3.5 shadow-card animate-pulse">
-          <div className="h-6 rounded bg-surface-2" />
-          <div className="h-6 rounded bg-surface-2" />
-          <div className="h-6 rounded bg-surface-2" />
+          <div className="h-7 rounded bg-surface-2" />
+          <div className="h-7 rounded bg-surface-2" />
+          <div className="h-7 rounded bg-surface-2" />
         </div>
-      ) : top4.length === 0 ? (
+      ) : top3.length === 0 ? (
         <div className="rounded-card bg-surface p-4 text-center text-ink-muted shadow-card">
-          <p className="text-caption">{t('noExpenses')}</p>
+          <p className="text-body">{t('noExpenses')}</p>
         </div>
       ) : (
-        <div className="rounded-card bg-surface px-3 py-1 shadow-card divide-y divide-line">
-          {top4.map((item, index) => {
+        <div className="rounded-card bg-surface px-3.5 py-0.5 shadow-card divide-y divide-line">
+          {top3.map((item, index) => {
             const name = pickName({ name_ar: item.nameAr, name_en: item.nameEn }, locale) || item.id;
             const color = item.color || DONUT_PALETTE[index % DONUT_PALETTE.length];
 
@@ -140,7 +141,7 @@ export function RankedCategories({
                     handleOpenSheetForCategory(item);
                   }
                 }}
-                className="flex items-center justify-between gap-2 py-1.5 cursor-pointer hover:bg-surface-2/40 -mx-1.5 px-1.5 rounded-lg transition-colors active:scale-[0.99]"
+                className="flex items-center justify-between gap-2.5 py-1.5 cursor-pointer hover:bg-surface-2/40 -mx-1.5 px-1.5 rounded-xl transition-colors active:scale-[0.99]"
               >
                 {/* Category Icon */}
                 <div
@@ -148,18 +149,18 @@ export function RankedCategories({
                     backgroundColor: `${color}18`,
                     color: color,
                   }}
-                  className="flex size-7 shrink-0 items-center justify-center rounded-full"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-full"
                 >
-                  <CategoryIcon name={item.icon} className="size-3.5" />
+                  <CategoryIcon name={item.icon} className="size-4" />
                 </div>
 
-                {/* Category Name - No ellipsis on default names */}
-                <span className="text-caption font-semibold text-ink whitespace-nowrap shrink-0">
+                {/* Category Name - text-body (17px), no ellipsis on default names */}
+                <span className="text-body font-semibold text-ink whitespace-nowrap shrink-0">
                   {name}
                 </span>
 
                 {/* Flexible Progress Bar */}
-                <div className="flex flex-1 items-center gap-1.5 min-w-8">
+                <div className="flex flex-1 items-center gap-2 min-w-8">
                   <div className="h-1.5 flex-1 rounded-full bg-surface-2 overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-300"
@@ -169,43 +170,43 @@ export function RankedCategories({
                       }}
                     />
                   </div>
-                  <span className="text-xs text-ink-muted tabular-nums shrink-0">
+                  <span className="text-caption text-ink-muted tabular-nums shrink-0">
                     {item.percentage}%
                   </span>
                 </div>
 
-                {/* Amount */}
-                <span className="text-caption font-bold tabular-nums text-expense shrink-0">
+                {/* Amount - text-body (17px) tabular-nums */}
+                <span className="text-body font-bold tabular-nums text-expense shrink-0">
                   {money(item.total, locale)}
                 </span>
               </div>
             );
           })}
 
-          {/* See All Row */}
+          {/* Full-width "See all categories" row */}
           <button
             type="button"
             onClick={handleOpenAllSheet}
-            className="flex w-full items-center justify-center gap-1 py-1.5 text-xs font-semibold text-accent hover:underline active:scale-95 transition-all"
+            className="flex w-full items-center justify-center gap-1.5 py-1.5 text-body font-semibold text-accent hover:underline active:scale-95 transition-all"
           >
             <span>{t('seeAllCategories')}</span>
-            {rootTotals.length > 4 && (
-              <span className="text-xs text-accent/80 tabular-nums">
+            {rootTotals.length > 3 && (
+              <span className="text-caption text-accent/80 tabular-nums">
                 ({rootTotals.length})
               </span>
             )}
-            <ChevronRight className="size-3.5 rtl:rotate-180" />
+            <ChevronRight className="size-4 rtl:rotate-180" />
           </button>
         </div>
       )}
 
       {/* Full Categories Drill-Down Sheet */}
       <Drawer open={sheetOpen} onOpenChange={setSheetOpen}>
-        <DrawerContent className="max-h-[88dvh] flex flex-col bg-surface text-ink">
-          <DrawerHeader className="pb-2 border-b border-line shrink-0">
+        <DrawerContent className="max-h-[90dvh] flex flex-col bg-surface text-ink">
+          <DrawerHeader className="pb-2.5 border-b border-line shrink-0">
             <div className="flex items-center justify-between">
               {/* Breadcrumb Trail */}
-              <div className="flex flex-wrap items-center gap-1.5 text-caption font-semibold">
+              <div className="flex flex-wrap items-center gap-1.5 text-body font-semibold">
                 {drill.level === 'category' ? (
                   <DrawerTitle className="text-heading font-bold text-ink">
                     {t('allCategories')}
@@ -220,7 +221,7 @@ export function RankedCategories({
                       <span>{t('allCategories')}</span>
                     </button>
 
-                    <ChevronRight className="size-3.5 text-ink-muted rtl:rotate-180" />
+                    <ChevronRight className="size-4 text-ink-muted rtl:rotate-180" />
 
                     {drill.level === 'subcategory' ? (
                       <span className="text-ink font-bold">
@@ -243,7 +244,7 @@ export function RankedCategories({
                         >
                           {drill.categoryName}
                         </button>
-                        <ChevronRight className="size-3.5 text-ink-muted rtl:rotate-180" />
+                        <ChevronRight className="size-4 text-ink-muted rtl:rotate-180" />
                         <span className="text-ink font-bold">
                           {drill.subcategoryName}
                         </span>
@@ -261,18 +262,18 @@ export function RankedCategories({
             </div>
           </DrawerHeader>
 
-          {/* Sheet List Content */}
-          <div className="flex-1 overflow-y-auto px-5 py-2 divide-y divide-line">
+          {/* Sheet List Content: 56px rows, hidden scrollbars, 2-line wrap */}
+          <div className="flex-1 overflow-y-auto px-5 py-2 divide-y divide-line [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             {!sheetTotals ? (
               <div className="space-y-3 py-4 animate-pulse">
-                <div className="h-10 rounded-xl bg-surface-2" />
-                <div className="h-10 rounded-xl bg-surface-2" />
-                <div className="h-10 rounded-xl bg-surface-2" />
+                <div className="h-14 rounded-xl bg-surface-2" />
+                <div className="h-14 rounded-xl bg-surface-2" />
+                <div className="h-14 rounded-xl bg-surface-2" />
               </div>
             ) : sheetTotals.length === 0 ? (
               <div className="py-12 text-center text-ink-muted">
                 <Layers className="size-8 mx-auto text-ink-faint mb-2" />
-                <p className="text-caption">{t('noData')}</p>
+                <p className="text-body">{t('noData')}</p>
               </div>
             ) : (
               sheetTotals.map((item, index) => {
@@ -302,7 +303,7 @@ export function RankedCategories({
                           }
                         : undefined
                     }
-                    className={`flex items-center justify-between gap-3 py-3 transition-colors ${
+                    className={`flex min-h-[56px] items-center justify-between gap-3 py-3 transition-colors ${
                       isClickable
                         ? 'cursor-pointer hover:bg-surface-2/40 -mx-2 px-2 rounded-xl active:scale-[0.99]'
                         : ''
@@ -314,12 +315,13 @@ export function RankedCategories({
                           backgroundColor: `${color}18`,
                           color: color,
                         }}
-                        className="flex size-9 shrink-0 items-center justify-center rounded-full"
+                        className="flex size-10 shrink-0 items-center justify-center rounded-full"
                       >
-                        <CategoryIcon name={iconName} className="size-4" />
+                        <CategoryIcon name={iconName} className="size-5" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <span className="text-body font-semibold text-ink truncate block">
+                        {/* Name wraps to 2 lines without ellipsis */}
+                        <span className="text-body font-semibold text-ink leading-snug line-clamp-2 block">
                           {name}
                         </span>
                         <div className="mt-1 flex items-center gap-2">

@@ -69,7 +69,7 @@ export default function ReportsPage() {
 
   return (
     <div className="flex h-full flex-col justify-between select-none">
-      <div className="space-y-2.5">
+      <div className="space-y-1.5">
         {/* 1. Tabs Segmented Control: Overview / Breakdown */}
         <div className="flex rounded-full bg-surface-2 p-1 text-caption font-semibold">
           <button
@@ -112,7 +112,7 @@ export default function ReportsPage() {
         ) : (
           /* Overview Content: 2-Page Carousel */
           <div
-            className="relative overflow-hidden w-full pt-0.5"
+            className="relative overflow-hidden -mx-1 px-1 -my-0.5 py-0.5"
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
@@ -124,8 +124,8 @@ export default function ReportsPage() {
                   : `translateX(-${pageIndex * 50}%)`,
               }}
             >
-              {/* PAGE 1: MonthSwitcher, HeroCard, Donut, Top 4 Categories + See All */}
-              <div className="w-1/2 shrink-0 pe-1.5 space-y-1.5">
+              {/* PAGE 1: MonthSwitcher, HeroCard, Donut, Top 3 Categories + See All */}
+              <div className="w-1/2 shrink-0 pe-2 ps-1 space-y-1">
                 {/* Month Switcher */}
                 <MonthSwitcher
                   month={selectedMonth}
@@ -147,15 +147,15 @@ export default function ReportsPage() {
                 )}
 
                 {/* Category Donut */}
-                <Card className="rounded-card bg-surface p-1.5 shadow-card">
+                <Card className="rounded-card bg-surface p-1 shadow-card gap-0">
                   <CategoryDonut
                     data={donutData}
                     total={donutTotal || summary?.expense || 0}
-                    height={115}
+                    height={72}
                   />
                 </Card>
 
-                {/* Top 4 Categories + See All Sheet */}
+                {/* Top 3 Categories + See All Sheet */}
                 <RankedCategories
                   month={selectedMonth}
                   kind="expense"
@@ -164,12 +164,12 @@ export default function ReportsPage() {
               </div>
 
               {/* PAGE 2: 6-Month Trends and Wallet Balances */}
-              <div className="w-1/2 shrink-0 ps-1.5 space-y-2">
+              <div className="w-1/2 shrink-0 ps-2 pe-1 space-y-2">
                 <div className="flex items-center justify-between px-1">
-                  <span className="text-caption font-bold text-ink">
+                  <span className="text-heading font-semibold text-ink">
                     {t('trendsAndWallets')}
                   </span>
-                  <span className="text-xs text-ink-muted tabular-nums">
+                  <span className="text-caption text-ink-muted tabular-nums">
                     2 / 2
                   </span>
                 </div>
@@ -188,27 +188,35 @@ export default function ReportsPage() {
 
       {/* Page Indicator Dots (Only in Overview mode) */}
       {activeTab === 'overview' && (
-        <div className="flex items-center justify-center gap-2 py-1">
+        <div className="flex items-center justify-center gap-1 py-0">
           <button
             type="button"
             onClick={() => setPageIndex(0)}
             aria-label="Page 1: Overview"
-            className={`h-2 rounded-full transition-all duration-300 ${
-              pageIndex === 0
-                ? 'w-6 bg-accent'
-                : 'w-2 bg-line hover:bg-ink-faint'
-            }`}
-          />
+            className="flex h-11 w-11 items-center justify-center"
+          >
+            <span
+              className={`h-2 rounded-full transition-all duration-300 ${
+                pageIndex === 0
+                  ? 'w-6 bg-accent'
+                  : 'w-2 bg-line hover:bg-ink-faint'
+              }`}
+            />
+          </button>
           <button
             type="button"
             onClick={() => setPageIndex(1)}
             aria-label="Page 2: Trends and Wallets"
-            className={`h-2 rounded-full transition-all duration-300 ${
-              pageIndex === 1
-                ? 'w-6 bg-accent'
-                : 'w-2 bg-line hover:bg-ink-faint'
-            }`}
-          />
+            className="flex h-11 w-11 items-center justify-center"
+          >
+            <span
+              className={`h-2 rounded-full transition-all duration-300 ${
+                pageIndex === 1
+                  ? 'w-6 bg-accent'
+                  : 'w-2 bg-line hover:bg-ink-faint'
+              }`}
+            />
+          </button>
         </div>
       )}
     </div>
