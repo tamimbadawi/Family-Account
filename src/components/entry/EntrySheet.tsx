@@ -369,6 +369,39 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
   );
 }
 
+/**
+ * The drawer library pins a pixel height on the sheet while the iPhone keyboard is open (so the
+ * field stays above the keyboard), but it does not always undo it when the keyboard closes —
+ * e.g. after saving a new category the input disappears, and the sheet stayed short and low on
+ * the screen. Once the keyboard is gone, hand the height back to the layout.
+ */
+function useRestoreSheetAfterKeyboard(sheetRef: React.RefObject<HTMLDivElement | null>, isOpen: boolean) {
+  React.useEffect(() => {
+    const viewport = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!isOpen || !viewport) return;
+
+    let frame = 0;
+    const onResize = () => {
+      cancelAnimationFrame(frame);
+      // Run after the library's own resize handler has written its styles
+      frame = requestAnimationFrame(() => {
+        const sheet = sheetRef.current;
+        const keyboardClosed = window.innerHeight - viewport.height < 60;
+        if (sheet && keyboardClosed) {
+          sheet.style.removeProperty('height');
+          sheet.style.removeProperty('bottom');
+        }
+      });
+    };
+
+    viewport.addEventListener('resize', onResize);
+    return () => {
+      cancelAnimationFrame(frame);
+      viewport.removeEventListener('resize', onResize);
+    };
+  }, [sheetRef, isOpen]);
+}
+
 function keepOpenForToasts(e: { target: EventTarget | null; preventDefault: () => void }) {
   if (e.target instanceof Element && e.target.closest('[data-sonner-toaster]')) e.preventDefault();
 }
@@ -376,10 +409,13 @@ function keepOpenForToasts(e: { target: EventTarget | null; preventDefault: () =
 export function EntrySheet() {
   const t = useTranslations('entry');
   const { isOpen, mode, editingEntry, initialType, close } = useEntrySheet();
+  const sheetRef = React.useRef<HTMLDivElement>(null);
+  useRestoreSheetAfterKeyboard(sheetRef, isOpen);
 
   return (
     <Drawer open={isOpen} onOpenChange={(open) => !open && close()} repositionInputs>
       <DrawerContent
+        ref={sheetRef}
         className="max-h-[96dvh]"
         // Tapping Undo on a toast must not close the sheet
         onPointerDownOutside={keepOpenForToasts}
