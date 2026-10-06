@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useLocale } from 'next-intl';
-import { ArrowLeftRight } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
+import { ArrowLeftRight, Paperclip } from 'lucide-react';
 import type { EnrichedEntry } from '@/lib/data/types';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { money, pickName } from '@/lib/format';
@@ -14,6 +14,7 @@ export interface EntryRowProps {
 
 export function EntryRow({ entry, onClick }: EntryRowProps) {
   const locale = useLocale();
+  const t = useTranslations('entry');
 
   const isTransfer = entry.type === 'transfer';
   const isIncome = entry.type === 'income';
@@ -89,8 +90,11 @@ export function EntryRow({ entry, onClick }: EntryRowProps) {
           )}
         </div>
         <div className="min-w-0">
-          <div className="truncate text-body font-medium text-ink leading-snug">
-            {title}
+          <div className="flex items-center gap-1 text-body font-medium text-ink leading-snug">
+            <span className="truncate">{title}</span>
+            {entry.photoPath && (
+              <Paperclip aria-label={t('hasPhoto')} className="size-4 shrink-0 text-ink-muted" />
+            )}
           </div>
           <div className="truncate text-caption text-ink-muted leading-tight">
             {subtitle}

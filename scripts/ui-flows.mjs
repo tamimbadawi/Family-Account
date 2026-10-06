@@ -46,6 +46,15 @@ async function openSheet(page) {
   await tap(page, 'Add entry');
   await page.getByText('New entry').first().waitFor({ timeout: 8000 });
 }
+/** One popup: the typed amount is shown and Save is on screen, no Next step, no scrolling. */
+async function assertOnePopup(page, amountText) {
+  const amount = page.locator("[data-amount]").first();
+  await assertUsable(page, amount, "amount display");
+  const shown = (await amount.innerText()).trim();
+  if (shown !== amountText) throw new Error(`amount shows "${shown}" (should be "${amountText}")`);
+  if (await btn(page, "Next").count()) throw new Error("a Next step is back; everything should be in one popup");
+  await assertUsable(page, page.getByRole("button", { name: /^(Save|Saved)$/ }).last(), "Save button without scrolling");
+}
 async function saveButton(page) {
   return page.getByRole('button', { name: /^(Save|Saved)$/ }).last();
 }
@@ -56,7 +65,7 @@ const FLOWS = {
     await openSheet(page);
     await tap(page, 'Money in');
     await typeAmount(page, ['5', '0', '0', '0']);
-    await tap(page, 'Next');
+    await assertOnePopup(page, '5,000');
     await tap(page, 'Income');
     await tap(page, 'Regular');
     await tap(page, 'Pension');
@@ -74,7 +83,7 @@ const FLOWS = {
     const before = await homeNumbers(page);
     await openSheet(page);
     await typeAmount(page, ['2', '5', '0']);
-    await tap(page, 'Next');
+    await assertOnePopup(page, '250');
     await tap(page, 'Food');
     await tap(page, 'Groceries');
     await tap(page, 'Supermarket');
@@ -89,21 +98,29 @@ const FLOWS = {
     await openSheet(page);
     await tap(page, 'Money in');
     await typeAmount(page, ['1', '0', '0']);
-    await tap(page, 'Next');
+    await assertOnePopup(page, '100');
     await assertUsable(page, btn(page, 'Income'), 'income category after choosing Money in');
     if (await btn(page, 'Food').isVisible().catch(() => false)) throw new Error('expense category "Food" shown for Money in');
-    await tap(page, 'Edit amount').catch(async () => { await page.getByText('100').first().click(); });
     await tap(page, 'Money out');
-    await tap(page, 'Next');
+    await assertOnePopup(page, '100'); // switching type keeps the amount
     await assertUsable(page, btn(page, 'Food'), 'expense category after switching back to Money out');
     if (await btn(page, 'Income').isVisible().catch(() => false)) throw new Error('income category still shown after switching to Money out');
   },
   async newgroup(page) {
+    // The keyboard only opens when the name field does: type the amount at full height first
+    const keyboard = page.viewportSize();
+    if (keyboard.height < 600) await page.setViewportSize({ width: keyboard.width, height: 844 });
     await openSheet(page);
     await typeAmount(page, ['5', '0']);
-    await tap(page, 'Next');
+    await assertOnePopup(page, '50');
     await tap(page, 'Food');
+    // "+ New Group" is the last chip of a sideways-swiping row
+    await btn(page, '+ New Group').scrollIntoViewIfNeeded();
     await tap(page, '+ New Group');
+    if (keyboard.height < 600) {
+      await page.setViewportSize(keyboard);
+      await sleep(400);
+    }
     const input = page.getByRole('textbox').first();
     await assertUsable(page, input, 'new group name field');
     await input.fill('Bakery test');
@@ -115,6 +132,104 @@ const FLOWS = {
     await save.click();
     await sleep(800);
     await assertUsable(page, page.getByText('Bakery test').first(), 'the new group after saving');
+  },
+  async photo(page) {
+    await page.goto(BASE + '/en/history', { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    // A big camera-sized JPEG, made in the page
+    const jpeg = Buffer.from(await page.evaluate(() => {
+      const c = document.createElement('canvas');
+      c.width = 4032; c.height = 3024;
+      const g = c.getContext('2d');
+      for (let i = 0; i < 400; i++) { g.fillStyle = `hsl(${i * 37 % 360} 70% 50%)`; g.fillRect((i * 97) % 4032, (i * 61) % 3024, 300, 200); }
+      return c.toDataURL('image/jpeg', 0.95).split(',')[1];
+    }), 'base64');
+    await openSheet(page);
+    await typeAmount(page, ['1', '2', '0']);
+    await tap(page, 'Food');
+    await tap(page, 'Groceries');
+    await tap(page, 'Supermarket');
+    await page.getByLabel('Add a receipt photo').setInputFiles({ name: 'receipt.jpg', mimeType: 'image/jpeg', buffer: jpeg });
+    const thumb = btn(page, 'View receipt photo');
+    await assertUsable(page, thumb, 'photo thumbnail');
+    await assertOnePopup(page, '120'); // the photo chip still fits with Save on screen
+    const width = await thumb.locator('img').evaluate((img) => img.naturalWidth);
+    if (width > 1600) throw new Error(`photo was not shrunk (${width}px wide)`);
+    // Viewer: Remove → Undo brings it back
+    await tap(page, 'View receipt photo');
+    await assertUsable(page, btn(page, 'Remove'), 'Remove in the photo viewer');
+    await assertUsable(page, page.getByText('Replace', { exact: true }), 'Replace in the photo viewer');
+    await tap(page, 'Remove');
+    await assertUsable(page, page.getByLabel('Add a receipt photo').locator('..'), 'camera chip after Remove');
+    await page.getByRole('button', { name: 'Undo' }).first().click();
+    await sleep(400);
+    await assertUsable(page, btn(page, 'View receipt photo'), 'photo thumbnail after Undo');
+    const save = await saveButton(page);
+    await assertUsable(page, save, 'Save button');
+    await save.click();
+    await sleep(1500);
+    // History marks the entry, and editing it shows the photo again
+    const clip = page.getByLabel('Has a photo').first();
+    await assertUsable(page, clip, 'photo mark on the history row');
+    await clip.click();
+    await page.getByText('Edit').first().waitFor({ timeout: 8000 });
+    await sleep(700); // let the sheet finish sliding up
+    await assertUsable(page, btn(page, 'View receipt photo'), 'photo thumbnail when editing');
+  },
+  async date(page) {
+    await openSheet(page);
+    // The app's own calendar (the hidden native date input did not open inside the sheet)
+    await tap(page, 'Pick a day');
+    const dialog = page.getByRole('dialog', { name: 'Pick a day' });
+    await assertUsable(page, dialog.getByRole('button', { name: 'Yesterday', exact: true }), 'Yesterday in the calendar');
+    await dialog.getByRole('button', { name: 'Yesterday', exact: true }).click();
+    await sleep(400);
+    const chip = btn(page, 'Pick a day');
+    if ((await chip.innerText()).trim() !== 'Yesterday') throw new Error(`date chip shows "${await chip.innerText()}" (should be "Yesterday")`);
+    // Pick the 1st of this month from the grid (never a future day)
+    await tap(page, 'Pick a day');
+    const first = dialog.getByRole('button', { name: '1', exact: true });
+    await assertUsable(page, first, 'day 1 in the calendar');
+    await first.click();
+    await sleep(400);
+    const shown = (await chip.innerText()).trim();
+    const today = new Date();
+    const expected = today.getDate() === 1 ? 'Today' : today.getDate() === 2 ? 'Yesterday' : null;
+    if (expected ? shown !== expected : !/^[A-Z][a-z]{2} 1$/.test(shown)) throw new Error(`date chip shows "${shown}" after picking the 1st`);
+    await dialog.waitFor({ state: 'hidden', timeout: 4000 }).catch(() => { throw new Error('calendar stayed open after picking a day'); });
+    await sleep(300);
+    await assertOnePopup(page, '0');
+  },
+  async bank(page) {
+    await openSheet(page);
+    await typeAmount(page, ['7', '5']);
+    await tap(page, 'Food');
+    await tap(page, 'Groceries');
+    await tap(page, 'Supermarket');
+    // Wallet → Bank → "Which bank?" → add a new bank by name; the chip then names it
+    await tap(page, 'Wallet');
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('button', { name: /^Bank/ }).click();
+    await page.getByText('Which bank?').waitFor({ timeout: 8000 });
+    const name = dialog.getByRole('textbox', { name: 'Bank name' });
+    await assertUsable(page, name, 'bank name field');
+    await name.click();
+    await name.fill('Test Bank');
+    await dialog.getByRole('button', { name: 'Add', exact: true }).click();
+    await sleep(600);
+    const chip = btn(page, 'Wallet');
+    if (!(await chip.innerText()).includes('Test Bank')) throw new Error(`wallet chip shows "${await chip.innerText()}" (should name the new bank)`);
+    // The bank is now listed under Bank, and the entry saves on it
+    await tap(page, 'Wallet');
+    await dialog.getByRole('button', { name: /^Bank/ }).click();
+    await assertUsable(page, dialog.getByRole('button', { name: 'Test Bank', exact: true }), 'the new bank in the bank list');
+    await dialog.getByRole('button', { name: 'Test Bank', exact: true }).click();
+    await sleep(400);
+    const save = await saveButton(page);
+    await assertUsable(page, save, 'Save button');
+    await save.click();
+    await sleep(1500);
+    await assertUsable(page, page.getByText('Food · Test Bank').first(), 'the entry saved on the new bank');
   },
 
   async reports_tabs(page, { locale }) {

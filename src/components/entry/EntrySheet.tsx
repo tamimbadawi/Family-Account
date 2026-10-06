@@ -1,9 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { motion, AnimatePresence } from 'motion/react';
-import { Check, Trash2 } from 'lucide-react';
+import { ArrowRight, Check, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import type {
@@ -13,8 +13,7 @@ import type {
 } from '@/lib/data/types';
 import { useRepository, useWallets } from '@/lib/data/provider';
 import { validateEntry } from '@/lib/validation/entry';
-import { money, pickName } from '@/lib/format';
-import { CategoryIcon } from '@/components/ui/category-icon';
+import { previewValue } from '@/lib/format/expression';
 
 import {
   Drawer,
@@ -27,10 +26,9 @@ import { Button } from '@/components/ui/button';
 import { TypeToggle } from './TypeToggle';
 import { AmountDisplay } from './AmountDisplay';
 import { AmountPad } from './AmountPad';
-import { CategoryPicker } from './CategoryPicker';
-import { WalletPicker } from './WalletPicker';
-import { DateChips } from './DateChips';
-import { NoteField } from './NoteField';
+import { CategoryRow } from './CategoryRow';
+import { DateChip, NoteChip, WalletSelect } from './DetailsRow';
+import { ReceiptPhoto } from './ReceiptPhoto';
 import { useEntrySheet } from './EntrySheetContext';
 
 function getLocalDateString(d: Date): string {
@@ -50,7 +48,6 @@ interface EntrySheetFormProps {
 function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheetFormProps) {
   const t = useTranslations('entry');
   const tCommon = useTranslations('common');
-  const locale = useLocale();
   const repo = useRepository();
   const wallets = useWallets();
 
@@ -91,8 +88,43 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
   const [note, setNote] = React.useState(defaultNote);
   const [selectedItem, setSelectedItem] = React.useState<Item | null>(defaultItem);
 
-  // Phase state: 1 = amount pad, 2 = category/details
-  const [phase, setPhase] = React.useState<1 | 2>(mode === 'edit' ? 2 : 1);
+  // Wallets may still be loading at mount: once they arrive, preselect them for a new entry.
+  // Only fills empty slots, so the user's choice and an edited entry's wallets are never replaced.
+  if (!editingEntry && wallets && wallets.length > 0) {
+    const fromId = selectedWalletId ?? wallets[0].id;
+    if (selectedWalletId === null) setSelectedWalletId(fromId);
+    if (selectedToWalletId === null) {
+      const other = wallets.find((w) => w.id !== fromId);
+      if (other) setSelectedToWalletId(other.id);
+    }
+  }
+
+  // Receipt photo: a new entry starts without one; an edited entry loads its stored photo
+  const [photo, setPhoto] = React.useState<Blob | null>(null);
+  const [originalPhoto, setOriginalPhoto] = React.useState<Blob | null>(null);
+  const photoTouched = React.useRef(false);
+  const editingId = editingEntry?.id;
+  const editingPhotoPath = editingEntry?.photoPath;
+
+  React.useEffect(() => {
+    if (!editingId || !editingPhotoPath) return;
+    let cancelled = false;
+    repo.getEntryPhoto(editingId).then((blob) => {
+      if (cancelled) return;
+      setOriginalPhoto(blob);
+      if (!photoTouched.current) setPhoto(blob);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [repo, editingId, editingPhotoPath]);
+
+  const handlePhotoChange = (next: Blob | null) => {
+    photoTouched.current = true;
+    setPhoto(next);
+  };
+
+  const [isNoteOpen, setIsNoteOpen] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -109,7 +141,10 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
   };
 
   // Validation
-  const numericAmount = parseFloat(amountStr) || 0;
+  // The pad may hold an expression ("120+85"); only its result is saved
+  const amountResult = previewValue(amountStr);
+  const numericAmount = amountResult ?? 0;
+  const isInvalidAmount = amountStr !== '' && amountResult === null;
   const isTransfer = type === 'transfer';
   const hasItem = Boolean(selectedItem);
   const hasWallets = isTransfer
@@ -142,6 +177,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
 
       if (mode === 'add') {
         const created = await repo.addEntry(payload);
+        if (photo) await repo.setEntryPhoto(created.id, photo);
 
         setIsSuccess(true);
         setTimeout(() => {
@@ -159,7 +195,13 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
         }, 300);
       } else if (mode === 'edit' && editingEntry) {
         const originalEntry = { ...editingEntry };
+        const photoChanged = photo !== originalPhoto;
+        const restorePhoto = originalPhoto;
         await repo.updateEntry(editingEntry.id, payload);
+        if (photoChanged) {
+          if (photo) await repo.setEntryPhoto(editingEntry.id, photo);
+          else await repo.removeEntryPhoto(editingEntry.id);
+        }
 
         setIsSuccess(true);
         setTimeout(() => {
@@ -177,6 +219,10 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
                   itemId: originalEntry.itemId,
                   note: originalEntry.note,
                 });
+                if (photoChanged) {
+                  if (restorePhoto) await repo.setEntryPhoto(originalEntry.id, restorePhoto);
+                  else await repo.removeEntryPhoto(originalEntry.id);
+                }
                 toast.info(t('updated'));
               },
             },
@@ -215,198 +261,103 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
     }
   };
 
-  const selectedItemLabel = selectedItem
-    ? pickName({ name_ar: selectedItem.nameAr, name_en: selectedItem.nameEn }, locale)
-    : null;
-
   return (
-    <div className="space-y-4 px-5 pb-8 select-none">
-      {/* PHASE 1: TypeToggle + AmountDisplay + AmountPad + Next */}
-      {phase === 1 && (
-        <div className="space-y-4">
-          {/* 1. TypeToggle */}
-          <TypeToggle value={type} onChange={handleTypeChange} />
+    <div className="flex flex-col gap-3 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] select-none">
+      {/* One sheet that fits an iPhone screen: type, amount, category, pad, details, save */}
+      <TypeToggle value={type} onChange={handleTypeChange} />
 
-          {/* 2. AmountDisplay */}
-          <AmountDisplay value={amountStr} type={type} />
+      <AmountDisplay value={amountStr} type={type} />
 
-          {/* 3. AmountPad (fills space) */}
-          <div className="pt-2">
-            <AmountPad value={amountStr} onChange={setAmountStr} />
-          </div>
-
-          {/* 4. Next Button */}
-          <div className="pt-2 space-y-2">
-            <Button
-              type="button"
-              onClick={() => setPhase(2)}
-              disabled={numericAmount <= 0}
-              className="w-full h-14 rounded-2xl text-heading font-semibold text-accent-ink shadow-xs cursor-pointer"
-            >
-              <span>{t('next')}</span>
-            </Button>
-
-            {mode === 'edit' && (
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="flex h-12 w-full items-center justify-center gap-1.5 rounded-2xl text-body font-semibold text-danger transition-colors hover:bg-danger/10 active:scale-98 cursor-pointer"
-              >
-                <Trash2 className="size-5" />
-                <span>{tCommon('delete')}</span>
-              </button>
-            )}
-          </div>
+      {isTransfer ? (
+        <div className="flex items-center gap-2">
+          <WalletSelect
+            label={t('from')}
+            value={selectedWalletId}
+            onChange={setSelectedWalletId}
+            exclude={selectedToWalletId}
+          />
+          <ArrowRight className="size-5 shrink-0 text-ink-muted rtl:rotate-180" />
+          <WalletSelect
+            label={t('to')}
+            value={selectedToWalletId}
+            onChange={setSelectedToWalletId}
+            exclude={selectedWalletId}
+          />
         </div>
+      ) : (
+        <CategoryRow
+          kind={type === 'income' ? 'income' : 'expense'}
+          selected={selectedItem}
+          onPick={handlePickCategoryItem}
+          onClear={() => setSelectedItem(null)}
+        />
       )}
 
-      {/* PHASE 2: Amount Pill + Category/Wallets + Review Strip + Save */}
-      {phase === 2 && (
-        <div className="space-y-4">
-          {/* 1. Small Amount Pill (tapping returns to Pad) */}
-          <div className="flex justify-center pb-1">
-            <button
-              type="button"
-              onClick={() => setPhase(1)}
-              className="inline-flex items-center gap-2 rounded-full bg-surface-2 px-4 py-2 shadow-xs transition-transform active:scale-95 hover:bg-surface-2/80 cursor-pointer"
-            >
-              <span
-                className={`text-heading font-bold tabular-nums ${
-                  type === 'income'
-                    ? 'text-income'
-                    : type === 'expense'
-                    ? 'text-expense'
-                    : 'text-ink'
-                }`}
-              >
-                {money(numericAmount, locale)}
-              </span>
-              <span className="text-caption text-ink-muted">·</span>
-              <span className="text-caption font-semibold text-accent">
-                {t('editAmount')}
-              </span>
-            </button>
-          </div>
+      <AmountPad value={amountStr} onChange={setAmountStr} />
 
-          {/* 2. Step Area: CategoryPicker or Wallets */}
-          {isTransfer ? (
-            <div className="space-y-3 rounded-card bg-surface p-4 shadow-card">
-              <div className="space-y-1.5">
-                <span className="text-caption font-semibold text-ink-muted">{t('from')}</span>
-                <WalletPicker
-                  value={selectedWalletId}
-                  onChange={setSelectedWalletId}
-                  exclude={selectedToWalletId}
-                />
-              </div>
-              <div className="space-y-1.5 pt-2 border-t border-line">
-                <span className="text-caption font-semibold text-ink-muted">{t('to')}</span>
-                <WalletPicker
-                  value={selectedToWalletId}
-                  onChange={setSelectedToWalletId}
-                  exclude={selectedWalletId}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {selectedItemLabel ? (
-                <div className="flex items-center justify-between rounded-card bg-surface p-4 shadow-card">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
-                      <CategoryIcon className="size-5" />
-                    </div>
-                    <span className="truncate text-body font-semibold text-ink">
-                      {selectedItemLabel}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedItem(null)}
-                    className="shrink-0 text-caption font-semibold text-accent hover:underline ps-2 cursor-pointer"
-                  >
-                    {t('change')}
-                  </button>
-                </div>
-              ) : (
-                <div className="rounded-card bg-surface p-4 shadow-card">
-                  <CategoryPicker
-                    kind={type === 'income' ? 'income' : 'expense'}
-                    onPick={handlePickCategoryItem}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* 3. Review strip */}
-          <div className="space-y-3 pt-1">
-            {/* Wallet for expense/income */}
+      {/* Wallet · date · note on one line */}
+      <div className="flex items-center gap-2">
+        {isNoteOpen ? (
+          <NoteChip value={note} onChange={setNote} isOpen onOpenChange={setIsNoteOpen} />
+        ) : (
+          <>
             {!isTransfer && (
-              <div className="space-y-1.5">
-                <span className="text-caption font-semibold text-ink-muted">{t('wallet')}</span>
-                <WalletPicker
-                  value={selectedWalletId}
-                  onChange={setSelectedWalletId}
-                />
-              </div>
+              <WalletSelect label={t('wallet')} value={selectedWalletId} onChange={setSelectedWalletId} />
             )}
+            <DateChip value={occurredOn} onChange={setOccurredOn} />
+            <NoteChip value={note} onChange={setNote} isOpen={false} onOpenChange={setIsNoteOpen} />
+          </>
+        )}
+      </div>
 
-            {/* Date Chips */}
-            <div className="space-y-1.5">
-              <DateChips value={occurredOn} onChange={setOccurredOn} />
-            </div>
-
-            {/* Note Field */}
-            <NoteField value={note} onChange={setNote} />
-          </div>
-
-          {/* 4. Save Button */}
-          <div className="pt-2 space-y-2">
-            <Button
-              onClick={handleSave}
-              disabled={!canSave}
-              className="relative w-full h-14 rounded-2xl text-heading font-semibold text-accent-ink overflow-hidden cursor-pointer"
-            >
-              <AnimatePresence mode="wait">
-                {isSuccess ? (
-                  <motion.div
-                    key="check"
-                    initial={{ scale: 0, rotate: -45 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                    className="flex items-center justify-center"
-                  >
-                    <Check className="size-7 stroke-[3]" />
-                  </motion.div>
-                ) : (
-                  <motion.span
-                    key="label"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    {tCommon('save')}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </Button>
-
-            {/* Edit mode: Delete button */}
-            {mode === 'edit' && (
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="flex h-12 w-full items-center justify-center gap-1.5 rounded-2xl text-body font-semibold text-danger transition-colors hover:bg-danger/10 active:scale-98 cursor-pointer"
+      <div className="flex gap-2">
+        {/* Edit mode: Delete next to Save so the sheet still fits */}
+        {mode === 'edit' && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            aria-label={tCommon('delete')}
+            className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-danger/10 text-danger transition-transform active:scale-95 cursor-pointer"
+          >
+            <Trash2 className="size-6" />
+          </button>
+        )}
+        {/* Receipt photo sits beside Save so the wallet/date/note labels keep their room */}
+        <ReceiptPhoto photo={photo} onChange={handlePhotoChange} />
+        <Button
+          onClick={handleSave}
+          disabled={!canSave}
+          className="relative h-14 flex-1 rounded-2xl text-heading font-semibold text-accent-ink overflow-hidden cursor-pointer"
+        >
+          <AnimatePresence mode="wait">
+            {isSuccess ? (
+              <motion.div
+                key="check"
+                initial={{ scale: 0, rotate: -45 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                className="flex items-center justify-center"
               >
-                <Trash2 className="size-5" />
-                <span>{tCommon('delete')}</span>
-              </button>
+                <Check className="size-7 stroke-[3]" />
+              </motion.div>
+            ) : (
+              <motion.span
+                key="label"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                {isInvalidAmount ? t('invalidAmount') : tCommon('save')}
+              </motion.span>
             )}
-          </div>
-        </div>
-      )}
+          </AnimatePresence>
+        </Button>
+      </div>
     </div>
   );
+}
+
+function keepOpenForToasts(e: { target: EventTarget | null; preventDefault: () => void }) {
+  if (e.target instanceof Element && e.target.closest('[data-sonner-toaster]')) e.preventDefault();
 }
 
 export function EntrySheet() {
@@ -415,22 +366,31 @@ export function EntrySheet() {
 
   return (
     <Drawer open={isOpen} onOpenChange={(open) => !open && close()} repositionInputs>
-      <DrawerContent className="max-h-[92dvh] overflow-y-auto">
-        <DrawerHeader className="pb-2">
-          <DrawerTitle className="text-title font-bold text-ink">
-            {mode === 'edit' ? t('editTitle') : t('addTitle')}
-          </DrawerTitle>
-        </DrawerHeader>
+      <DrawerContent
+        className="max-h-[96dvh]"
+        // Tapping Undo on a toast must not close the sheet
+        onPointerDownOutside={keepOpenForToasts}
+        onInteractOutside={keepOpenForToasts}
+      >
+        {/* Only this inner box may scroll: vaul hangs a 200%-tall strip under the sheet, which made the sheet itself
+            scrollable, so tapping a lower chip slid the type toggle and amount out of view */}
+        <div className="min-h-0 overflow-y-auto">
+          <DrawerHeader className="px-4 pt-1 pb-2">
+            <DrawerTitle className="text-title font-bold text-ink">
+              {mode === 'edit' ? t('editTitle') : t('addTitle')}
+            </DrawerTitle>
+          </DrawerHeader>
 
-        {isOpen && (
-          <EntrySheetForm
-            key={editingEntry?.id ?? (initialType ?? 'new')}
-            mode={mode}
-            editingEntry={editingEntry}
-            initialType={initialType}
-            onClose={close}
-          />
-        )}
+          {isOpen && (
+            <EntrySheetForm
+              key={editingEntry?.id ?? (initialType ?? 'new')}
+              mode={mode}
+              editingEntry={editingEntry}
+              initialType={initialType}
+              onClose={close}
+            />
+          )}
+        </div>
       </DrawerContent>
     </Drawer>
   );
