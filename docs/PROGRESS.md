@@ -13,7 +13,7 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 
 | # | Step | Workflow | Needs merged first | Branch | Status |
 |---|---|---|---|---|---|
-| 1 | A0 | `/a0-scaffold` — Next.js 16 + next-intl scaffold | — | `step/a0-scaffold` | ⏳ |
+| 1 | A0 | `/a0-scaffold` — Next.js 16 + next-intl scaffold | — | `step/a0-scaffold` | ✅ |
 | 2 | A1 | `/a1-design-system` — fonts, tokens, restyled shadcn/ui, format helpers, styleguide | A0 | `step/a1-design-system` |  |
 | 3 | A2b | `/a2b-shell-home` — tab bar shell, sync dot, Home | A1, **A2a** | `step/a2b-shell-home` |  |
 | 4 | A3b | `/a3b-entry-sheet` — assemble the Add/Edit entry sheet ⭐ | A2b, **A3a** | `step/a3b-entry-sheet` |  |
@@ -76,3 +76,4 @@ _(write what you observed here: every hesitation, question, or complaint)_
 | 2026-10-05 | Setup | Repo created with plan, rules, workflows, schema (smoke-tested locally: 13/13 PASS) |
 | 2026-10-06 | Setup | English default, Western digits, messages split per namespace, kind guards in schema, orchestration (2 Antigravity builders + Claude orchestrator) |
 | 2026-10-06 | A7-icon | Final icon `design/icon.png` (1024, house + wallet, made in Gemini, chosen by the user). Login logo = same icon with rounded corners. |
+| 2026-10-06 | A0 | AG-1: Next.js 16.3 + next-intl 4 (en default, ar RTL), proxy.ts, per-namespace messages, vitest (PR #2) |
