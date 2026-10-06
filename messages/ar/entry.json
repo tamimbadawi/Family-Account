@@ -16,5 +16,14 @@
   "saved": "اتسجل",
   "updated": "اتعدّل",
   "deleted": "اتحذف",
-  "sameWallet": "اختار محفظتين مختلفتين"
+  "sameWallet": "اختار محفظتين مختلفتين",
+  "newCategory": "+ قسم جديد",
+  "newSubcategory": "+ فرع جديد",
+  "newItem": "+ بند جديد",
+  "nameArLabel": "الاسم بالعربي",
+  "nameEnLabel": "الاسم بالإنجليزي",
+  "today": "النهارده",
+  "yesterday": "امبارح",
+  "pickDay": "اختار يوم",
+  "allCategories": "الأقسام"
 }

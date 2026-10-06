@@ -63,5 +63,13 @@
   "toastMessage": "اتسجل ✓",
   "toastAction": "تراجع",
   "undoSuccess": "تم التراجع بنجاح",
-  "switchLabel": "عرض التفاصيل الدقيقة"
+  "switchLabel": "عرض التفاصيل الدقيقة",
+  "entryPartsTitle": "مكونات تسجيل المصروف",
+  "entryPartsSubtitle": "المكونات المستقلة المجهزة لشاشة التسجيل السفلية",
+  "typeToggleSection": "١. نوع المعاملة",
+  "amountSection": "٢. عرض وإدخال المبلغ",
+  "categoryPickerSection": "٣. اختيار القسم (٣ مستويات + الأحدث + إضافة جديد)",
+  "walletPickerSection": "٤. اختيار المحفظة",
+  "dateAndNoteSection": "٥. التاريخ والملاحظة",
+  "pickedItem": "البند المختار:"
 }
