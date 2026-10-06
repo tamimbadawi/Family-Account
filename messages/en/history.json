@@ -4,5 +4,9 @@
   "expenses": "Money out",
   "incomes": "Money in",
   "dayTotal": "Day total",
-  "emptyMonth": "Nothing logged this month"
+  "emptyMonth": "Nothing logged this month",
+  "emptyMonthHint": "Tap the plus button below to log an entry.",
+  "addEntry": "Add entry",
+  "prevMonth": "Previous month",
+  "nextMonth": "Next month"
 }
