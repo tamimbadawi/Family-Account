@@ -2,5 +2,9 @@
   "title": "Put the app on your phone",
   "step1": "Tap the Share button at the bottom",
   "step2": "Choose “Add to Home Screen”",
-  "step3": "Tap “Add” — that's it!"
+  "step3": "Tap “Add” — that's it!",
+  "bannerText": "Add the app to your Home Screen for faster access",
+  "bannerAction": "See how",
+  "backToApp": "Back",
+  "note": "The app opens just like a native iPhone app without needing to open Safari each time."
 }
