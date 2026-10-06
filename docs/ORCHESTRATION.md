@@ -6,7 +6,7 @@ Three agents share this repo. **The two Antigravity agents build. Claude Code co
 |---|---|---|---|
 | **AG-1** | Builder (Antigravity) | `P:\App Builds\family-accounts-ag1` | the step assigned to AG-1 in `docs/PROGRESS.md` |
 | **AG-2** | Builder (Antigravity) | `P:\App Builds\family-accounts-ag2` | the step assigned to AG-2 in `docs/PROGRESS.md` |
-| **Claude** | Orchestrator (Claude Code) | `P:\App Builds\Accounting App` (`main`) | assigning steps, reviewing, merging, `PROGRESS.md`, Supabase/Vercel setup |
+| **Claude** | Orchestrator (Claude Code) | `P:\App Builds\Accounting App` (`main`) | assigning steps, reviewing, merging, `PROGRESS.md`, **all Vercel and Supabase configuration** (projects, env vars, crons). Builders use Supabase only through the MCP calls their workflow names (B1+) |
 
 ## 1. Folders: one per agent, always
 
