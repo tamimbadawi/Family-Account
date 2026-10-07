@@ -95,3 +95,17 @@ export function budgetTotals(progress: BudgetProgress[]): { budget: number; spen
 export function budgetPercent(p: Pick<BudgetProgress, 'ratio'>): number {
   return Math.round(p.ratio * 100);
 }
+
+/** How many wordings each friendly budget message has (keys "1"…"3" in messages/<locale>/budgets.json). */
+export const BUDGET_MESSAGE_VARIANTS = 3;
+
+/**
+ * Picks one of the message variants. The same seed always gives the same variant
+ * (Home uses budget + day, so its wording stays put all day); no seed = a fresh pick each time.
+ */
+export function messageVariant(seed?: string, count = BUDGET_MESSAGE_VARIANTS): string {
+  if (seed === undefined) return String(1 + Math.floor(Math.random() * count));
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return String(1 + (h % count));
+}

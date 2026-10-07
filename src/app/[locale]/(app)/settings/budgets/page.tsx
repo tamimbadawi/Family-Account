@@ -148,6 +148,10 @@ export default function BudgetsPage() {
       <div className="flex-1 px-5 pt-3 pb-24 space-y-2.5 select-none">
         <p className="text-body text-ink-muted px-1">{t('intro')}</p>
 
+        {budgets?.some((b) => b.isStarter) && (
+          <p className="rounded-card bg-accent-soft px-3.5 py-2.5 text-body font-medium text-ink">{t('starterHint')}</p>
+        )}
+
         <button
           type="button"
           onClick={openAdd}

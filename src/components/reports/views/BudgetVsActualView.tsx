@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { PiggyBank } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { useBudgetProgress } from '@/lib/data/provider';
-import { budgetTotals } from '@/lib/reports/budgets';
+import { budgetTotals, budgetWarnings, messageVariant } from '@/lib/reports/budgets';
 import { localISODate, money } from '@/lib/format';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -70,6 +70,11 @@ export function BudgetVsActualView() {
         <div className={`mt-1 text-caption font-medium tabular-nums text-end ${left < 0 ? 'text-expense' : 'text-ink-muted'}`}>
           {left < 0 ? t('overBy', { amount: fmt(-left) }) : t('left', { amount: fmt(left) })}
         </div>
+        {budgetWarnings(progress).length === 0 && (
+          <p className="mt-2 pt-2 border-t border-line/40 text-body font-semibold text-income text-center">
+            {t(`allGood.${messageVariant(month)}`)}
+          </p>
+        )}
       </Card>
 
       {/* One row per budget, fullest first */}

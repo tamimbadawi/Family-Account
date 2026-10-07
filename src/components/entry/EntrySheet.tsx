@@ -18,7 +18,7 @@ import { validateEntry } from '@/lib/validation/entry';
 import { generalItemFor } from '@/lib/data/general-item';
 import { previewValue } from '@/lib/format/expression';
 import { money } from '@/lib/format';
-import { budgetPercent } from '@/lib/reports/budgets';
+import { budgetPercent, messageVariant } from '@/lib/reports/budgets';
 import { budgetWarningsForEntry } from '@/components/budgets/budget-warning';
 
 import {
@@ -193,8 +193,8 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
       const { progress, label } = worst;
       const message =
         progress.level === 'over'
-          ? tBudgets('warnOver', { name: label, amount: money(-progress.remaining, locale, { fractionDigits: 0 }) })
-          : tBudgets('warnNear', { name: label, percent: String(budgetPercent(progress)) });
+          ? tBudgets(`warnOver.${messageVariant()}`, { name: label, amount: money(-progress.remaining, locale, { fractionDigits: 0 }) })
+          : tBudgets(`warnNear.${messageVariant()}`, { name: label, percent: String(budgetPercent(progress)) });
       toast.warning(message, { duration: 6000 });
     } catch (err) {
       console.error(err);

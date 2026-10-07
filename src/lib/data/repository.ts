@@ -147,6 +147,8 @@ export interface CreateBudgetInput {
   /** null or omitted = a budget for the whole category */
   subcategoryId?: string | null;
   amount: number; // per month
+  /** Set only by the starter budgets a new family gets. */
+  isStarter?: boolean;
 }
 
 export interface UpdateBudgetInput {

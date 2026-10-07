@@ -197,9 +197,10 @@ export class MockRepository implements Repository {
     await this.seedSampleBudgets();
   }
 
-  // Sample budgets (once per phone, so existing practice entries are kept): the three biggest expense
-  // categories, each set a little above its usual month
-  // (average of the last 3 full months, rounded up to 500).
+  // Starter budgets (once per phone, so existing practice entries are kept): the three biggest expense
+  // categories, each around its usual month (average of the last 3 full months) times a random
+  // 0.8–1.3, rounded to 100. Every phone gets its own amounts, so some start close to the limit.
+  // They are ordinary budgets: the family can change or remove them in Settings → Budgets.
   private async seedSampleBudgets(): Promise<void> {
     if ((await this.db.meta.get('budgetsSeeded'))?.value === true) return;
     const now = new Date();
@@ -217,10 +218,10 @@ export class MockRepository implements Repository {
       if (e.itemId === ITEM_EXPENSE_BALANCE_CORRECTION_ID) continue;
       byCategory.set(e.categoryId, (byCategory.get(e.categoryId) ?? 0) + e.amount);
     }
-    const roundUp = (monthly: number) => Math.max(500, Math.ceil((monthly * 1.05) / 500) * 500);
+    const starter = (monthly: number) => Math.max(300, Math.round((monthly * (0.8 + Math.random() * 0.5)) / 100) * 100);
     const top = [...byCategory.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
     for (const [categoryId, total] of top) {
-      await this.addBudget({ categoryId, amount: roundUp(total / months.size) });
+      await this.addBudget({ categoryId, amount: starter(total / months.size), isStarter: true });
     }
     await this.db.meta.put({ key: 'budgetsSeeded', value: true });
   }
@@ -537,6 +538,7 @@ export class MockRepository implements Repository {
       category_id: input.categoryId,
       subcategory_id: subcategoryId,
       amount,
+      is_starter: input.isStarter ?? false,
       is_archived: false,
       created_at: now,
       updated_at: now,
@@ -554,7 +556,8 @@ export class MockRepository implements Repository {
     if (!(amount > 0)) {
       throw new Error('A budget must be more than 0');
     }
-    const updatedRow: BudgetRow = { ...row, amount, updated_at: new Date().toISOString() };
+    // Once the family changes a starter budget, it is theirs
+    const updatedRow: BudgetRow = { ...row, amount, is_starter: false, updated_at: new Date().toISOString() };
     await this.db.budgets.put(updatedRow);
     return toBudget(updatedRow);
   }

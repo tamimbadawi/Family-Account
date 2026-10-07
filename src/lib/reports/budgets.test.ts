@@ -7,6 +7,7 @@ import {
   budgetProgress,
   budgetTotals,
   budgetWarnings,
+  messageVariant,
   type BudgetEntryLike,
 } from './budgets';
 
@@ -16,6 +17,7 @@ const budget = (over: Partial<Budget>): Budget => ({
   categoryId: 'food',
   subcategoryId: null,
   amount: 1000,
+  isStarter: false,
   isArchived: false,
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
@@ -99,5 +101,15 @@ describe('budgetTotals', () => {
       '2026-10',
     );
     expect(budgetTotals(list)).toEqual({ budget: 1500, spent: 400, level: 'ok' });
+  });
+});
+
+describe('messageVariant', () => {
+  it('is stable for a seed and always one of the variants', () => {
+    expect(messageVariant('food|2026-10-07')).toBe(messageVariant('food|2026-10-07'));
+    for (let i = 0; i < 50; i++) {
+      expect(['1', '2', '3']).toContain(messageVariant(`seed-${i}`));
+      expect(['1', '2', '3']).toContain(messageVariant());
+    }
   });
 });

@@ -23,6 +23,14 @@ begin
   select id into other_group from public.subcategories where household_id = hid and category_id <> food limit 1;
   select id into income_cat from public.categories where household_id = hid and kind = 'income' limit 1;
 
+  select count(*) into n from public.budgets where household_id = hid and is_starter and not is_archived;
+  r := r || format(E'\n%s new household gets its own starter budgets (%s)', case when n = 4 then 'PASS' else 'FAIL' end, n);
+  select id into bid from public.budgets where household_id = hid and category_id = food;
+  update public.budgets set amount = 4321, is_starter = false where id = bid;
+  select count(*) into n from public.budgets where id = bid and amount = 4321 and not is_starter;
+  r := r || format(E'\n%s family can change a starter budget', case when n = 1 then 'PASS' else 'FAIL' end);
+  update public.budgets set is_archived = true where household_id = hid;
+
   insert into public.budgets (household_id, category_id, amount) values (hid, food, 5000) returning id into bid;
   insert into public.budgets (household_id, category_id, subcategory_id, amount) values (hid, food, groceries, 2000);
   r := r || E'\nPASS category and group budgets inserted';

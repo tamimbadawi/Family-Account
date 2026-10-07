@@ -4,7 +4,8 @@ import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronRight, TriangleAlert } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
-import { budgetPercent, type BudgetProgress } from '@/lib/reports/budgets';
+import { budgetPercent, messageVariant, type BudgetProgress } from '@/lib/reports/budgets';
+import { localISODate } from '@/lib/format';
 import { useBudgetNames } from './BudgetProgressRow';
 
 /** Home: one calm line when a budget is at 80% or more this month. Opens Budget vs actual. */
@@ -16,10 +17,14 @@ export function BudgetAlert({ warnings }: { warnings: BudgetProgress[] }) {
 
   const isOver = warnings.some((w) => w.level === 'over');
   const name = names.label(worst.budget);
+  // Same friendly wording all day for the same budget, a different one on another day
+  const variant = messageVariant(`${worst.budget.id}|${localISODate()}`);
   const text =
-    warnings.length === 1
-      ? t('homeAlertOne', { name, percent: String(budgetPercent(worst)) })
-      : t('homeAlertMore', { name, more: String(warnings.length - 1) });
+    warnings.length > 1
+      ? t('homeMore', { name, more: String(warnings.length - 1) })
+      : worst.level === 'over'
+        ? t(`homeOver.${variant}`, { name })
+        : t(`homeNear.${variant}`, { name, percent: String(budgetPercent(worst)) });
 
   return (
     <Link
