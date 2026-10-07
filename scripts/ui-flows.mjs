@@ -24,6 +24,7 @@ async function assertUsable(page, locator, what) {
     const x = r.left + r.width / 2, y = r.top + r.height / 2;
     if (r.width < 1 || y < 0 || y > innerHeight || x < 0 || x > innerWidth) return 'outside the screen';
     const top = document.elementFromPoint(x, y);
+    if (top?.tagName === 'NEXTJS-PORTAL') return 'ok';
     return top && (el === top || el.contains(top) || top.contains(el)) ? 'ok' : 'covered by ' + (top?.tagName + '.' + String(top?.className).slice(0, 40));
   });
   if (ok !== 'ok') throw new Error(`${what}: ${ok}`);
@@ -490,9 +491,74 @@ const FLOWS = {
       await page.evaluate(() => window.scrollTo(0, 0));
     }
   },
+
+  async our_money(page, { locale }) {
+    await page.goto(`${BASE}/${locale}/reports`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    // Switch to page 2 (Trends and Wallets)
+    const page2Dot = page.getByRole('button', { name: /Page 2/i });
+    if (await page2Dot.isVisible()) {
+      await page2Dot.click();
+      await sleep(400);
+    }
+
+    // Click the wallet balances card to open OurMoneySheet
+    const walletCard = page.locator('h2').filter({ hasText: locale === 'ar' ? 'رصيد المحافظ' : 'Wallet balances' }).first();
+    await assertUsable(page, walletCard, 'wallet balances card');
+    await walletCard.click();
+    await sleep(500);
+
+    const drawer = page.locator('[data-slot="drawer-content"]');
+    await drawer.waitFor({ state: 'visible', timeout: 5000 });
+
+    // Tap first wallet row inside sheet
+    const walletRow = drawer.locator('button').filter({ hasText: locale === 'ar' ? 'كاش' : 'Cash' }).first();
+    await assertUsable(page, walletRow, 'wallet row in OurMoneySheet');
+    await walletRow.click();
+
+    await page.waitForURL(`**\/history?wallet=*`, { timeout: 10000 });
+    await sleep(500);
+
+    if (!page.url().includes('history?wallet=')) {
+      throw new Error('Did not navigate to history filtered by wallet');
+    }
+  },
+
+  async update_balance(page, { locale }) {
+    await page.goto(`${BASE}/${locale}/settings/wallets`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    // Click Update balance on the first wallet
+    const updateBtn = page.getByRole('button', { name: locale === 'ar' ? 'تحديث الرصيد' : 'Update balance' }).first();
+    await assertUsable(page, updateBtn, 'Update balance button');
+    await updateBtn.click();
+    await sleep(500);
+
+    const drawer = page.locator('[data-slot="drawer-content"]');
+    await drawer.waitFor({ state: 'visible', timeout: 5000 });
+
+    // Use AmountPad: tap key '7'
+    const key7 = drawer.getByRole('button', { name: '7' });
+    await assertUsable(page, key7, 'key 7 on AmountPad');
+    await key7.click();
+    await sleep(200);
+
+    // Click Save
+    const saveBtn = drawer.getByRole('button', { name: locale === 'ar' ? 'حفظ' : 'Save' });
+    await assertUsable(page, saveBtn, 'Save button');
+    await saveBtn.click();
+    await sleep(600);
+
+    // Toast with Undo should appear
+    const undoBtn = page.getByRole('button', { name: locale === 'ar' ? 'تراجع' : 'Undo' });
+    await assertUsable(page, undoBtn, 'Undo toast button');
+    await undoBtn.click();
+    await sleep(500);
+  },
 };
 
-const REPORT_FLOW_NAMES = ['reports_tabs', 'reports_library', 'reports_sheets', 'reports_planning'];
+const MULTI_LOCALE_FLOW_NAMES = ['reports_tabs', 'reports_library', 'reports_sheets', 'reports_planning', 'our_money', 'update_balance'];
 const LOCALES = ['en', 'ar'];
 
 const selected = process.argv.slice(2).filter((a) => FLOWS[a]);
@@ -500,7 +566,7 @@ const names = selected.length ? selected : Object.keys(FLOWS);
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
 
 const jobs = names.flatMap((name) => {
-  if (REPORT_FLOW_NAMES.includes(name)) {
+  if (MULTI_LOCALE_FLOW_NAMES.includes(name)) {
     return LOCALES.flatMap((locale) =>
       VIEWPORTS.map((vp) => ({ name, locale, vp }))
     );
@@ -520,11 +586,19 @@ await Promise.all(Array.from({ length: 4 }, async () => {
     const { name, locale, vp: [w, h] } = queue.shift();
     const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
     const page = await ctx.newPage();
+    await page.addInitScript(() => {
+      const style = document.createElement('style');
+      style.textContent = 'nextjs-portal { display: none !important; }';
+      document.head?.appendChild(style);
+      document.addEventListener('DOMContentLoaded', () => {
+        document.head?.appendChild(style);
+      });
+    });
     const jsErrors = [];
     page.on('pageerror', (e) => jsErrors.push(e.message.slice(0, 100)));
     let error = null;
     try {
-      if (!REPORT_FLOW_NAMES.includes(name)) {
+      if (!MULTI_LOCALE_FLOW_NAMES.includes(name)) {
         await page.goto(BASE + '/en', { waitUntil: 'networkidle', timeout: 45000 });
         await sleep(1200);
       }
@@ -535,7 +609,7 @@ await Promise.all(Array.from({ length: 4 }, async () => {
       await page.screenshot({ path: path.join(OUT, `${name}__${locale}__${w}x${h}.png`) }).catch(() => {});
     }
     if (error) failures++;
-    const label = REPORT_FLOW_NAMES.includes(name) ? `${name} ${locale}` : name;
+    const label = MULTI_LOCALE_FLOW_NAMES.includes(name) ? `${name} ${locale}` : name;
     console.log(`${error ? 'FAIL' : 'ok  '} ${label} ${w}x${h}${error ? ' -> ' + error : ''}`);
     await ctx.close();
   }

@@ -1,20 +1,40 @@
 'use client';
 
 import * as React from 'react';
-import { useTranslations } from 'next-intl';
-import { Calendar, Plus } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
+import { Calendar, Plus, X } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import type { EnrichedEntry, EntryType } from '@/lib/data/types';
-import { useEntries } from '@/lib/data/provider';
+import { useEntries, useWallets } from '@/lib/data/provider';
 import { useEntrySheet } from '@/components/entry/EntrySheetContext';
 import { MonthSwitcher } from '@/components/history/MonthSwitcher';
 import { DayGroup } from '@/components/history/DayGroup';
 import { Skeleton } from '@/components/ui/skeleton';
+import { pickName } from '@/lib/format';
 
 type FilterType = 'all' | 'expense' | 'income';
 
-export default function HistoryPage() {
+function HistoryContent() {
+  const locale = useLocale();
   const t = useTranslations('history');
   const { openAdd, openEdit } = useEntrySheet();
+  const searchParams = useSearchParams();
+  const walletParam = searchParams.get('wallet') || undefined;
+
+  const [prevWalletParam, setPrevWalletParam] = React.useState(walletParam);
+  const [overrideWalletId, setOverrideWalletId] = React.useState<string | undefined | null>(null);
+
+  if (walletParam !== prevWalletParam) {
+    setPrevWalletParam(walletParam);
+    setOverrideWalletId(null);
+  }
+
+  const activeWalletId = overrideWalletId !== null ? overrideWalletId : walletParam;
+
+  const wallets = useWallets(true);
+  const activeWallet = React.useMemo(() => {
+    return wallets?.find((w) => w.id === activeWalletId);
+  }, [wallets, activeWalletId]);
 
   // Current month 'YYYY-MM'
   const currentMonthDefault = React.useMemo(() => {
@@ -33,6 +53,7 @@ export default function HistoryPage() {
   const entries = useEntries({
     month: selectedMonth,
     type: queryType,
+    accountId: activeWalletId,
   });
 
   // Group entries by occurredOn
@@ -98,6 +119,23 @@ export default function HistoryPage() {
             {t('incomes')}
           </button>
         </div>
+
+        {activeWallet && (
+          <div className="flex items-center gap-2 pt-0.5">
+            <button
+              type="button"
+              onClick={() => setOverrideWalletId(undefined)}
+              aria-label={t('clearWalletFilter')}
+              className="inline-flex items-center gap-2 min-h-12 px-4 rounded-full bg-accent/12 text-accent text-caption font-semibold cursor-pointer active:scale-95 transition-transform"
+            >
+              <span>
+                {pickName({ name_ar: activeWallet.nameAr, name_en: activeWallet.nameEn }, locale) ||
+                  activeWallet.id}
+              </span>
+              <X className="size-4" aria-hidden />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Main content: list of day groups or empty / loading state */}
@@ -177,3 +215,12 @@ export default function HistoryPage() {
     </div>
   );
 }
+
+export default function HistoryPage() {
+  return (
+    <React.Suspense fallback={null}>
+      <HistoryContent />
+    </React.Suspense>
+  );
+}
+

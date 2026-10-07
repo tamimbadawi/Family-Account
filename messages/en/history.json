@@ -8,5 +8,6 @@
   "emptyMonthHint": "Tap the plus button below to log an entry.",
   "addEntry": "Add entry",
   "prevMonth": "Previous month",
-  "nextMonth": "Next month"
+  "nextMonth": "Next month",
+  "clearWalletFilter": "Show all wallets"
 }
