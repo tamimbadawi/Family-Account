@@ -2,13 +2,19 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { ImagePlus, Loader2, X } from 'lucide-react';
+import { ChevronDown, ImagePlus, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { useObjectUrl } from '@/components/entry/ReceiptPhoto';
 import { useRestoreSheetAfterKeyboard } from '@/components/settings/useRestoreSheetAfterKeyboard';
 import { compressPhoto } from '@/lib/photos/compress';
-import { MAX_SUPPORT_PHOTOS, SUPPORT_EMAIL, sendSupportMessage } from '@/lib/support/send';
+import {
+  MAX_SUPPORT_PHOTOS,
+  SUPPORT_EMAIL,
+  SUPPORT_SECTIONS,
+  type SupportSection,
+  sendSupportMessage,
+} from '@/lib/support/send';
 
 export interface SupportDrawerProps {
   open: boolean;
@@ -42,6 +48,7 @@ function PhotoThumb({ photo, onRemove, label }: { photo: Blob; onRemove: () => v
 export function SupportDrawer({ open, onOpenChange }: SupportDrawerProps) {
   const t = useTranslations('settings');
 
+  const [section, setSection] = React.useState<SupportSection | ''>('');
   const [message, setMessage] = React.useState('');
   const [photos, setPhotos] = React.useState<Blob[]>([]);
   const [busy, setBusy] = React.useState(false);
@@ -52,6 +59,7 @@ export function SupportDrawer({ open, onOpenChange }: SupportDrawerProps) {
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
+      setSection('');
       setMessage('');
       setPhotos([]);
       setBusy(false);
@@ -82,7 +90,10 @@ export function SupportDrawer({ open, onOpenChange }: SupportDrawerProps) {
   const handleSend = async () => {
     if (!canSend) return;
     setSending(true);
-    const result = await sendSupportMessage(t('supportSubject'), message.trim(), photos);
+    const area = section ? t(`supportSection.${section}`) : '';
+    const subject = area ? `${t('supportSubject')} · ${area}` : t('supportSubject');
+    const body = area ? `${t('supportAreaLabel')} ${area}\n\n${message.trim()}` : message.trim();
+    const result = await sendSupportMessage(subject, body, photos);
     setSending(false);
     if (result === 'shared' || result === 'mailed') {
       toast.success(t('supportSent'));
@@ -102,6 +113,30 @@ export function SupportDrawer({ open, onOpenChange }: SupportDrawerProps) {
           </DrawerHeader>
 
           <div className="space-y-4 pt-2">
+            <div className="space-y-1">
+              <label htmlFor="support-section" className="text-caption font-semibold text-ink-muted">
+                {t('supportArea')}
+              </label>
+              <div className="relative">
+                <select
+                  id="support-section"
+                  value={section}
+                  onChange={(e) => setSection(e.target.value as SupportSection | '')}
+                  className={`h-14 w-full cursor-pointer appearance-none rounded-2xl border border-line/50 bg-surface-2 ps-4 pe-12 text-body focus:outline-none focus:ring-2 focus:ring-accent ${section ? 'text-ink' : 'text-ink-muted'}`}
+                >
+                  <option value="" disabled>
+                    {t('supportAreaPlaceholder')}
+                  </option>
+                  {SUPPORT_SECTIONS.map((key) => (
+                    <option key={key} value={key}>
+                      {t(`supportSection.${key}`)}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute end-4 top-1/2 size-5 -translate-y-1/2 text-ink-muted" />
+              </div>
+            </div>
+
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}

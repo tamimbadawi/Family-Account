@@ -8,6 +8,22 @@ export const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() ?? ''
 
 export const MAX_SUPPORT_PHOTOS = 3;
 
+/** Parts of the app the problem can be about (labels in messages/<locale>/settings.json → supportSection). */
+export const SUPPORT_SECTIONS = [
+  'home',
+  'addEntry',
+  'history',
+  'reports',
+  'wallets',
+  'categories',
+  'budgets',
+  'family',
+  'signIn',
+  'other',
+] as const;
+
+export type SupportSection = (typeof SUPPORT_SECTIONS)[number];
+
 export function supportMailto(email: string, subject: string, body: string): string {
   return `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }

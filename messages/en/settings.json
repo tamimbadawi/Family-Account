@@ -60,5 +60,20 @@
   "supportSend": "Send",
   "supportSubject": "Family Accounts — help request",
   "supportSent": "Thank you — your message is ready to send",
-  "supportFailed": "Couldn't open sending. Try again."
+  "supportFailed": "Couldn't open sending. Try again.",
+  "supportArea": "Which part of the app?",
+  "supportAreaPlaceholder": "Choose a section",
+  "supportAreaLabel": "Section:",
+  "supportSection": {
+    "home": "Home",
+    "addEntry": "Adding an entry",
+    "history": "History",
+    "reports": "Reports",
+    "wallets": "Wallets",
+    "categories": "Categories",
+    "budgets": "Budgets",
+    "family": "Family",
+    "signIn": "Signing in or password",
+    "other": "Something else"
+  }
 }

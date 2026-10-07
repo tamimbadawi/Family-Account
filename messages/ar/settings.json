@@ -60,5 +60,20 @@
   "supportSend": "إرسال",
   "supportSubject": "حساباتنا — طلب مساعدة",
   "supportSent": "شكرًا — رسالتك جاهزة للإرسال",
-  "supportFailed": "تعذّر فتح الإرسال. حاول مرة أخرى."
+  "supportFailed": "تعذّر فتح الإرسال. حاول مرة أخرى.",
+  "supportArea": "أي جزء من التطبيق؟",
+  "supportAreaPlaceholder": "اختر القسم",
+  "supportAreaLabel": "القسم:",
+  "supportSection": {
+    "home": "الرئيسية",
+    "addEntry": "إضافة عملية",
+    "history": "السجل",
+    "reports": "التقارير",
+    "wallets": "المحافظ",
+    "categories": "الأقسام",
+    "budgets": "الميزانية",
+    "family": "العائلة",
+    "signIn": "تسجيل الدخول أو كلمة السر",
+    "other": "شيء آخر"
+  }
 }
