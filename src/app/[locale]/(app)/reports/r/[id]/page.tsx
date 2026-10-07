@@ -51,7 +51,7 @@ export default async function ReportDetailPage({ params }: ReportPageProps) {
       <div className="flex items-center gap-2.5 pt-0.5">
         <Link
           href="/reports?tab=all"
-          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink hover:text-accent active:scale-95 transition-all -ms-1"
+          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink hover:text-accent active:scale-95 transition-all -ms-1"
           aria-label={t('library.allReportsBack')}
         >
           <ChevronLeft className="size-5 rtl:rotate-180" />

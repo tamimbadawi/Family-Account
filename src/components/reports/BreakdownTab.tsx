@@ -340,10 +340,10 @@ export function BreakdownTab() {
         <button
           type="button"
           onClick={() => setShowFilters((prev) => !prev)}
-          className="flex items-center gap-1.5 h-8 px-2.5 rounded-full bg-surface-2 text-ink hover:text-accent active:scale-95 transition-all text-caption font-medium"
+          className="flex items-center gap-1.5 h-8 px-2.5 rounded-full bg-surface-2 text-ink hover:text-accent active:scale-95 transition-all text-caption font-medium min-w-0 shrink"
         >
           <Calendar className="size-3.5 text-accent shrink-0" />
-          <span>
+          <span className="truncate">
             {activePresetId
               ? PIVOT_PRESETS.find((p) => p.id === activePresetId)?.periodPreset === 'last-6-months'
                 ? t('periods.last6')
@@ -360,13 +360,13 @@ export function BreakdownTab() {
             type="button"
             onClick={() => setShowFilters((prev) => !prev)}
             aria-label={t('customize')}
-            className={`flex items-center gap-1.5 h-8 px-2.5 rounded-full text-caption font-medium transition-all active:scale-95 ${
+            className={`flex items-center gap-1.5 h-8 px-2.5 rounded-full text-caption font-medium transition-all active:scale-95 shrink-0 ${
               showFilters
                 ? 'bg-accent text-accent-ink shadow-xs'
                 : 'bg-surface-2 text-ink-muted hover:text-ink'
             }`}
           >
-            <Filter className="size-3.5" />
+            <Filter className="size-3.5 shrink-0" />
             <span>{t('customize')}</span>
           </button>
 
@@ -445,7 +445,7 @@ export function BreakdownTab() {
             <span className="w-16 shrink-0 text-ink-muted font-medium">
               {t('show')}:
             </span>
-            <div className="flex-1 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex-1 flex gap-1.5 overflow-x-auto pe-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {(['expense', 'income', 'net'] as PivotMeasure[]).map((m) => (
                 <button
                   key={m}
@@ -454,7 +454,7 @@ export function BreakdownTab() {
                     setConfig((prev) => ({ ...prev, measure: m }));
                     setActivePresetId(null);
                   }}
-                  className={`h-7 px-2.5 rounded-full text-caption whitespace-nowrap transition-all ${
+                  className={`h-7 px-2.5 rounded-full text-caption whitespace-nowrap shrink-0 transition-all ${
                     config.measure === m
                       ? 'bg-accent text-accent-ink shadow-xs font-semibold'
                       : 'bg-surface-2 text-ink-muted hover:text-ink'
@@ -471,7 +471,7 @@ export function BreakdownTab() {
             <span className="w-16 shrink-0 text-ink-muted font-medium">
               {t('splitBy')}:
             </span>
-            <div className="flex-1 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex-1 flex gap-1.5 overflow-x-auto pe-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {(
                 ['category', 'subcategory', 'item', 'wallet', 'person'] as PivotRowDimension[]
               ).map((r) => (
@@ -483,7 +483,7 @@ export function BreakdownTab() {
                     setBreadcrumbs([]);
                     setActivePresetId(null);
                   }}
-                  className={`h-7 px-2.5 rounded-full text-caption whitespace-nowrap transition-all ${
+                  className={`h-7 px-2.5 rounded-full text-caption whitespace-nowrap shrink-0 transition-all ${
                     config.rows === r
                       ? 'bg-accent text-accent-ink shadow-xs font-semibold'
                       : 'bg-surface-2 text-ink-muted hover:text-ink'
@@ -500,7 +500,7 @@ export function BreakdownTab() {
             <span className="w-16 shrink-0 text-ink-muted font-medium">
               {t('across')}:
             </span>
-            <div className="flex-1 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex-1 flex gap-1.5 overflow-x-auto pe-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {(
                 ['month', 'week', 'wallet', 'none'] as PivotColumnDimension[]
               ).map((c) => (
@@ -511,7 +511,7 @@ export function BreakdownTab() {
                     setConfig((prev) => ({ ...prev, columns: c }));
                     setActivePresetId(null);
                   }}
-                  className={`h-7 px-2.5 rounded-full text-caption whitespace-nowrap transition-all ${
+                  className={`h-7 px-2.5 rounded-full text-caption whitespace-nowrap shrink-0 transition-all ${
                     config.columns === c
                       ? 'bg-accent text-accent-ink shadow-xs font-semibold'
                       : 'bg-surface-2 text-ink-muted hover:text-ink'
@@ -528,7 +528,7 @@ export function BreakdownTab() {
             <span className="w-16 shrink-0 text-ink-muted font-medium">
               {t('period')}:
             </span>
-            <div className="flex-1 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex-1 flex gap-1.5 overflow-x-auto pe-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {[
                 { id: 'this-month', key: 'thisMonth' },
                 { id: 'last-3-months', key: 'last3' },
@@ -548,7 +548,7 @@ export function BreakdownTab() {
                       setConfig((prev) => ({ ...prev, period: dates }));
                       setActivePresetId(null);
                     }}
-                    className={`h-7 px-2.5 rounded-full text-caption whitespace-nowrap transition-all ${
+                    className={`h-7 px-2.5 rounded-full text-caption whitespace-nowrap shrink-0 transition-all ${
                       isSelected
                         ? 'bg-accent text-accent-ink shadow-xs font-semibold'
                         : 'bg-surface-2 text-ink-muted hover:text-ink'

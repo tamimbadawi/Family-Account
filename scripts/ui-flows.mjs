@@ -402,8 +402,9 @@ const FLOWS = {
     // 4. Biggest expenses "See all entries" sheet
     await page.goto(`${BASE}/${locale}/reports/r/biggest-expenses`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(800);
-    const seeAllBig = page.getByRole('button', { name: new RegExp(seeAllLabel) }).first();
-    await assertUsable(page, seeAllBig, `See all categories button on Biggest expenses (${locale}/${size})`);
+    const top10Label = tReports.library.top10Entries;
+    const seeAllBig = page.getByRole('button', { name: new RegExp(top10Label) }).first();
+    await assertUsable(page, seeAllBig, `Top 10 entries button on Biggest expenses (${locale}/${size})`);
     await seeAllBig.click();
     await sleep(500);
     const drawer4 = page.locator('[data-slot="drawer-content"]');

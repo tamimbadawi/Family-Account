@@ -144,7 +144,7 @@ export function BiggestExpensesView() {
             onClick={() => setShowAllSheet(true)}
             className="w-full py-2.5 text-center text-caption font-semibold text-accent hover:bg-surface-2 transition-colors border-t border-line/40"
           >
-            {t('seeAllCategories')} ({result.entries.length})
+            {t('library.top10Entries')} ({result.entries.length})
           </button>
         )}
       </Card>
