@@ -59,10 +59,10 @@ async function assertOnePopup(page, amountText) {
   const shown = (await amount.innerText()).trim();
   if (shown !== amountText) throw new Error(`amount shows "${shown}" (should be "${amountText}")`);
   if (await btn(page, "Next").count()) throw new Error("a Next step is back; everything should be in one popup");
-  await assertUsable(page, page.getByRole("button", { name: /^(Save|Saved|Choose a category)$/ }).last(), "Save button without scrolling");
+  await assertUsable(page, page.getByRole("button", { name: /^(Save|Saved|Choose a category|Choose Sub \/ Save)$/ }).last(), "Save button without scrolling");
 }
 async function saveButton(page) {
-  return page.getByRole('button', { name: /^(Save|Saved)$/ }).last();
+  return page.getByRole('button', { name: /^(Save|Saved|Choose Sub \/ Save)$/ }).last();
 }
 
 const FLOWS = {
@@ -766,7 +766,7 @@ const FLOWS = {
     await tap(page, 'Food');
     await tap(page, 'Groceries');
     let save = await saveButton(page);
-    if ((await save.innerText()).trim() !== 'Save' || (await save.isDisabled())) throw new Error('Save is not available at the group level');
+    if ((await save.innerText()).trim() !== 'Choose Sub / Save' || (await save.isDisabled())) throw new Error(`group level shows "${(await save.innerText()).trim()}"`);
     await save.click();
     await sleep(1500);
     await page.goto(BASE + '/en/history', { waitUntil: 'networkidle', timeout: 45000 });
@@ -779,7 +779,7 @@ const FLOWS = {
     await typeAmount(page, ['3', '5']);
     await tap(page, 'Transport');
     save = await saveButton(page);
-    if ((await save.innerText()).trim() !== 'Save' || (await save.isDisabled())) throw new Error('Save is not available at the category level');
+    if ((await save.innerText()).trim() !== 'Choose Sub / Save' || (await save.isDisabled())) throw new Error(`category level shows "${(await save.innerText()).trim()}"`);
     await save.click();
     await sleep(1500);
     const rowTransport = page.locator('[data-entry-row]').filter({ hasText: 'Transport' }).filter({ hasText: '35' }).first();

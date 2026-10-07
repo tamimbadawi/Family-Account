@@ -382,7 +382,9 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
                   ? t('invalidAmount')
                   : numericAmount > 0 && !isTransfer && !hasItem
                     ? t('chooseCategoryFirst')
-                    : tCommon('save')}
+                    : !isTransfer && !selectedItem && path.category
+                      ? t('chooseSubOrSave')
+                      : tCommon('save')}
               </motion.span>
             )}
           </AnimatePresence>
