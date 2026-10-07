@@ -2,7 +2,9 @@ name: Keep Supabase awake
 
 # Free Supabase projects pause after ~7 days of low activity.
 # This calls public.keepalive(), which writes one row, once a day.
-# Skips quietly until the secrets exist (they are added in step B5).
+# Repo secrets SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY override the defaults below. The defaults are
+# the production project's public URL and publishable key (already shipped in the app's browser
+# bundle, not secrets), so the ping works even before anyone adds the secrets.
 
 on:
   schedule:
@@ -16,13 +18,9 @@ jobs:
     steps:
       - name: Call keepalive()
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://zzbbniffrdigluisvxxb.supabase.co' }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_9wITIPopjTwmvl_SKtJKLA_7icGt18o' }}
         run: |
-          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then
-            echo "Secrets not set yet — skipping (expected before step B5)."
-            exit 0
-          fi
           for attempt in 1 2 3; do
             code=$(curl -s -o response.txt -w '%{http_code}' -X POST \
               "$SUPABASE_URL/rest/v1/rpc/keepalive" \
