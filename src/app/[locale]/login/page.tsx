@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { InstallBanner } from '@/components/install/InstallBanner';
 import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
-import { normalizeEmail } from '@/lib/auth/email';
+import { toLoginEmail } from '@/lib/auth/email';
 import { routeAfterSignIn } from '@/lib/auth/after-sign-in';
 
 export default function LoginPage() {
@@ -36,7 +36,7 @@ export default function LoginPage() {
     try {
       const supabase = getSupabaseBrowserClient();
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: normalizeEmail(email),
+        email: toLoginEmail(email),
         password,
       });
       if (signInError || !data.user) {
@@ -82,7 +82,8 @@ export default function LoginPage() {
             {tAuth('email')}
           </label>
           <Input
-            type="email"
+            /* text, not email: the first family's older usernames (no @) still sign in */
+            type="text"
             inputMode="email"
             dir="ltr"
             value={email}

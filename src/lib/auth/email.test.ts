@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isEmail, normalizeEmail } from './email';
+import { isEmail, loginLabel, normalizeEmail, toLoginEmail } from './email';
 
 describe('email', () => {
   it('is case-insensitive and trims spaces', () => {
@@ -11,5 +11,11 @@ describe('email', () => {
     expect(isEmail('injy')).toBe(false);
     expect(isEmail('injy@gmail')).toBe(false);
     expect(isEmail('a b@gmail.com')).toBe(false);
+  });
+  it('keeps older username logins working', () => {
+    expect(toLoginEmail(' Injy ')).toBe('injy@family.local');
+    expect(toLoginEmail('Injy@Gmail.com')).toBe('injy@gmail.com');
+    expect(loginLabel('fatma@family.local')).toBe('fatma');
+    expect(loginLabel('mama@gmail.com')).toBe('mama@gmail.com');
   });
 });

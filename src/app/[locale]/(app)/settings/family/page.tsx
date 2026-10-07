@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useHouseholdMembers } from '@/lib/data/provider';
 import { isAuthConfigured } from '@/lib/supabase/client';
 import { familyAdmin, type FamilyList, type FamilyMember } from '@/lib/auth/family-admin';
-import { isEmail, normalizeEmail } from '@/lib/auth/email';
+import { isEmail, loginLabel, normalizeEmail } from '@/lib/auth/email';
 import { isEnglishName } from '@/lib/members';
 
 type Sheet =
@@ -165,7 +165,7 @@ export default function FamilyPage() {
                     </div>
                     <div className="truncate text-caption text-ink-muted">
                       {m.role === 'owner' ? t('admin') : t('member')}
-                      {m.email && <span dir="ltr"> · {m.email}</span>}
+                      {m.email && <span dir="ltr"> · {loginLabel(m.email)}</span>}
                     </div>
                   </div>
                   {isOwner && m.userId !== list?.me && (
