@@ -6,8 +6,10 @@
 --   publishable key), so signed-in users lose EXECUTE. anon keeps it on purpose: it takes no
 --   input, returns only a timestamp and writes one fixed row.
 -- * heartbeat: an explicit deny-all policy says in the schema what "RLS on, no policies" meant.
--- * remove_member() and set_household_currencies() now also refuse a suspended family, like
---   every table policy does through is_member().
+-- * set_household_currencies() now also refuses a suspended family, like every table policy
+--   does through is_member(). remove_member() is left as in 0006: the app removes members
+--   through the family-admin Edge Function, which already refuses suspended families, and a
+--   suspended owner could only remove someone from their own family (entries stay).
 --
 -- Still reported by the linter and accepted (each checks the caller itself):
 --   is_member (used by every RLS policy), create_family (invited family admins only),
@@ -18,20 +20,6 @@ revoke execute on function public.keepalive() from authenticated;
 
 create policy "no direct access" on public.heartbeat
   for all to anon, authenticated using (false) with check (false);
-
-create or replace function public.remove_member(p_user_id uuid)
-returns void language plpgsql security definer set search_path = ''
-as $$
-declare hid uuid;
-begin
-  select household_id into hid from public.household_members
-  where user_id = auth.uid() and role = 'owner';
-  if hid is null or not public.is_member(hid) then raise exception 'Only the owner can remove members'; end if;
-  if p_user_id = auth.uid() then raise exception 'The owner cannot remove themselves'; end if;
-  delete from public.household_members
-  where household_id = hid and user_id = p_user_id and role <> 'owner';
-  if not found then raise exception 'That person is not a member of this household'; end if;
-end $$;
 
 create or replace function public.set_household_currencies(p_currencies text[])
 returns void language plpgsql security definer set search_path = ''

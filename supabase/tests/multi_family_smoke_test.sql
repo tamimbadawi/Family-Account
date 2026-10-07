@@ -203,11 +203,8 @@ begin
   r := r || format(E'\n%s suspended family reads no entries (%s)', case when n = 0 then 'PASS' else 'FAIL' end, n);
   perform set_config('request.jwt.claim.sub', a_admin::text, true);
   ok := false;
-  begin perform public.set_household_currencies('{EGP}'); exception when others then ok := true; end;
+  begin perform public.set_household_currencies('{USD,EGP}'); exception when others then ok := true; end;
   r := r || format(E'\n%s suspended family admin cannot change currencies', case when ok then 'PASS' else 'FAIL' end);
-  ok := false;
-  begin perform public.remove_member(a_mem); exception when others then ok := true; end;
-  r := r || format(E'\n%s suspended family admin cannot remove members', case when ok then 'PASS' else 'FAIL' end);
   ok := false;
   begin perform public.keepalive(); exception when others then ok := true; end;
   r := r || format(E'\n%s signed-in users cannot call keepalive()', case when ok then 'PASS' else 'FAIL' end);
