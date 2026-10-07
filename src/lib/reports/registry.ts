@@ -86,7 +86,7 @@ export const REPORTS_REGISTRY: ReportDefinition[] = [
     titleKey: 'netWorth',
     descKey: 'netWorthDesc',
     route: '/reports/r/net-worth',
-    isImplemented: false,
+    isImplemented: true,
   },
   {
     id: 'balance-over-time',
@@ -95,7 +95,7 @@ export const REPORTS_REGISTRY: ReportDefinition[] = [
     titleKey: 'balanceOverTime',
     descKey: 'balanceOverTimeDesc',
     route: '/reports/r/balance-over-time',
-    isImplemented: false,
+    isImplemented: true,
   },
   {
     id: 'in-out-per-wallet',
@@ -104,7 +104,7 @@ export const REPORTS_REGISTRY: ReportDefinition[] = [
     titleKey: 'inOutPerWallet',
     descKey: 'inOutPerWalletDesc',
     route: '/reports/r/in-out-per-wallet',
-    isImplemented: false,
+    isImplemented: true,
   },
   {
     id: 'cash-withdrawals',
@@ -113,7 +113,7 @@ export const REPORTS_REGISTRY: ReportDefinition[] = [
     titleKey: 'cashWithdrawals',
     descKey: 'cashWithdrawalsDesc',
     route: '/reports/r/cash-withdrawals',
-    isImplemented: false,
+    isImplemented: true,
   },
   {
     id: 'transfers-log',
@@ -122,7 +122,7 @@ export const REPORTS_REGISTRY: ReportDefinition[] = [
     titleKey: 'transfersLog',
     descKey: 'transfersLogDesc',
     route: '/reports/r/transfers-log',
-    isImplemented: false,
+    isImplemented: true,
   },
 
   // --- Group 3: Planning (التخطيط) — Part A5e ---
