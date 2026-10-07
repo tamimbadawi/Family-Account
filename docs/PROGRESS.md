@@ -20,8 +20,8 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 | 5 | A3b | `/a3b-entry-sheet` — assemble the Add/Edit entry sheet ⭐ | A2b, A3a | `step/a3b-entry-sheet` | ✅ |
 | 6 | A4 | `/a4-history` — History, edit, soft delete, Recently deleted | A3b | `step/a4-history` | ✅ |
 | 7 | A6 | `/a6-settings-categories` — Settings, category & wallet managers, language | A2b | `step/a6-settings` | ✅ |
-| 8 | A5e screens | `/a5c-report-library` part A5e: 6 Planning report screens on the merged logic (`src/lib/reports/planning.ts`), same pattern as A5c | A5c ✅ | `step/a5e-planning-reports` | ⏳ |
-| 9 | A8a | `/a8-polish-pass` on what is merged: Login, Home, Add sheet, History, Settings | **A3d, A3c (Claude)** | `step/a8a-polish` |  |
+| 8 | A5e screens | `/a5c-report-library` part A5e: 6 Planning report screens on the merged logic (`src/lib/reports/planning.ts`), same pattern as A5c | A5c ✅ | `step/a5e-planning-reports` | ✅ |
+| 9 | A8a | `/a8-polish-pass` on what is merged: Login, Home, Add sheet, History, Settings | **A3d, A3c (Claude)** | `step/a8a-polish` | ⏳ |
 | 8 | A8b | `/a8-polish-pass` on Reports (Overview + Breakdown) and a last full sweep | **A5, A5b** | `step/a8b-polish` |  |
 
 ### AG-2 queue · account-two, folder `C:\Dev\family-accounts\ag2`, port 3002
@@ -39,7 +39,7 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 | 9 | Reports flows | ui:flows tests for the Reports hub, library and sheets | A5c ✅ | `test/reports-flows` | ✅ |
 | 10 | A2c | `/a2c-wallets` PR 1: data layer (Cash + 3 banks, Balance correction, adjustWalletBalance, seed v2) | A5b | `step/a2c-wallets` | ✅ |
 | 10b | A2c UI | PR 2: Our money sheet + OurMoneyRow, Update balance / Add wallet in Settings (not on Home, not the entry sheet) | A2c ✅ | `step/a2c-wallets-ui` | ⏳ |
-| 11 | A5d | `/a5c-report-library` part A5d: 5 Banks & cash reports | A5c, A2c | `step/a5d-wallet-reports` |  |
+| 11 | A5d | `/a5c-report-library` part A5d: 5 Banks & cash reports | A5c, A2c | `step/a5d-wallet-reports` | ⏳ |
 
 | 12 | Home money | Place `OurMoneyRow` (from A2c) on Home, keeping Home within one screen | A2c | `step/home-our-money` |  |
 
@@ -134,3 +134,4 @@ savings goals. Not planned: AI, notifications, bank feeds, investments, multi-cu
 | 2026-10-06 | Reports flows | AG-2: ui:flows reports_tabs/library/sheets (en+ar, 3 sizes) + fixes: library links keep the locale, ?tab= read via useSearchParams. Merged with orchestrator lint fix (setState in effect -> derive during render). Gate on local main: reports flows 18/18, ui:check 42/42, build ok. Remaining ui:flows failures are the known entry-sheet ones (A3d). Follow-up: reports_sheets skips silently when a button is missing; biggest-expenses step looks for the wrong label |
 | 2026-10-06 | A2c PR 1 | AG-2 was stuck 40 min (installed eslint-plugin-react, hunted a non-existent SEED_VERSION); re-prompted with A2c split in 2 PRs. PR 1 merged with orchestrator fixes: no hard-coded Arabic note on corrections, no silent fallback to a random item, test conflict with A3c resolved, cash wallet named Cash/كاش ("Cash at home" truncated History/Home rows). Gate on local main: ui:check 42/42, ui:flows 40/40 (income/expense save now pass), build ok, 129 tests |
 | 2026-10-06 | Plan review | Claude: reviewed the external roadmap against the repo; most of it was already in PLAN.md. Added "Before B3" items P1–P7 and the two-phone B3 definition of done above. Fixed UTC date in balance corrections (`localISODate`), README rewritten (was "no app code yet"), backups now gpg-encrypted, `0006_remove_member` + smoke test written (not yet applied). Rejected from the review: versioned conflicts (LWW is enough for 3 people), 100k-row load tests, monitoring/notification phases, a separate ROADMAP.md |
+| 2026-10-07 | A5e | AG-1: 6 Planning report screens + reports_planning flow. Merged with orchestrator fixes: 11px label -> caption token; sample entries never stamped after now (bank flow failed at 375x667 on production: a seeded noon entry sorted above a just-saved one), seed v3 so phones reseed. Gate on local main: ui:check 42/42, ui:flows 46/46, build ok, 139 tests. AG-1 -> A8a, AG-2 -> A5d while I review |

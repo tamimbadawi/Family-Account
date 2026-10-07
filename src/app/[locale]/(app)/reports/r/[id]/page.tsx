@@ -12,6 +12,12 @@ import { BiggestExpensesView } from '@/components/reports/views/BiggestExpensesV
 import { SpendingCalendarView } from '@/components/reports/views/SpendingCalendarView';
 import { IncomeSourcesView } from '@/components/reports/views/IncomeSourcesView';
 import { CategoryDeepDiveView } from '@/components/reports/views/CategoryDeepDiveView';
+import { BillsTrackerView } from '@/components/reports/views/BillsTrackerView';
+import { MonthlyAveragesView } from '@/components/reports/views/MonthlyAveragesView';
+import { WhoSpentWhatView } from '@/components/reports/views/WhoSpentWhatView';
+import { SearchExportView } from '@/components/reports/views/SearchExportView';
+import { UnusualSpendingView } from '@/components/reports/views/UnusualSpendingView';
+import { SpendingPaceView } from '@/components/reports/views/SpendingPaceView';
 
 export function generateStaticParams() {
   return REPORTS_REGISTRY.map((r) => ({ id: r.id }));
@@ -59,6 +65,12 @@ export default async function ReportDetailPage({ params }: ReportPageProps) {
       {report.id === 'spending-calendar' && <SpendingCalendarView />}
       {report.id === 'income-sources' && <IncomeSourcesView />}
       {report.id === 'category-deep-dive' && <CategoryDeepDiveView />}
+      {report.id === 'bills-tracker' && <BillsTrackerView />}
+      {report.id === 'monthly-averages' && <MonthlyAveragesView />}
+      {report.id === 'who-spent-what' && <WhoSpentWhatView />}
+      {report.id === 'search-export' && <SearchExportView />}
+      {report.id === 'unusual-spending' && <UnusualSpendingView />}
+      {report.id === 'spending-pace' && <SpendingPaceView />}
 
       {!report.isImplemented && (
         <Card className="rounded-card bg-surface p-8 text-center shadow-card border border-line/60 space-y-3 mt-4">

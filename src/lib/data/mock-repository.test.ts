@@ -3,7 +3,7 @@ import { liveQuery } from 'dexie';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { FamilyAccountsDB } from '../offline/db';
 import { MockRepository } from './mock-repository';
-import { USER_BABA_ID, USER_MAMA_ID, WALLET_BANK_ID, WALLET_CASH_ID } from './mock-seed';
+import { SEED_VERSION, USER_BABA_ID, USER_MAMA_ID, WALLET_BANK_ID, WALLET_CASH_ID } from './mock-seed';
 
 describe('MockRepository with fake-indexeddb', () => {
   let db: FamilyAccountsDB;
@@ -449,7 +449,7 @@ describe('MockRepository with fake-indexeddb', () => {
       // Call ensureSeeded should detect mismatch and reseed
       await reseedRepo.ensureSeeded();
       const v = await reseedDb.meta.get('seedVersion');
-      expect(v?.value).toBe(2);
+      expect(v?.value).toBe(SEED_VERSION);
     });
   });
 });

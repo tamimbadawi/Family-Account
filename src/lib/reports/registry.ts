@@ -133,7 +133,7 @@ export const REPORTS_REGISTRY: ReportDefinition[] = [
     titleKey: 'billsTracker',
     descKey: 'billsTrackerDesc',
     route: '/reports/r/bills-tracker',
-    isImplemented: false,
+    isImplemented: true,
   },
   {
     id: 'monthly-averages',
@@ -142,7 +142,7 @@ export const REPORTS_REGISTRY: ReportDefinition[] = [
     titleKey: 'monthlyAverages',
     descKey: 'monthlyAveragesDesc',
     route: '/reports/r/monthly-averages',
-    isImplemented: false,
+    isImplemented: true,
   },
   {
     id: 'who-spent-what',
@@ -151,7 +151,7 @@ export const REPORTS_REGISTRY: ReportDefinition[] = [
     titleKey: 'whoSpentWhat',
     descKey: 'whoSpentWhatDesc',
     route: '/reports/r/who-spent-what',
-    isImplemented: false,
+    isImplemented: true,
   },
   {
     id: 'search-export',
@@ -160,7 +160,7 @@ export const REPORTS_REGISTRY: ReportDefinition[] = [
     titleKey: 'searchExport',
     descKey: 'searchExportDesc',
     route: '/reports/r/search-export',
-    isImplemented: false,
+    isImplemented: true,
   },
   {
     id: 'unusual-spending',
@@ -169,7 +169,7 @@ export const REPORTS_REGISTRY: ReportDefinition[] = [
     titleKey: 'unusualSpending',
     descKey: 'unusualSpendingDesc',
     route: '/reports/r/unusual-spending',
-    isImplemented: false,
+    isImplemented: true,
   },
   {
     id: 'spending-pace',
@@ -178,7 +178,7 @@ export const REPORTS_REGISTRY: ReportDefinition[] = [
     titleKey: 'spendingPace',
     descKey: 'spendingPaceDesc',
     route: '/reports/r/spending-pace',
-    isImplemented: false,
+    isImplemented: true,
   },
 ];
 

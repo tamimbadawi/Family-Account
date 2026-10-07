@@ -116,6 +116,27 @@
     "highestDay": "أعلى يوم",
     "incomeDistribution": "توزيع مصادر الدخل",
     "monthlyAvg": "المتوسط الشهري",
-    "subcategoriesBreakdown": "تفاصيل المجموعات والبنود"
+    "subcategoriesBreakdown": "تفاصيل المجموعات والبنود",
+    "billsJumped": "قفزة",
+    "billsNormal": "طبيعي",
+    "noBills": "لا توجد فواتير مرافق مسجلة",
+    "min": "أقل شهر",
+    "max": "أعلى شهر",
+    "avg": "المتوسط",
+    "totalSpent": "إجمالي المصاريف",
+    "shareOfTotal": "من الإجمالي",
+    "searchPlaceholder": "ابحث بالبند، الفئة، أو الملاحظة...",
+    "downloadCsv": "تصدير CSV",
+    "noResults": "لا توجد حركات مطابقة",
+    "resultsFound": "{count, plural, one {# حركة} other {# حركات}}",
+    "noUnusual": "كل شيء طبيعي",
+    "noUnusualDesc": "لا توجد فئات زادت بشكل ملحوظ عن معدلها المعتاد.",
+    "aboveAverage": "+{percent}٪ أعلى من المعتاد",
+    "spentSoFar": "المصروف حتى اليوم",
+    "typicalByToday": "المعتاد حتى نفس اليوم",
+    "typicalFullMonth": "المعتاد للشهر كاملاً",
+    "aheadPace": "معدل الصرف أعلى من المعتاد",
+    "behindPace": "معدل الصرف أقل من المعتاد",
+    "onTrackPace": "معدل الصرف طبيعي"
   }
 }
