@@ -15,14 +15,15 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
-import { useHouseholdMembers, useRepository } from '@/lib/data/provider';
+import { useRepository } from '@/lib/data/provider';
 import { localISODate } from '@/lib/format';
+import { useFamilyMembers } from '@/lib/auth/use-family-members';
 import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
 import { entriesToCsv } from '@/lib/reports/export';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
-  const familyNames = useHouseholdMembers().map((m) => m.displayName).join(' · ');
+  const familyNames = useFamilyMembers().map((m) => m.displayName).join(' · ');
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
