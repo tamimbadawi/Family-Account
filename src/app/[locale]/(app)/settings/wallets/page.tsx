@@ -25,6 +25,8 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 
+const noopSubscribe = () => () => {};
+
 export default function WalletManagerPage() {
   const locale = useLocale();
   const t = useTranslations('settings');
@@ -32,6 +34,13 @@ export default function WalletManagerPage() {
   const repo = useRepository();
 
   const [showArchived, setShowArchived] = React.useState(false);
+
+  // Opened from the Home header shortcut (?from=home): back returns Home.
+  const backHref = React.useSyncExternalStore(
+    noopSubscribe,
+    () => (new URLSearchParams(window.location.search).get('from') === 'home' ? '/' : '/settings'),
+    () => '/settings'
+  );
   const wallets = useWallets(showArchived);
   const balances = useWalletBalances();
 
@@ -173,7 +182,7 @@ export default function WalletManagerPage() {
       <div className="px-5 pt-[max(env(safe-area-inset-top,0px),1rem)] pb-3 shrink-0 flex items-center justify-between border-b border-line/30 select-none">
         <div className="flex items-center gap-2 min-w-0">
           <Link
-            href="/settings"
+            href={backHref}
             className="flex size-11 shrink-0 items-center justify-center rounded-full text-accent hover:bg-surface-2 transition-colors -ms-2"
             aria-label={t('back')}
           >
