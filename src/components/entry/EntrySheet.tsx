@@ -168,6 +168,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
     category: null,
     subcategory: null,
   });
+  const [breadcrumbSlot, setBreadcrumbSlot] = React.useState<HTMLDivElement | null>(null);
   const handlePathChange = React.useCallback(
     (category: Category | null, subcategory: Subcategory | null) => setPath({ category, subcategory }),
     []
@@ -298,7 +299,11 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
       {/* One sheet that fits an iPhone screen: type, amount, category, pad, details, save */}
       <TypeToggle value={type} onChange={handleTypeChange} />
 
-      <AmountDisplay value={amountStr} type={type} />
+      {/* Amount, with the chosen main category (and group) beside it */}
+      <div className="flex items-center gap-2">
+        <AmountDisplay value={amountStr} type={type} className="min-w-0 flex-1" />
+        <div ref={setBreadcrumbSlot} className="flex max-w-[56%] shrink-0 empty:hidden" />
+      </div>
 
       {isTransfer ? (
         <div className="flex items-center gap-2">
@@ -322,6 +327,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
           onPick={handlePickCategoryItem}
           onClear={() => setSelectedItem(null)}
           onPathChange={handlePathChange}
+          breadcrumbSlot={breadcrumbSlot}
         />
       )}
 
