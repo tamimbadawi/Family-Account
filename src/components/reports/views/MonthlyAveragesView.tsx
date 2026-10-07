@@ -103,7 +103,6 @@ export function MonthlyAveragesView() {
         {averages.map((cat) => {
           const matchedCategory = categories?.find((c) => c.id === cat.id);
           const icon = matchedCategory?.icon ?? 'Layers';
-          const color = matchedCategory?.color ?? '#0F766E';
           const name = pickName(
             { name_ar: cat.nameAr, name_en: cat.nameEn },
             locale
@@ -118,11 +117,15 @@ export function MonthlyAveragesView() {
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div
-                    style={{
-                      backgroundColor: `${color}18`,
-                      color: color,
-                    }}
-                    className="flex size-9 shrink-0 items-center justify-center rounded-full"
+                    style={
+                      matchedCategory?.color
+                        ? {
+                            backgroundColor: `${matchedCategory.color}18`,
+                            color: matchedCategory.color,
+                          }
+                        : undefined
+                    }
+                    className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent"
                   >
                     <CategoryIcon name={icon} className="size-4" />
                   </div>
@@ -151,9 +154,9 @@ export function MonthlyAveragesView() {
                 <div
                   style={{
                     width: `${Math.min(100, sharePercent)}%`,
-                    backgroundColor: color,
+                    ...(matchedCategory?.color ? { backgroundColor: matchedCategory.color } : {}),
                   }}
-                  className="h-full rounded-full transition-all"
+                  className={`h-full rounded-full transition-all ${matchedCategory?.color ? '' : 'bg-accent'}`}
                 />
               </div>
             </Card>
