@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
+import { WalletShortcut } from '@/components/layout/WalletShortcut';
 import {
   useCategories,
   useItems,
@@ -278,13 +279,16 @@ export default function CategoryManagerPage() {
           </h1>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsReordering(!isReordering)}
-          className="text-body font-semibold text-accent hover:opacity-80 transition-opacity cursor-pointer shrink-0 ps-3"
-        >
-          {isReordering ? t('done') : t('reorder')}
-        </button>
+        <div className="flex items-center gap-3 shrink-0 ps-3">
+          <button
+            type="button"
+            onClick={() => setIsReordering(!isReordering)}
+            className="text-body font-semibold text-accent hover:opacity-80 transition-opacity cursor-pointer shrink-0"
+          >
+            {isReordering ? t('done') : t('reorder')}
+          </button>
+          <WalletShortcut />
+        </div>
       </div>
 
       {/* Tabs & Controls (only visible at top category level) */}
