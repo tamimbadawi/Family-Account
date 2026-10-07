@@ -55,7 +55,7 @@ export function TabBar() {
               }`}
             >
               <Icon className="size-6 shrink-0" strokeWidth={active ? 2.25 : 1.75} />
-              <span className="text-xs leading-none tracking-tight">{tab.label}</span>
+              <span className="text-caption leading-none tracking-tight whitespace-nowrap">{tab.label}</span>
             </Link>
           );
         })}
