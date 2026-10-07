@@ -147,7 +147,7 @@ export default function SettingsPage() {
           className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
         >
           <div className="flex items-center gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/12 text-amber-600 dark:text-amber-400">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-warning/12 text-warning">
               <Globe className="size-4.5" />
             </div>
             <div className="text-start">
@@ -173,7 +173,7 @@ export default function SettingsPage() {
           className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
         >
           <div className="flex items-center gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/12 text-blue-600 dark:text-blue-400">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-member-3-soft text-member-3">
               <Download className="size-4.5" />
             </div>
             <div className="text-start">
@@ -197,7 +197,7 @@ export default function SettingsPage() {
       <div className="bg-surface rounded-card border border-line/40 shadow-card">
         <div className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 select-none">
           <div className="flex items-center gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-indigo-500/12 text-indigo-600 dark:text-indigo-400">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-member-1-soft text-member-1">
               <Users className="size-4.5" />
             </div>
             <div>
