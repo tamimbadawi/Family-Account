@@ -2,12 +2,18 @@
  * Family Accounts — format helpers
  * Western digits (0–9) are used everywhere, in both languages.
  */
+import { currencySymbol } from './currency';
+
+export { COMMON_CURRENCIES, DEFAULT_CURRENCY, currencyChoices, currencyName, currencySymbol, isCurrencyCode } from './currency';
+export type { CurrencyChoice } from './currency';
 
 export interface MoneyOptions {
   sign?: boolean;
   compact?: boolean;
   hideCurrency?: boolean;
   fractionDigits?: number;
+  /** ISO code of the wallet's currency (a family has 1 or 2). Default EGP. */
+  currency?: string;
 }
 
 /**
@@ -30,7 +36,8 @@ export function normalizeDigits(str: string | null | undefined): string {
 }
 
 /**
- * Formats a currency amount in EGP with Western digits in both English and Arabic.
+ * Formats an amount with Western digits in both English and Arabic, in EGP unless
+ * `options.currency` names the wallet's currency.
  * Examples:
  *   money(1250, 'en') => "1,250 EGP"
  *   money(1250.5, 'ar') => "1,250.50 ج.م"
@@ -42,7 +49,7 @@ export function money(
   options: MoneyOptions = {}
 ): string {
   const isAr = locale.startsWith('ar');
-  const currencySymbol = isAr ? 'ج.م' : 'EGP';
+  const symbol = currencySymbol(options.currency, locale);
 
   const absAmount = Math.abs(amount);
   const isInt = absAmount % 1 === 0;
@@ -76,7 +83,7 @@ export function money(
     return `${prefix}${formattedNum}`;
   }
 
-  return `${prefix}${formattedNum} ${currencySymbol}`;
+  return `${prefix}${formattedNum} ${symbol}`;
 }
 
 export interface BilingualRow {

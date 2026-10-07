@@ -8,6 +8,8 @@ declare
   hid uuid; n int; r text := ''; ok boolean;
 begin
   insert into auth.users (id, email) values (mom, 'smoke-mom-' || mom || '@test.local'), (bad, 'smoke-x-' || bad || '@test.local');
+  -- Only a family admin invited by the operator can create a family (0009)
+  update auth.users set raw_app_meta_data = '{"family_admin": true}' where id = mom;
   execute 'set local role authenticated';
   perform set_config('request.jwt.claim.sub', mom::text, true);
   perform set_config('request.jwt.claims', json_build_object('sub', mom, 'role', 'authenticated')::text, true);

@@ -15,7 +15,8 @@ const namespaces = [
   'offline',
   'styleguide',
   'wallets',
-  'family'
+  'family',
+  'operator'
 ] as const;
 
 function isAppLocale(locale: string | undefined): locale is Locale {
