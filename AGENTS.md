@@ -15,7 +15,7 @@ that your workflow names. Work through **your queue** on the board, one branch p
 | Phase | What | Data source |
 |---|---|---|
 | **A — Interface** | Every screen, fully polished, on realistic sample data | `NEXT_PUBLIC_DATA_MODE=mock` (Dexie, on the phone) |
-| **B — Real data** | Supabase auth, database, offline sync behind the *same* interface | `NEXT_PUBLIC_DATA_MODE=live` |
+| **B — Real data** | Supabase auth and database behind the *same* interface (online-only saves) | `NEXT_PUBLIC_DATA_MODE=live` |
 
 Phase B starts **only** after `docs/PROGRESS.md` shows the "Family approval" gate ticked.
 In Phase B you must not redesign screens — only swap what is behind `src/lib/data/repository.ts`.
@@ -34,7 +34,7 @@ Never use `next-pwa` (unmaintained, webpack-only).
 
 1. **Screens never import Supabase.** All data goes through the `Repository` interface in
    `src/lib/data/repository.ts`, obtained from the `useRepository()` hook.
-2. **Writes go through the browser** (repository → Dexie → outbox → Supabase). No Server Actions for writes — they cannot queue offline.
+2. **Writes go through the browser** (repository → Supabase, then the Dexie read cache). Saves are online-only: no outbox, no offline queue. No Server Actions for writes.
 3. **IDs are generated on the phone** with `crypto.randomUUID()`; sync uses `upsert` so retries never duplicate.
 4. **Money:** `numeric(14,2)` in the DB; in TS keep amounts as numbers rounded to 2 dp at the edge; display only via `money()` in `src/lib/format`. Currency is EGP.
 5. **Hierarchy:** Category → Subcategory → Item. An expense/income entry stores only `item_id`. Transfers store `to_account_id` and no item.
@@ -52,7 +52,7 @@ Never use `next-pwa` (unmaintained, webpack-only).
 - No raw strings in components — every user-facing string comes from `messages/en/<namespace>.json` + `messages/ar/<namespace>.json` (add both every time).
 - **Western digits (0–9) everywhere, in both languages.** Arabic is for wording only. Format with `numberingSystem: 'latn'`.
 - Amount entry uses the custom on-screen `AmountPad` — never the iOS keyboard. Normalise Arabic-Indic digits (٠-٩) and `٫` with `normalizeDigits()` anywhere text becomes a number.
-- Feedback: Undo toasts (6 s) instead of "Are you sure?" dialogs. Offline is never an error.
+- Feedback: Undo toasts (6 s) instead of "Are you sure?" dialogs. Offline: a short "No connection" toast on Save, never a dialog.
 - Motion 150–250 ms, ease-out; honour `prefers-reduced-motion`.
 - Light and dark mode both first-class (follow iOS setting).
 - **Feels like a native app:** fixed full-screen shell, the page never scrolls or bounces; only list content scrolls inside it. Home, the entry sheet and Settings fit 390×844 with no scrolling (DESIGN.md §3).
@@ -82,7 +82,7 @@ supabase/migrations SQL — applied in Phase B via MCP, never edited after being
 supabase/tests      RLS smoke test (runs inside a rolled-back transaction)
 .agents/workflows   one workflow per roadmap step: /a0-scaffold … /b6-handover, /design-review
 src/lib/data        Repository interface + mock + live implementations
-src/lib/offline     Dexie schema, outbox, sync engine (Phase B)
+src/lib/offline     Dexie schema (read cache) and pull (Phase B)
 src/lib/reports     pivot() and report helpers — pure, unit-tested
 ```
 

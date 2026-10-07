@@ -1,16 +1,18 @@
 ---
-description: Step B3 — live repository on Dexie + outbox + Supabase sync, switched on without changing any screen.
+description: Step B3 — live repository on Supabase with a Dexie read cache; saves are online-only. Switched on without changing any screen.
 ---
 
-# B3 · Live repository with offline sync
+# B3 · Live repository (online-only saves)
 
-Read `AGENTS.md`, `.agents/rules/03-data-offline.md`, and `docs/PLAN.md` "Offline strategy" (all 9 points).
+Read `AGENTS.md`, `.agents/rules/03-data-offline.md`, and `docs/PLAN.md` "Offline strategy".
+Decision 2026-10-07: **no offline saving.** No outbox, no background sync, no "Needs attention" queue.
 
-1. `src/lib/offline/outbox.ts` and `sync.ts` exactly per the Offline strategy (ordered push via upsert, pull with 5-minute overlap cursor per table, triggers on open/visible/online/after-write, backoff, failed rows kept and surfaced).
-2. `src/lib/data/live-repository.ts` implementing the same `Repository` interface on top of the Dexie tables + outbox. No screen component may change; if one must, explain why first.
-3. First login on a device: full pull, show a one-time "جاري التحميل…" skeleton.
-4. Receipt photos: queue uploads in the outbox (blob from the Dexie `photos` table → Storage bucket `receipts` at `<household_id>/<transaction_id>.jpg`, `upsert: true`), then set `photo_path`. Download photos lazily when viewed and cache them in Dexie. Never cache `*.supabase.co` in the service worker.
-5. Sync dot: synced / N waiting / offline. Settings → "محتاج انتباه" lists failed rows with Retry and Discard.
-5. Set `NEXT_PUBLIC_DATA_MODE=live` in Vercel (Preview first).
-6. Tests: vitest for outbox ordering and cursor logic. Manual (on the preview): airplane mode → add 3 entries + edit 1 + create a new item and use it → reconnect → confirm in Supabase (`execute_sql`) every row arrived exactly once, and a second device sees them after opening.
-7. Definition of Done.
+1. `src/lib/data/live-repository.ts` implementing the same `Repository` interface. Every write: validate (zod) → `upsert` to Supabase → on success put the returned row into Dexie `fa-live`. On failure or `navigator.onLine === false`: write nothing and throw a typed `OfflineError`; the screen keeps its input and shows the "No connection — try again" toast. No screen component may change beyond showing that toast; if one must, explain why first.
+2. `src/lib/offline/sync.ts` is pull-only: per-table `updated_at > last pull − 5 min`, on app open / visible / `online`; full pull + drop missing rows if the last pull is older than 25 days.
+3. First login on a device: full pull, show a one-time loading skeleton.
+4. Balance corrections: compute the correction from the server balance (`v_account_balances`) at save time (PROGRESS P1).
+5. Receipt photos: upload to Storage `receipts/<household_id>/<transaction_id>.jpg` (`upsert: true`) first, then save the entry with `photo_path`. Download lazily when viewed and cache in Dexie. Never cache `*.supabase.co` in the service worker.
+6. Sync dot shows online / offline only (no "N waiting").
+7. Set `NEXT_PUBLIC_DATA_MODE=live` in Vercel (Preview first).
+8. Tests: vitest for the pull cursor and for "a failed upsert writes nothing to Dexie". Manual on two phones per the B3 definition of done in `docs/PROGRESS.md`.
+9. Definition of Done.
