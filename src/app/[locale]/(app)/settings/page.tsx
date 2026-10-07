@@ -17,6 +17,7 @@ import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { useHouseholdMembers, useRepository } from '@/lib/data/provider';
 import { localISODate } from '@/lib/format';
 import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
+import { entriesToCsv } from '@/lib/reports/export';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
@@ -36,35 +37,8 @@ export default function SettingsPage() {
   const handleDownloadCsv = async () => {
     try {
       setIsExporting(true);
-      const entries = await repo.listEntries({ includeDeleted: true });
-      const BOM = '\uFEFF';
-      const headers = [
-        'Date',
-        'Type',
-        'Amount',
-        'Category (AR)',
-        'Category (EN)',
-        'Item (AR)',
-        'Item (EN)',
-        'Wallet',
-        'To Wallet',
-        'Note',
-      ];
-      const rows = entries.map((e) => [
-        e.occurredOn,
-        e.type,
-        e.amount.toFixed(2),
-        `"${(e.categoryNameAr || '').replace(/"/g, '""')}"`,
-        `"${(e.categoryNameEn || '').replace(/"/g, '""')}"`,
-        `"${(e.itemNameAr || '').replace(/"/g, '""')}"`,
-        `"${(e.itemNameEn || '').replace(/"/g, '""')}"`,
-        `"${(e.accountNameEn || e.accountNameAr || '').replace(/"/g, '""')}"`,
-        `"${(e.toAccountNameEn || e.toAccountNameAr || '').replace(/"/g, '""')}"`,
-        `"${(e.note || '').replace(/"/g, '""')}"`,
-      ]);
-
-      const csvContent =
-        BOM + [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
+      const entries = await repo.listEntries({ includeDeleted: false });
+      const csvContent = entriesToCsv(entries, locale as 'ar' | 'en');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

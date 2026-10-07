@@ -592,7 +592,8 @@ const FLOWS = {
     await sleep(800);
 
     // Switch to page 2 (Trends and Wallets)
-    const page2Dot = page.getByRole('button', { name: /Page 2/i });
+    const page2Dot = page.locator('button[aria-label*="Page 2"]').first();
+    await page2Dot.scrollIntoViewIfNeeded().catch(() => {});
     if (await page2Dot.isVisible()) {
       await page2Dot.click();
       await sleep(400);
@@ -651,9 +652,60 @@ const FLOWS = {
     await undoBtn.click();
     await sleep(500);
   },
+
+  async download_data(page, { locale, vp }) {
+    const size = vp ? `${vp[0]}x${vp[1]}` : '';
+    await page.goto(`${BASE}/${locale}/settings`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    const downloadBtn = page.locator('[role="button"]').filter({
+      hasText: locale === 'ar' ? 'تنزيل بياناتي' : 'Download my data',
+    }).first();
+    await assertUsable(page, downloadBtn, `Download my data button (${locale}/${size})`);
+
+    const [download] = await Promise.all([
+      page.waitForEvent('download', { timeout: 15000 }),
+      downloadBtn.click(),
+    ]);
+
+    const filename = download.suggestedFilename();
+    if (!filename.endsWith('.csv')) {
+      throw new Error(`Expected .csv file download, got: ${filename} (${locale}/${size})`);
+    }
+
+    const stream = await download.createReadStream();
+    const chunks = [];
+    for await (const chunk of stream) {
+      chunks.push(chunk);
+    }
+    const content = Buffer.concat(chunks).toString('utf-8');
+
+    // Strip BOM if present
+    const cleanContent = content.startsWith('\uFEFF') ? content.slice(1) : content;
+    const firstLine = cleanContent.split(/\r?\n/)[0];
+
+    const expectedHeader = locale === 'ar'
+      ? 'التاريخ,النوع,المبلغ,القسم,الفرع,البند,المحفظة,ملاحظة,بواسطة'
+      : 'Date,Type,Amount,Category,Subcategory,Item,Wallet,Note,Entered by';
+
+    if (firstLine !== expectedHeader) {
+      throw new Error(
+        `CSV header mismatch (${locale}/${size}): expected "${expectedHeader}", got "${firstLine}"`
+      );
+    }
+  },
 };
 
-const MULTI_LOCALE_FLOW_NAMES = ['reports_tabs', 'reports_library', 'reports_sheets', 'reports_planning', 'reports_wallets', 'our_money', 'update_balance'];
+const MULTI_LOCALE_FLOW_NAMES = [
+  'reports_tabs',
+  'reports_library',
+  'reports_sheets',
+  'reports_planning',
+  'reports_wallets',
+  'our_money',
+  'update_balance',
+  'download_data',
+];
 const LOCALES = ['en', 'ar'];
 
 const selected = process.argv.slice(2).filter((a) => FLOWS[a]);
