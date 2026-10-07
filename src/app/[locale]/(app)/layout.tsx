@@ -4,7 +4,6 @@ import * as React from 'react';
 import { RepositoryProvider } from '@/lib/data/provider';
 import { Header } from '@/components/layout/Header';
 import { TabBar } from '@/components/layout/TabBar';
-import { FloatingAddButton } from '@/components/layout/FloatingAddButton';
 import { PageTransition } from '@/components/layout/PageTransition';
 import { EntrySheetProvider } from '@/components/entry/EntrySheetContext';
 import { EntrySheet } from '@/components/entry/EntrySheet';
@@ -28,7 +27,6 @@ export default function AppLayout({
             </PageTransition>
           </main>
 
-          <FloatingAddButton />
           <TabBar />
           <EntrySheet />
         </div>
