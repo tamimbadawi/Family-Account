@@ -85,7 +85,21 @@ Deno.serve(async (req) => {
         email_confirm: true,
         user_metadata: { must_change_password: true },
       });
-      if (error || !created.user) return reply(409, { error: 'username_taken' });
+      if (error || !created.user) {
+        const code = (error as { code?: string } | null)?.code ?? '';
+        if (code === 'email_exists' || code === 'user_already_exists' || /already/i.test(error?.message ?? '')) {
+          // Say who signs in with that name (a removed member keeps their login, so it can be nobody here)
+          const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
+          const holder = list?.users.find((u) => u.email === usernameToEmail(username));
+          const { data: row } = holder
+            ? await admin.from('household_members').select('display_name').eq('household_id', hid).eq('user_id', holder.id).maybeSingle()
+            : { data: null };
+          return reply(409, { error: row ? 'username_taken' : 'username_taken_removed', name: row?.display_name ?? '' });
+        }
+        if (code === 'weak_password') return reply(400, { error: 'weak_password' });
+        console.error('[family-admin] createUser failed', code, error?.message);
+        return reply(500, { error: 'add_failed' });
+      }
       const { error: memberError } = await admin
         .from('household_members')
         .insert({ household_id: hid, user_id: created.user.id, display_name: displayName, role: 'member' });

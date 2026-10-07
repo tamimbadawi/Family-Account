@@ -22,12 +22,15 @@
   "adminDone": "Admin changed",
   "loadFailed": "Couldn't load the family. Check your connection.",
   "errors": {
-    "username_taken": "Someone already has that name. Try another one.",
+    "username_taken": "{name} already signs in with this name. Choose another name.",
     "bad_name": "Write the name in English letters",
     "short_password": "Use at least 6 characters",
     "owner_only": "Only the admin can do this",
     "cannot_remove_self": "You can't remove yourself",
-    "failed": "That didn't work. Check your connection and try again."
+    "failed": "That didn't work. Check your connection and try again.",
+    "username_taken_removed": "This name belonged to someone who was removed. Choose another name.",
+    "weak_password": "That password is too easy to guess. Try another one.",
+    "add_failed": "Couldn't add them. Check your connection and try again."
   },
   "tryAgain": "Try again",
   "password": "Password"

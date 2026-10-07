@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useHouseholdMembers } from '@/lib/data/provider';
 import { isAuthConfigured } from '@/lib/supabase/client';
-import { familyAdmin, type FamilyList, type FamilyMember } from '@/lib/auth/family-admin';
+import { familyAdmin, FamilyAdminError, type FamilyList, type FamilyMember } from '@/lib/auth/family-admin';
 import { normalizeUsername } from '@/lib/auth/username';
 import { isEnglishName } from '@/lib/members';
 
@@ -86,7 +86,8 @@ export default function FamilyPage() {
       await load();
     } catch (err) {
       const code = err instanceof Error ? err.message : 'failed';
-      setError(t.has(`errors.${code}`) ? t(`errors.${code}`) : t('errors.failed'));
+      const name = err instanceof FamilyAdminError ? (err.details.name ?? '') : '';
+      setError(t.has(`errors.${code}`) ? t(`errors.${code}`, { name }) : t('errors.failed'));
     } finally {
       setBusy(false);
     }
