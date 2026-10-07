@@ -1,0 +1,13 @@
+{
+  "badge": "Sample data",
+  "badgeLabel": "You are looking at sample data. Tap to learn more",
+  "title": "This is sample data",
+  "body": "The entries, amounts and bank balances you see are made up, so you can look around and try everything. Nothing here is real.",
+  "adminBody": "When your family is ready, clear the samples and start with your own money. Your categories stay; the entries, budgets and sample balances go, including anything you added for practice.",
+  "memberBody": "{name}, your family admin, can clear the samples when your family is ready to start.",
+  "memberBodyPlain": "Your family admin can clear the samples when your family is ready to start.",
+  "clear": "Clear sample data and start",
+  "keep": "Keep looking around",
+  "cleared": "Sample data cleared. Add your first entry!",
+  "failed": "Could not clear the sample data. Try again."
+}

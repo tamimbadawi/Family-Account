@@ -104,3 +104,14 @@ export function useEntryAuthor(): (createdBy: string | null | undefined) => Memb
     [live, sample, real]
   );
 }
+
+/**
+ * Whether the signed-in person is the family admin (owner). In local sample-data mode, with no
+ * sign-in, the phone's user counts as the admin. Undefined while the household is loading.
+ */
+export function useIsFamilyAdmin(): boolean | undefined {
+  const real = useRealFamily();
+  if (!isAuthConfigured()) return true;
+  if (!real) return undefined;
+  return real.members.some((m) => m.userId === real.me && m.role === 'owner');
+}

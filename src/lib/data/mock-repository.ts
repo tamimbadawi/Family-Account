@@ -110,6 +110,8 @@ export class MockRepository implements Repository {
 
     promise = (async () => {
       try {
+        // The family cleared the samples to start on their own data: never load them again
+        if ((await this.db.meta.get('sampleCleared'))?.value === true) return;
         const seeded = await this.db.meta.get('seeded');
         const seedVersion = await this.db.meta.get('seedVersion');
         // A store marked as seeded but holding no entries at all (not even deleted ones) lost its sample
@@ -255,7 +257,54 @@ export class MockRepository implements Repository {
   async reset(): Promise<void> {
     MockRepository.seedPromises.delete(this.db);
     this.seedPromise = null;
+    await this.db.meta.delete('sampleCleared');
     await this.seed();
+  }
+
+  // ---------- Sample data ----------
+
+  async hasSampleData(): Promise<boolean> {
+    return (await this.db.meta.get('sampleCleared'))?.value !== true;
+  }
+
+  async clearSampleData(): Promise<() => Promise<void>> {
+    await this.ensureSeeded();
+    const sampleWalletIds = new Set(DEFAULT_WALLETS.map((w) => w.id));
+    const tables = [this.db.transactions, this.db.photos, this.db.budgets, this.db.accounts, this.db.meta];
+
+    // Kept in memory for the Undo toast
+    const before = {
+      transactions: await this.db.transactions.toArray(),
+      photos: await this.db.photos.toArray(),
+      budgets: await this.db.budgets.toArray(),
+      wallets: await this.db.accounts.bulkGet([...sampleWalletIds]),
+    };
+
+    await this.db.transaction('rw', tables, async () => {
+      await Promise.all([this.db.transactions.clear(), this.db.photos.clear(), this.db.budgets.clear()]);
+      const now = new Date().toISOString();
+      for (const wallet of before.wallets) {
+        if (!wallet) continue;
+        await this.db.accounts.update(wallet.id, {
+          opening_balance: 0,
+          // Cash is in every home; the sample banks are hidden (Settings → Wallets → Show hidden)
+          is_archived: wallet.type === 'cash' ? wallet.is_archived : true,
+          updated_at: now,
+        });
+      }
+      await this.db.meta.put({ key: 'sampleCleared', value: true });
+      await this.db.meta.put({ key: 'budgetsSeeded', value: true });
+    });
+
+    return async () => {
+      await this.db.transaction('rw', tables, async () => {
+        await this.db.transactions.bulkPut(before.transactions);
+        await this.db.photos.bulkPut(before.photos);
+        await this.db.budgets.bulkPut(before.budgets);
+        await this.db.accounts.bulkPut(before.wallets.filter((w) => w !== undefined));
+        await this.db.meta.delete('sampleCleared');
+      });
+    };
   }
 
   // ---------- Household & Members ----------

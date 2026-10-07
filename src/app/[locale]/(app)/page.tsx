@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { OurMoneyRow } from '@/components/wallets/OurMoneySheet';
+import { SampleDataBadge } from '@/components/layout/SampleDataBadge';
 import { money, pickName } from '@/lib/format';
 import { useSignedInName } from '@/lib/auth/use-signed-in-name';
 
@@ -135,11 +136,13 @@ export default function HomePage() {
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-3 pt-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-2 select-none">
-      {/* 1. Greeting */}
-      <div>
-        <span className="text-body font-medium text-ink-muted">
+      {/* 1. Greeting (and the sample-data chip while the samples are still there) */}
+      <div className="flex items-center justify-between gap-2">
+        <span className="min-w-0 truncate text-body font-medium text-ink-muted">
           {greeting}
         </span>
+        {/* The 48px tap area overlaps the space around the line instead of making it taller */}
+        <SampleDataBadge className="-my-3" />
       </div>
 
       {/* 2. Hero Card */}
