@@ -1,4 +1,4 @@
--- Smoke test for 0009_budgets.sql. Same pattern as rls_smoke_test.sql:
+-- Smoke test for 0010_budgets.sql. Same pattern as rls_smoke_test.sql:
 -- one DO block that always ends with an exception, so everything rolls back.
 -- EXPECTED OUTPUT: an ERROR starting with "SMOKE TEST RESULTS"; every line must say PASS.
 
@@ -9,9 +9,9 @@ declare
   hid uuid; food uuid; groceries uuid; other_group uuid; income_cat uuid; bid uuid;
   n int; r text := ''; ok boolean;
 begin
-  insert into auth.users (id, email) values
-    (mom, 'smoke-mom-' || mom || '@test.local'),
-    (stranger, 'smoke-x-' || stranger || '@test.local');
+  insert into auth.users (id, email, raw_app_meta_data) values
+    (mom, 'smoke-mom-' || mom || '@test.local', '{"family_admin": true}'),
+    (stranger, 'smoke-x-' || stranger || '@test.local', '{}');
 
   execute 'set local role authenticated';
 

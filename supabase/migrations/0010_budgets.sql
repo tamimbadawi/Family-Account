@@ -1,10 +1,10 @@
--- 0009_budgets.sql · monthly budgets per expense category or group (2026-10-07)
+-- 0010_budgets.sql · monthly budgets per expense category or group (2026-10-07)
 --
 -- One row = a monthly spending limit on an expense category (subcategory_id null) or on one
 -- group (subcategory) inside it. The same amount applies to every month. "Removing" a budget
 -- archives it (no DELETE policy, nothing is hard-deleted). The app warns softly from 80%.
 -- Every new household gets its own starter budgets (amounts vary per family); they are normal
--- rows the family can change or remove. is_starter turns false once the app saves a change.
+-- rows the family can change or remove (create_family calls seed_budgets). is_starter turns false once the app saves a change.
 
 create table public.budgets (
   id             uuid primary key default gen_random_uuid(), -- normally generated on the phone
@@ -78,22 +78,31 @@ begin
   end loop;
 end $$;
 
--- Same as 0005, plus the starter budgets.
-create or replace function public.create_household(
-  p_name text, p_display_name text, p_locale text default 'en')
+-- Same as create_family in 0009_multi_family.sql, plus the starter budgets.
+create or replace function public.create_family(
+  p_name text, p_display_name text, p_locale text default 'en', p_currencies text[] default '{EGP}')
 returns uuid language plpgsql security definer set search_path = ''
 as $$
-declare hid uuid;
+declare hid uuid; clean text[];
 begin
   if auth.uid() is null then raise exception 'Not signed in'; end if;
+  if not coalesce((select (u.raw_app_meta_data ->> 'family_admin')::boolean
+                   from auth.users u where u.id = auth.uid()), false) then
+    raise exception 'Only an invited family admin can create a family' using errcode = '42501';
+  end if;
   if exists (select 1 from public.household_members where user_id = auth.uid()) then
     raise exception 'Already in a household';
   end if;
-  insert into public.households (name) values (p_name) returning id into hid;
+  if coalesce(trim(p_name), '') = '' then raise exception 'The family needs a name' using errcode = '23514'; end if;
+  clean := array(select upper(trim(x)) from unnest(p_currencies) with ordinality as u(x, n) order by n);
+  if not public.valid_currencies(clean) then
+    raise exception 'Choose one or two currencies' using errcode = '23514';
+  end if;
+  insert into public.households (name, currencies) values (trim(p_name), clean) returning id into hid;
   insert into public.household_members (household_id, user_id, display_name, role, locale)
-  values (hid, auth.uid(), p_display_name, 'owner', p_locale);
-  insert into public.accounts (household_id, name_en, name_ar, type, icon)
-  values (hid, 'Cash at home', 'كاش في البيت', 'cash', 'banknote');
+  values (hid, auth.uid(), trim(p_display_name), 'owner', p_locale);
+  insert into public.accounts (household_id, name_en, name_ar, type, icon, currency)
+  values (hid, 'Cash', 'كاش', 'cash', 'banknote', clean[1]);
   perform public.seed_defaults(hid);
   perform public.seed_corrections(hid);
   perform public.seed_budgets(hid);
@@ -101,8 +110,6 @@ begin
 end $$;
 
 revoke execute on function public.seed_budgets(uuid) from public, anon, authenticated;
-revoke execute on function public.create_household(text, text, text) from public, anon;
-grant  execute on function public.create_household(text, text, text) to authenticated;
 
 -- Households created before this migration get their starter budgets too.
 do $$

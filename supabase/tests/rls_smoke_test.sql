@@ -21,6 +21,8 @@ begin
     (mom, 'smoke-mom-' || mom || '@test.local'),
     (dad, 'smoke-dad-' || dad || '@test.local'),
     (bad, 'smoke-x-'   || bad || '@test.local');
+  -- Only a family admin invited by the operator can create a family (0009)
+  update auth.users set raw_app_meta_data = '{"family_admin": true}' where id = mom;
   dad_email := 'smoke-dad-' || dad || '@test.local';
 
   execute 'set local role authenticated';
@@ -32,7 +34,10 @@ begin
   select count(*) into n from public.items;
   r := r || format(E'\n%s seed created items (%s)', case when n > 20 then 'PASS' else 'FAIL' end, n);
 
-  perform public.add_member(dad_email, 'Dad');
+  -- The family-admin Edge Function adds members with the service role (add_member RPC dropped in 0009)
+  execute 'reset role';
+  insert into public.household_members (household_id, user_id, display_name) values (hid, dad, 'Dad');
+  execute 'set local role authenticated';
 
   select id into cash from public.accounts where household_id = hid and type = 'cash';
   insert into public.accounts (household_id, name_en, type) values (hid, 'Bank', 'bank') returning id into bank;

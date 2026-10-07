@@ -100,7 +100,7 @@ function audit() {
     if (offscreen || bigBlocker) cutBottom.push(label(t));
     else covered.push(label(t));
   }
-  const errors = (document.body.innerText.match(/(something went wrong|couldn.t load|NaN|undefined)/gi) || []);
+  const errors = (document.body.innerText.match(/(something went wrong|couldn.t load|\bNaN\b|\bundefined\b)/gi) || []);
   const uniq = (a) => [...new Set(a)].slice(0, 6);
   return {
     pageScrolls: se.scrollHeight > se.clientHeight + 2,

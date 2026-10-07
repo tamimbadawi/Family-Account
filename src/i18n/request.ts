@@ -16,6 +16,7 @@ const namespaces = [
   'styleguide',
   'wallets',
   'family',
+  'operator',
   'budgets'
 ] as const;
 

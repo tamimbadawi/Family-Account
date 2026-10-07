@@ -10,7 +10,8 @@ import { db } from '@/lib/offline/db';
 import { DEMO_HOUSEHOLD_ID, USER_MAMA_ID } from '@/lib/data/mock-seed';
 import { isEnglishName } from '@/lib/members';
 import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
-import { emailToUsername } from '@/lib/auth/username';
+import { CurrencySelect } from '@/components/family/CurrencySelect';
+import { DEFAULT_CURRENCY } from '@/lib/format';
 
 export default function WelcomePage() {
   const tAuth = useTranslations('auth');
@@ -18,9 +19,24 @@ export default function WelcomePage() {
   const locale = useLocale();
 
   const [householdName, setHouseholdName] = React.useState('بيت العيلة');
-  const [yourName, setYourName] = React.useState('Mama');
+  // The name the app shows for this person everywhere ("Added by Injy"); the email is only for signing in
+  const [yourName, setYourName] = React.useState(isAuthConfigured() ? '' : 'Mama');
+  // The family picks its own currencies: a main one and, if they want, a second one
+  const [mainCurrency, setMainCurrency] = React.useState(DEFAULT_CURRENCY);
+  const [secondCurrency, setSecondCurrency] = React.useState('');
   const nameIsValid = isEnglishName(yourName);
   const [saving, setSaving] = React.useState(false);
+
+  // Signed in for real: the family name the operator chose when starting this family
+  React.useEffect(() => {
+    if (!isAuthConfigured()) return;
+    getSupabaseBrowserClient()
+      .auth.getUser()
+      .then(({ data }) => {
+        const chosen = data.user?.app_metadata?.family_name;
+        if (typeof chosen === 'string' && chosen.trim()) setHouseholdName(chosen.trim());
+      });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,15 +47,16 @@ export default function WelcomePage() {
       // Real sign-in: the first person to sign in creates the household and becomes its owner (admin)
       try {
         const supabase = getSupabaseBrowserClient();
-        const { error } = await supabase.rpc('create_household', {
+        const { error } = await supabase.rpc('create_family', {
           p_name: householdName.trim() || 'عائلتنا',
           p_display_name: yourName.trim(),
           p_locale: locale,
+          p_currencies: secondCurrency ? [mainCurrency, secondCurrency] : [mainCurrency],
         });
         if (error) throw error;
         router.replace('/');
       } catch (err) {
-        console.error('create_household failed:', err);
+        console.error('create_family failed:', err);
         setSaving(false);
       }
       return;
@@ -49,6 +66,7 @@ export default function WelcomePage() {
       // Store names in the local database
       await db.households.update(DEMO_HOUSEHOLD_ID, {
         name: householdName.trim() || 'عائلتنا',
+        currency: mainCurrency,
       });
       await db.household_members.update([DEMO_HOUSEHOLD_ID, USER_MAMA_ID], {
         display_name: yourName.trim(),
@@ -59,17 +77,6 @@ export default function WelcomePage() {
       router.push('/');
     }
   };
-
-  // Signed in for real: suggest the person's own username as their name (e.g. "Injy")
-  React.useEffect(() => {
-    if (!isAuthConfigured()) return;
-    getSupabaseBrowserClient()
-      .auth.getUser()
-      .then(({ data }) => {
-        const u = emailToUsername(data.user?.email);
-        if (u) setYourName(u.charAt(0).toUpperCase() + u.slice(1));
-      });
-  }, []);
 
   return (
     <div className="mx-auto flex h-dvh max-w-[520px] flex-col justify-between overflow-hidden bg-canvas px-6 pt-[max(env(safe-area-inset-top,0px),1.5rem)] pb-[max(env(safe-area-inset-bottom,0px),1.5rem)] text-ink select-none">
@@ -131,6 +138,24 @@ export default function WelcomePage() {
           >
             {tAuth('nameEnglishOnly')}
           </p>
+        </div>
+
+        <div>
+          <p className="mb-1.5 block text-caption font-medium text-ink-muted">{tAuth('currencies')}</p>
+          <div className="space-y-3">
+            <CurrencySelect
+              value={mainCurrency}
+              exclude={secondCurrency}
+              onChange={setMainCurrency}
+            />
+            <CurrencySelect
+              value={secondCurrency}
+              exclude={mainCurrency}
+              noneLabel={tAuth('noSecondCurrency')}
+              onChange={setSecondCurrency}
+            />
+          </div>
+          <p className="mt-1.5 text-caption text-ink-muted">{tAuth('currenciesHint')}</p>
         </div>
 
         <Button

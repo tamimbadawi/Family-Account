@@ -1,12 +1,14 @@
-// family-admin · lets the household owner (Injy) manage family logins from the app.
+// family-admin · lets a family's admin (household owner) manage that family's logins from the app.
 // Runs on Supabase with the service-role key from its own environment; that key never
-// reaches the app, Vercel or git. Every action first checks the caller's JWT and role.
+// reaches the app, Vercel or git. Every action first checks the caller's JWT and role,
+// and every query is limited to the caller's own household.
+//
+// People sign in with their email (docs/MULTI-FAMILY.md). The name the admin types when adding
+// someone is what the app shows everywhere; the email is only for signing in.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const DOMAIN = 'family.local';
-const usernameToEmail = (u: string) => `${u.trim().toLowerCase().replace(/\s+/g, '')}@${DOMAIN}`;
-const emailToUsername = (e?: string | null) => (e ? e.slice(0, e.lastIndexOf('@')) : '');
-const USERNAME_RE = /^[a-z0-9._-]{2,30}$/;
+const normalizeEmail = (e: string) => e.trim().toLowerCase();
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const NAME_RE = /^[A-Za-z][A-Za-z .'-]{0,29}$/; // same rule as 0007 / isEnglishName()
 
 const cors = {
@@ -38,6 +40,9 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (!me) return reply(403, { error: 'no_household' });
   const hid = me.household_id;
+  // A family the operator suspended can't change anything either
+  const { data: family } = await admin.from('households').select('status').eq('id', hid).maybeSingle();
+  if (family?.status !== 'active') return reply(403, { error: 'suspended' });
   const isOwner = me.role === 'owner';
 
   let body: Record<string, string>;
@@ -57,7 +62,7 @@ Deno.serve(async (req) => {
     const members = await Promise.all(
       (rows ?? []).map(async (r) => {
         const { data } = await admin.auth.admin.getUserById(r.user_id);
-        return { userId: r.user_id, displayName: r.display_name, role: r.role, username: emailToUsername(data.user?.email) };
+        return { userId: r.user_id, displayName: r.display_name, role: r.role, email: data.user?.email ?? '' };
       })
     );
     return reply(200, { members, isOwner, me: caller.user.id });
@@ -73,31 +78,26 @@ Deno.serve(async (req) => {
 
   switch (body.action) {
     case 'add_member': {
-      const username = (body.username ?? '').trim().toLowerCase();
+      const email = normalizeEmail(body.email ?? '');
       const displayName = (body.displayName ?? '').trim();
       const password = body.password ?? '';
-      if (!USERNAME_RE.test(username)) return reply(400, { error: 'bad_username' });
       if (!NAME_RE.test(displayName)) return reply(400, { error: 'bad_name' });
+      if (!EMAIL_RE.test(email)) return reply(400, { error: 'bad_email' });
       if (password.length < 6) return reply(400, { error: 'short_password' });
       const { data: created, error } = await admin.auth.admin.createUser({
-        email: usernameToEmail(username),
+        email,
         password,
         email_confirm: true,
         user_metadata: { must_change_password: true },
       });
       if (error || !created.user) {
         const code = (error as { code?: string } | null)?.code ?? '';
+        // Never say which family has that email: it may belong to someone else's family
         if (code === 'email_exists' || code === 'user_already_exists' || /already/i.test(error?.message ?? '')) {
-          // Say who signs in with that name (a removed member keeps their login, so it can be nobody here)
-          const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
-          const holder = list?.users.find((u) => u.email === usernameToEmail(username));
-          const { data: row } = holder
-            ? await admin.from('household_members').select('display_name').eq('household_id', hid).eq('user_id', holder.id).maybeSingle()
-            : { data: null };
-          return reply(409, { error: row ? 'username_taken' : 'username_taken_removed', name: row?.display_name ?? '' });
+          return reply(409, { error: 'email_taken' });
         }
         if (code === 'weak_password') return reply(400, { error: 'weak_password' });
-        console.error('[family-admin] createUser failed', code, error?.message);
+        console.error('[family-admin] createUser failed', code);
         return reply(500, { error: 'add_failed' });
       }
       const { error: memberError } = await admin
