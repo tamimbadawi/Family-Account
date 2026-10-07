@@ -359,7 +359,11 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               >
-                {isInvalidAmount ? t('invalidAmount') : tCommon('save')}
+                {isInvalidAmount
+                  ? t('invalidAmount')
+                  : numericAmount > 0 && !isTransfer && !hasItem
+                    ? t('chooseCategoryFirst')
+                    : tCommon('save')}
               </motion.span>
             )}
           </AnimatePresence>

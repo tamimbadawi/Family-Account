@@ -55,5 +55,6 @@
   "back": "رجوع",
   "addedBy": "أضافها {name}",
   "changedBy": "آخر تعديل من {name}",
-  "swapWallets": "اعكس الاتجاه"
+  "swapWallets": "اعكس الاتجاه",
+  "chooseCategoryFirst": "اختار الفئة"
 }

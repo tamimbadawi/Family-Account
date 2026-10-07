@@ -59,7 +59,7 @@ async function assertOnePopup(page, amountText) {
   const shown = (await amount.innerText()).trim();
   if (shown !== amountText) throw new Error(`amount shows "${shown}" (should be "${amountText}")`);
   if (await btn(page, "Next").count()) throw new Error("a Next step is back; everything should be in one popup");
-  await assertUsable(page, page.getByRole("button", { name: /^(Save|Saved)$/ }).last(), "Save button without scrolling");
+  await assertUsable(page, page.getByRole("button", { name: /^(Save|Saved|Choose a category)$/ }).last(), "Save button without scrolling");
 }
 async function saveButton(page) {
   return page.getByRole('button', { name: /^(Save|Saved)$/ }).last();
@@ -158,8 +158,13 @@ const FLOWS = {
     await save.scrollIntoViewIfNeeded();
     await save.click();
     await sleep(800);
-    // Lands on the new category's groups, ready to add one
-    await assertUsable(page, btn(page, 'Pets test'), 'the new category after saving');
+    // The new category comes with a matching group and item, chosen at once: Save works straight away
+    await assertUsable(page, page.getByRole('button', { name: /Pets test/ }).first(), 'the new category chosen after saving');
+    await tap(page, '4');
+    await tap(page, '0');
+    const entrySave = await saveButton(page);
+    if ((await entrySave.innerText()).trim() !== 'Save') throw new Error(`button says "${(await entrySave.innerText()).trim()}" after creating a category`);
+    if (await entrySave.isDisabled()) throw new Error('Save stays disabled after creating a new category');
   },
   async photo(page) {
     await page.goto(BASE + '/en/history', { waitUntil: 'networkidle', timeout: 45000 });

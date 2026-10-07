@@ -74,14 +74,22 @@ export function CategoryRow({ kind, selected, onPick, onClear }: CategoryRowProp
 
   // Same form as Settings → Categories: both names, plus colour and icon for categories
   const handleCreate = async ({ nameAr, nameEn, color, icon }: CategoryFormValues) => {
+    // A new category or group comes with a matching group/item of the same name and is chosen at once,
+    // so Save works straight away (an entry needs an item; nobody should have to build three levels first)
     if (step === 'category') {
       const created = await repo.addCategory({ kind, nameAr, nameEn, color, icon });
+      const group = await repo.addSubcategory({ categoryId: created.id, nameAr, nameEn });
+      const item = await repo.addItem({ subcategoryId: group.id, nameAr, nameEn });
       setCategory(created);
-      setStep('subcategory');
+      setSubcategory(group);
+      setStep('item');
+      onPick(item);
     } else if (step === 'subcategory' && category) {
       const created = await repo.addSubcategory({ categoryId: category.id, nameAr, nameEn });
+      const item = await repo.addItem({ subcategoryId: created.id, nameAr, nameEn });
       setSubcategory(created);
       setStep('item');
+      onPick(item);
     } else if (step === 'item' && subcategory) {
       const created = await repo.addItem({ subcategoryId: subcategory.id, nameAr, nameEn });
       onPick(created);
