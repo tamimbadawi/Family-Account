@@ -147,7 +147,7 @@ export function FilterSheet({ open, onOpenChange, value, onApply, range }: Filte
                   </div>
                 </section>
 
-                {members.length > 1 && (
+                {members.length > 0 && (
                   <section className="space-y-2">
                     <h3 className="text-caption font-semibold text-ink-muted">{t('who')}</h3>
                     <div className="flex flex-wrap gap-2">
