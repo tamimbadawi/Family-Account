@@ -30,7 +30,7 @@ begin
   -- Mom creates the household
   perform set_config('request.jwt.claim.sub', mom::text, true);
   perform set_config('request.jwt.claims', json_build_object('sub', mom, 'role', 'authenticated')::text, true);
-  hid := public.create_household('Smoke', 'Mom', 'ar');
+  hid := public.create_family('Smoke', 'Mom', 'ar');
   select count(*) into n from public.items;
   r := r || format(E'\n%s seed created items (%s)', case when n > 20 then 'PASS' else 'FAIL' end, n);
 

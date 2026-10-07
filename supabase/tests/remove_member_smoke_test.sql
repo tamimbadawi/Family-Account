@@ -19,7 +19,7 @@ begin
 
   perform set_config('request.jwt.claim.sub', mom::text, true);
   perform set_config('request.jwt.claims', json_build_object('sub', mom, 'role', 'authenticated')::text, true);
-  hid := public.create_household('Smoke', 'Mom', 'en');
+  hid := public.create_family('Smoke', 'Mom', 'en');
   -- The family-admin Edge Function adds members with the service role (add_member RPC dropped in 0009)
   execute 'reset role';
   insert into public.household_members (household_id, user_id, display_name) values (hid, dad, 'Dad');
