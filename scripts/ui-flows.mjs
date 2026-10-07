@@ -310,6 +310,7 @@ const FLOWS = {
     for (const rId of reports) {
       // Find card link
       const link = page.locator(`a[href*="/reports/r/${rId}"]`).first();
+      await link.evaluate((el) => el.scrollIntoView({ block: "center" })); // users scroll the list to reach it
       await assertUsable(page, link, `link to ${rId}`);
       await link.click();
       await page.waitForURL(`**\/reports/r/${rId}*`, { timeout: 10000 });
@@ -453,6 +454,7 @@ const FLOWS = {
 
       // Find card link
       const link = page.locator(`a[href*="/reports/r/${rId}"]`).first();
+      await link.evaluate((el) => el.scrollIntoView({ block: "center" })); // users scroll the list to reach it
       await assertUsable(page, link, `link to ${rId}`);
       await link.click();
       await page.waitForURL(`**\/reports/r/${rId}*`, { timeout: 10000 });
@@ -535,6 +537,7 @@ const FLOWS = {
 
       // Find card link
       const link = page.locator(`a[href*="/reports/r/${rId}"]`).first();
+      await link.evaluate((el) => el.scrollIntoView({ block: "center" })); // users scroll the list to reach it
       await assertUsable(page, link, `link to ${rId}`);
       await link.click();
       await page.waitForURL(`**\/reports/r/${rId}*`, { timeout: 10000 });
