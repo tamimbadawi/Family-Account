@@ -73,8 +73,8 @@ _(write what you observed here: every hesitation, question, or complaint)_
 ### Before B3 (from the 2026-10-06 plan review) · must be closed before real data
 | # | Item | Where | Status |
 |---|---|---|---|
-| P1 | Balance corrections must not be a delta computed from the phone's local (possibly unsynced) balance. Store the target ("balance is X on date Y") and derive the correction amount from synced data, or recompute it at push time | B3 design | |
-| P2 | Receipt photos need their own upload queue: photo uploads first, then `photo_path` syncs on the entry; retry on failure; never sync a path whose file is missing | B3 | |
+| P1 | Balance corrections: compute the correction from the server balance at save time, never the phone's copy (simple now that saves are online-only) | B3 | |
+| P2 | Receipt photos: upload first, then save the entry with `photo_path`; a failed upload fails the save (no upload queue — saves are online-only) | B3 | |
 | P3 | Orphan receipts: the 30-day purge hard-deletes entries but not their Storage files. Add cleanup through the Storage API (scheduled edge function or the backup workflow), since SQL cannot delete Storage objects | B5 | |
 | P4 | `remove_member` RPC (owner only) + smoke test: removed member reads/writes nothing and sees no receipts; their entries stay | `0006` written, **apply in B2** | 🔍 |
 | P5 | Backups encrypted with `BACKUP_PASSPHRASE` (Injy only); job fails rather than upload plain SQL | `backup.yml` | ✅ |
@@ -82,17 +82,14 @@ _(write what you observed here: every hesitation, question, or complaint)_
 | P7 | Dates: `localISODate()` in `lib/format`; never `toISOString().slice(0,10)` | fixed in balance corrections + export names | ✅ |
 
 ### B3 definition of done · two real phones
-B3 is not done until each passes on two iPhones against the production project:
-1. Phone A offline: add 3 entries, edit one → reconnect → each reaches Supabase exactly once; Phone B shows them after open/focus.
-2. Same entry edited on both phones → the later push wins, no duplicate, no crash.
-3. Entry deleted on one phone while edited on the other → result is consistent on both after sync.
-4. Category and wallet created offline and used at once → both sync in order (no FK error).
-5. Receipt added offline → uploads after reconnect; receipt replaced offline → new photo shown on both.
-6. App killed / Safari closed mid-sync → nothing lost, nothing duplicated on next open.
-7. Connection drops halfway through a sync → resumes cleanly.
-8. Sign out with pending entries → user is warned; nothing is silently dropped.
-9. Fresh install / new phone → full household downloads; sync dot reaches "synced".
-10. Balance correction made offline on a stale phone → correct final balance on both phones (see P1).
+Saves are online-only (decided 2026-10-07; replaces the offline-sync checklist). B3 is not done until each passes on two iPhones against the production project:
+1. Phone A adds 3 entries and edits one → each is in Supabase exactly once; Phone B shows them after open/focus.
+2. Same entry edited on both phones → the later save wins, no duplicate, no crash.
+3. Airplane mode → Save shows "No connection — try again", the typed entry stays in the sheet, nothing is written; reconnect → Save works.
+4. Category and wallet created and used at once → no FK error.
+5. Receipt added → shown on both phones; receipt replaced → new photo on both.
+6. Fresh install / new phone → full household downloads.
+7. Balance correction → correct final balance on both phones (see P1).
 
 ### After launch (not before)
 Quick-repeat and favourite entries · smart category suggestion from the note · recurring expenses · monthly budgets ·
@@ -104,7 +101,7 @@ savings goals. Not planned: AI, notifications, bank feeds, investments, multi-cu
 | B1 | `/b1-database` — migrations, smoke test, advisors, types | AG-1 | `step/b1-database` | ✅ |
 | B2 | `/b2-auth` — Supabase auth, proxy, welcome, family | AG-1 | `step/b2-auth` | |
 | B5 | `/b5-keepalive-backups` — keep-alive, backups, CSV | AG-2 | `step/b5-keepalive` | |
-| B3 | `/b3-live-sync` — live repository + offline sync | AG-1 | `step/b3-live-sync` | |
+| B3 | `/b3-live-sync` — live repository, online-only saves | AG-1 | `step/b3-live-sync` | |
 | B4 | `/b4-reports-live` — reports on server views | AG-2 | `step/b4-reports-live` | |
 | B6 | `/b6-handover` — final QA + handover docs | AG-1 | `step/b6-handover` | |
 
@@ -134,4 +131,5 @@ savings goals. Not planned: AI, notifications, bank feeds, investments, multi-cu
 | 2026-10-06 | Reports flows | AG-2: ui:flows reports_tabs/library/sheets (en+ar, 3 sizes) + fixes: library links keep the locale, ?tab= read via useSearchParams. Merged with orchestrator lint fix (setState in effect -> derive during render). Gate on local main: reports flows 18/18, ui:check 42/42, build ok. Remaining ui:flows failures are the known entry-sheet ones (A3d). Follow-up: reports_sheets skips silently when a button is missing; biggest-expenses step looks for the wrong label |
 | 2026-10-06 | A2c PR 1 | AG-2 was stuck 40 min (installed eslint-plugin-react, hunted a non-existent SEED_VERSION); re-prompted with A2c split in 2 PRs. PR 1 merged with orchestrator fixes: no hard-coded Arabic note on corrections, no silent fallback to a random item, test conflict with A3c resolved, cash wallet named Cash/كاش ("Cash at home" truncated History/Home rows). Gate on local main: ui:check 42/42, ui:flows 40/40 (income/expense save now pass), build ok, 129 tests |
 | 2026-10-06 | Plan review | Claude: reviewed the external roadmap against the repo; most of it was already in PLAN.md. Added "Before B3" items P1–P7 and the two-phone B3 definition of done above. Fixed UTC date in balance corrections (`localISODate`), README rewritten (was "no app code yet"), backups now gpg-encrypted, `0006_remove_member` + smoke test written (not yet applied). Rejected from the review: versioned conflicts (LWW is enough for 3 people), 100k-row load tests, monitoring/notification phases, a separate ROADMAP.md |
+| 2026-10-07 | Plan | Claude: offline saving dropped at the user's request — everyone using the app is online. B3 is now online-only writes + a Dexie read cache (no outbox, sync queue or "Needs attention"); P1, P2 and the B3 definition of done simplified; PLAN, AGENTS, rule 03, DESIGN, README and the B3/B4/B6 workflows updated |
 | 2026-10-07 | A5e | AG-1: 6 Planning report screens + reports_planning flow. Merged with orchestrator fixes: 11px label -> caption token; sample entries never stamped after now (bank flow failed at 375x667 on production: a seeded noon entry sorted above a just-saved one), seed v3 so phones reseed. Gate on local main: ui:check 42/42, ui:flows 46/46, build ok, 139 tests. AG-1 -> A8a, AG-2 -> A5d while I review |

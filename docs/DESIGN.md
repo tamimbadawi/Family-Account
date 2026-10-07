@@ -12,7 +12,7 @@ Tokens: `design/tokens.css` (copied to `src/app/tokens.css`). This file explains
 1. **One thing per screen.** Each screen has one hero (usually a number) and one primary action.
 2. **Recognition over reading.** Colour + icon identify a category before its name is read.
 3. **Forgiving.** Everything is undoable. No "Are you sure?" for reversible actions.
-4. **Quietly reliable.** Offline is normal. The only sync signal is a small dot.
+4. **Quietly reliable.** The only connection signal is a small dot; with no signal, Save shows a short toast and keeps what was typed.
 5. **English is the default; Arabic wording is first-class.** Design in English first, then check Arabic (RTL). Arabic copy must read as natural Egyptian Arabic, never a literal translation. Screen labels below are quoted in Arabic; the English equivalents live in `messages/en/`.
 6. **Western digits everywhere.** Numbers, amounts and dates use 0–9 in both languages, including Arabic. With `ar-EG`, always pass `numberingSystem: 'latn'` to `Intl`.
 

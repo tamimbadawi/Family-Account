@@ -2,7 +2,7 @@
 
 A calm, bilingual (English/Arabic) household accounting app for iPhone, installed from the browser.
 Expenses, income and transfers across wallets; 3-level categories; a reports library and pivot tables;
-works offline; zero running costs.
+opens offline to view; saving needs a connection; zero running costs.
 
 **Live:** https://family-account-sigma.vercel.app (install from Safari → Share → Add to Home Screen)
 
@@ -56,7 +56,7 @@ Two Antigravity builder agents work in parallel on their own branches; Claude Co
 | Path | Purpose |
 |---|---|
 | `AGENTS.md` | Project rules every agent reads first |
-| `.agents/rules/` | Scoped rules: design quality, RTL/i18n, data/offline, Supabase security |
+| `.agents/rules/` | Scoped rules: design quality, RTL/i18n, data layer, Supabase security |
 | `.agents/workflows/` | One slash command per roadmap step + `/design-review` |
 | `docs/PROGRESS.md` | **Current status, queues and log (authoritative)** |
 | `docs/PLAN.md` | Architecture, schema, offline strategy, PWA, roadmap, risks, handover |
