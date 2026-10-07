@@ -7,8 +7,10 @@ import type { Category, CategoryKind, Item, Subcategory } from '@/lib/data/types
 import { useCategories, useItems, useRepository, useSubcategories } from '@/lib/data/provider';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { pickName } from '@/lib/format';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import {
+  CategoryFormDrawer,
+  type CategoryFormValues,
+} from '@/components/settings/CategoryFormDrawer';
 
 export interface CategoryRowProps {
   kind: CategoryKind;
@@ -28,17 +30,15 @@ const CHIP =
  */
 export function CategoryRow({ kind, selected, onPick, onClear }: CategoryRowProps) {
   const t = useTranslations('entry');
-  const tCommon = useTranslations('common');
+  const tSettings = useTranslations('settings');
   const locale = useLocale();
   const repo = useRepository();
-  const isRtl = locale === 'ar';
   const rowRef = React.useRef<HTMLDivElement>(null);
 
   const [step, setStep] = React.useState<Step>('category');
   const [category, setCategory] = React.useState<Category | null>(null);
   const [subcategory, setSubcategory] = React.useState<Subcategory | null>(null);
   const [isCreating, setIsCreating] = React.useState(false);
-  const [newName, setNewName] = React.useState('');
 
   // Reset when kind changes (expense <-> income)
   const [prevKind, setPrevKind] = React.useState(kind);
@@ -72,29 +72,20 @@ export function CategoryRow({ kind, selected, onPick, onClear }: CategoryRowProp
     }
   };
 
-  const handleCreate = async () => {
-    const value = newName.trim();
-    if (!value) return;
-    const names = { nameAr: value, nameEn: value };
-
+  // Same form as Settings → Categories: both names, plus colour and icon for categories
+  const handleCreate = async ({ nameAr, nameEn, color, icon }: CategoryFormValues) => {
     if (step === 'category') {
-      const created = await repo.addCategory({
-        kind,
-        ...names,
-        icon: 'tag',
-        color: kind === 'expense' ? '#C2410C' : '#15803D',
-      });
+      const created = await repo.addCategory({ kind, nameAr, nameEn, color, icon });
       setCategory(created);
       setStep('subcategory');
     } else if (step === 'subcategory' && category) {
-      const created = await repo.addSubcategory({ categoryId: category.id, ...names });
+      const created = await repo.addSubcategory({ categoryId: category.id, nameAr, nameEn });
       setSubcategory(created);
       setStep('item');
     } else if (step === 'item' && subcategory) {
-      const created = await repo.addItem({ subcategoryId: subcategory.id, ...names });
+      const created = await repo.addItem({ subcategoryId: subcategory.id, nameAr, nameEn });
       onPick(created);
     }
-    setNewName('');
     setIsCreating(false);
   };
 
@@ -110,48 +101,6 @@ export function CategoryRow({ kind, selected, onPick, onClear }: CategoryRowProp
           <Check className="size-5 shrink-0" />
           <span className="truncate">{name(selected)}</span>
           <X className="size-4 shrink-0 opacity-80" aria-label={t('change')} />
-        </button>
-      </div>
-    );
-  }
-
-  if (isCreating) {
-    const label =
-      step === 'category' ? t('newCategory') : step === 'subcategory' ? t('newSubcategory') : t('newItem');
-    return (
-      <div className="flex h-12 items-center gap-2">
-        <Input
-          autoFocus
-          aria-label={label}
-          placeholder={isRtl ? t('nameArLabel') : t('nameEnLabel')}
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              handleCreate();
-            }
-          }}
-          className="h-12 min-w-0 flex-1 rounded-2xl bg-surface-2 text-body"
-        />
-        <Button
-          type="button"
-          onClick={handleCreate}
-          disabled={!newName.trim()}
-          className="h-12 rounded-2xl px-5 text-body font-semibold text-accent-ink cursor-pointer"
-        >
-          {tCommon('save')}
-        </Button>
-        <button
-          type="button"
-          aria-label={tCommon('cancel')}
-          onClick={() => {
-            setIsCreating(false);
-            setNewName('');
-          }}
-          className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-surface-2 text-ink-muted cursor-pointer"
-        >
-          <X className="size-5" />
         </button>
       </div>
     );
@@ -182,6 +131,12 @@ export function CategoryRow({ kind, selected, onPick, onClear }: CategoryRowProp
 
   const newLabel =
     step === 'category' ? t('newCategory') : step === 'subcategory' ? t('newSubcategory') : t('newItem');
+  const formTitle =
+    step === 'category'
+      ? tSettings('addCategory')
+      : step === 'subcategory'
+        ? tSettings('addSubcategory')
+        : tSettings('addItem');
 
   return (
     <div
@@ -213,6 +168,15 @@ export function CategoryRow({ kind, selected, onPick, onClear }: CategoryRowProp
       >
         {newLabel}
       </button>
+
+      <CategoryFormDrawer
+        nested
+        open={isCreating}
+        onOpenChange={setIsCreating}
+        level={step}
+        title={formTitle}
+        onSave={handleCreate}
+      />
     </div>
   );
 }

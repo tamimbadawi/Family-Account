@@ -19,8 +19,10 @@ import {
 } from '@/lib/data/provider';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { pickName } from '@/lib/format';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import {
+  CategoryFormDrawer,
+  type CategoryFormValues,
+} from '@/components/settings/CategoryFormDrawer';
 
 export interface CategoryPickerProps {
   kind: CategoryKind;
@@ -32,19 +34,16 @@ type Step = 'category' | 'subcategory' | 'item';
 
 export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerProps) {
   const t = useTranslations('entry');
-  const tCommon = useTranslations('common');
+  const tSettings = useTranslations('settings');
   const locale = useLocale();
   const repo = useRepository();
-  const isRtl = locale === 'ar';
 
   const [step, setStep] = React.useState<Step>('category');
   const [selectedCategory, setSelectedCategory] = React.useState<Category | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = React.useState<Subcategory | null>(null);
 
-  // Inline "New" state
+  // "New" form (same as Settings → Categories)
   const [isCreating, setIsCreating] = React.useState(false);
-  const [newNameAr, setNewNameAr] = React.useState('');
-  const [newNameEn, setNewNameEn] = React.useState('');
 
   // Reset when kind changes (expense <-> income)
   const [prevKind, setPrevKind] = React.useState(kind);
@@ -87,10 +86,6 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
   };
 
   const handleBack = () => {
-    if (isCreating) {
-      setIsCreating(false);
-      return;
-    }
     if (step === 'item') {
       setSelectedSubcategory(null);
       setStep('subcategory');
@@ -100,39 +95,17 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
     }
   };
 
-  const handleCreate = async () => {
-    if (!newNameAr.trim() && !newNameEn.trim()) return;
-
+  const handleCreate = async ({ nameAr, nameEn, color, icon }: CategoryFormValues) => {
     if (step === 'category') {
-      const created = await repo.addCategory({
-        kind,
-        nameAr: newNameAr.trim() || newNameEn.trim(),
-        nameEn: newNameEn.trim() || newNameAr.trim(),
-        icon: 'tag',
-        color: kind === 'expense' ? '#C2410C' : '#15803D',
-      });
-      setNewNameAr('');
-      setNewNameEn('');
+      const created = await repo.addCategory({ kind, nameAr, nameEn, color, icon });
       setIsCreating(false);
       handleSelectCategory(created);
     } else if (step === 'subcategory' && selectedCategory) {
-      const created = await repo.addSubcategory({
-        categoryId: selectedCategory.id,
-        nameAr: newNameAr.trim() || newNameEn.trim(),
-        nameEn: newNameEn.trim() || newNameAr.trim(),
-      });
-      setNewNameAr('');
-      setNewNameEn('');
+      const created = await repo.addSubcategory({ categoryId: selectedCategory.id, nameAr, nameEn });
       setIsCreating(false);
       handleSelectSubcategory(created);
     } else if (step === 'item' && selectedSubcategory && selectedCategory) {
-      const created = await repo.addItem({
-        subcategoryId: selectedSubcategory.id,
-        nameAr: newNameAr.trim() || newNameEn.trim(),
-        nameEn: newNameEn.trim() || newNameAr.trim(),
-      });
-      setNewNameAr('');
-      setNewNameEn('');
+      const created = await repo.addItem({ subcategoryId: selectedSubcategory.id, nameAr, nameEn });
       setIsCreating(false);
       onPick(created, selectedSubcategory, selectedCategory);
     }
@@ -141,7 +114,7 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
   return (
     <div className={`space-y-3 ${className}`}>
       {/* Breadcrumb Header if drilled down or creating */}
-      {(step !== 'category' || isCreating) && (
+      {step !== 'category' && (
         <div className="flex items-center gap-1.5 pb-1 select-none">
           <button
             type="button"
@@ -150,9 +123,7 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
           >
             <ChevronLeft className="size-5 rtl:rotate-180" />
             <span>
-              {isCreating
-                ? tCommon('back')
-                : step === 'subcategory'
+              {step === 'subcategory'
                 ? pickName(
                     { name_ar: selectedCategory?.nameAr, name_en: selectedCategory?.nameEn },
                     locale
@@ -167,7 +138,7 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
       )}
 
       {/* Recents Row (only on root category step when not creating) */}
-      {step === 'category' && !isCreating && filteredRecents.length > 0 && (
+      {step === 'category' && filteredRecents.length > 0 && (
         <div className="space-y-1.5 select-none">
           <div className="flex items-center gap-1.5 text-caption font-medium text-ink-muted">
             <Sparkles className="size-4 text-accent" />
@@ -199,62 +170,13 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
       {/* Animated Step Content */}
       <AnimatePresence initial={false} mode="wait">
         <motion.div
-          key={isCreating ? `creating-${step}` : step}
+          key={step}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.1 }}
           className="w-full"
         >
-          {/* Top-aligned "+ New" Form replacing picker */}
-          {isCreating ? (
-            <div className="space-y-3 rounded-card bg-surface p-4 shadow-card">
-              <div className="text-body font-semibold text-ink">
-                {step === 'category'
-                  ? t('newCategory')
-                  : step === 'subcategory'
-                  ? t('newSubcategory')
-                  : t('newItem')}
-              </div>
-              <Input
-                autoFocus
-                placeholder={isRtl ? t('nameArLabel') : t('nameEnLabel')}
-                value={isRtl ? newNameAr : newNameEn}
-                onChange={(e) =>
-                  isRtl ? setNewNameAr(e.target.value) : setNewNameEn(e.target.value)
-                }
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleCreate();
-                  }
-                }}
-                className="h-12 rounded-xl text-body bg-surface"
-              />
-              <div className="flex gap-2.5 pt-1">
-                <Button
-                  type="button"
-                  onClick={handleCreate}
-                  disabled={isRtl ? !newNameAr.trim() : !newNameEn.trim()}
-                  className="flex-1 h-12 rounded-xl text-body font-semibold text-accent-ink cursor-pointer"
-                >
-                  {tCommon('save')}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsCreating(false);
-                    setNewNameAr('');
-                    setNewNameEn('');
-                  }}
-                  className="h-12 rounded-xl text-body font-semibold cursor-pointer"
-                >
-                  {tCommon('cancel')}
-                </Button>
-              </div>
-            </div>
-          ) : (
             <>
               {/* Step 1: Category Tiles */}
               {step === 'category' && (
@@ -376,9 +298,22 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
                 </div>
               )}
             </>
-          )}
         </motion.div>
       </AnimatePresence>
+
+      <CategoryFormDrawer
+        open={isCreating}
+        onOpenChange={setIsCreating}
+        level={step}
+        title={
+          step === 'category'
+            ? tSettings('addCategory')
+            : step === 'subcategory'
+            ? tSettings('addSubcategory')
+            : tSettings('addItem')
+        }
+        onSave={handleCreate}
+      />
     </div>
   );
 }
