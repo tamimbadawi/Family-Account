@@ -363,3 +363,17 @@ export function useSyncStatus(): SyncStatus | undefined {
     undefined
   );
 }
+
+/** True while this phone still shows the sample entries (false once the family cleared them). */
+export function useHasSampleData(): boolean | undefined {
+  const repo = useRepository();
+
+  return useLiveQuery(
+    async () => {
+      if (typeof window === 'undefined' || typeof repo.hasSampleData !== 'function') return false;
+      return repo.hasSampleData();
+    },
+    [repo],
+    undefined
+  );
+}

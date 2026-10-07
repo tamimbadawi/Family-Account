@@ -495,5 +495,50 @@ describe('MockRepository with fake-indexeddb', () => {
 
     await expect(repo.addBudget({ categoryId: food.id, amount: 0 })).rejects.toThrow();
   });
+
+  describe('clearing the sample data', () => {
+    it('removes entries and budgets, zeroes sample wallets, keeps categories, and never reseeds', async () => {
+      const categoriesBefore = (await repo.getCategories()).length;
+      expect(await repo.hasSampleData()).toBe(true);
+
+      await repo.clearSampleData();
+
+      expect(await repo.hasSampleData()).toBe(false);
+      expect(await repo.listEntries({ includeDeleted: true })).toHaveLength(0);
+      expect(await repo.getBudgets(true)).toHaveLength(0);
+      expect((await repo.getCategories()).length).toBe(categoriesBefore);
+
+      const visible = await repo.getWallets();
+      expect(visible.map((w) => w.id)).toEqual([WALLET_CASH_ID]);
+      const balances = await repo.walletBalances();
+      expect(balances.every((b) => b.balance === 0)).toBe(true);
+
+      // A fresh start on the same phone (new app session) must not bring the samples back
+      const reopened = new MockRepository(db);
+      await reopened.ensureSeeded();
+      expect(await reopened.listEntries({ includeDeleted: true })).toHaveLength(0);
+    });
+
+    it('keeps entries added after clearing', async () => {
+      await repo.clearSampleData();
+      const item = (await repo.getItems())[0];
+      await repo.addEntry({ type: 'expense', amount: 50, occurredOn: '2026-10-01', accountId: WALLET_CASH_ID, itemId: item.id });
+      const reopened = new MockRepository(db);
+      await reopened.ensureSeeded();
+      expect(await reopened.listEntries()).toHaveLength(1);
+    });
+
+    it('undo puts everything back', async () => {
+      const entriesBefore = (await repo.listEntries({ includeDeleted: true })).length;
+      const walletsBefore = await repo.getWallets();
+
+      const undo = await repo.clearSampleData();
+      await undo();
+
+      expect(await repo.hasSampleData()).toBe(true);
+      expect(await repo.listEntries({ includeDeleted: true })).toHaveLength(entriesBefore);
+      expect(await repo.getWallets()).toEqual(walletsBefore);
+    });
+  });
 });
 

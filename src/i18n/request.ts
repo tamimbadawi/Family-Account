@@ -17,7 +17,8 @@ const namespaces = [
   'wallets',
   'family',
   'operator',
-  'budgets'
+  'budgets',
+  'sample'
 ] as const;
 
 function isAppLocale(locale: string | undefined): locale is Locale {

@@ -235,4 +235,14 @@ export interface Repository {
   refresh?(): Promise<void>;
   /** Live mode: forget everything kept on this phone (sign-out). */
   clearCache?(): Promise<void>;
+
+  // Sample data (Phase A): every phone starts with made-up entries so people can look around.
+  /** True while the phone still shows the sample entries. */
+  hasSampleData?(): Promise<boolean>;
+  /**
+   * Removes the sample entries, photos and budgets, zeroes the sample wallets' opening balances
+   * (Cash stays, the sample banks are hidden) and keeps the categories. The samples never come back.
+   * Resolves to an undo that puts everything back exactly as it was.
+   */
+  clearSampleData?(): Promise<() => Promise<void>>;
 }
