@@ -156,6 +156,8 @@
     "avgWithdrawal": "Average",
     "allWallets": "All wallets",
     "transfersTotal": "Total transfers",
+    "seeAllTransfers": "See all transfers",
+    "seeAllWallets": "See all wallets",
     "noTransfers": "No transfers recorded",
     "noTransfersDesc": "Transfers between your wallets will appear here.",
     "walletHistory": "View history"

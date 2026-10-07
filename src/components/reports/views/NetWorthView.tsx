@@ -33,19 +33,15 @@ export function NetWorthView() {
   const isNegative = report.changeVsLastMonth < 0;
 
   return (
-    <div className="space-y-3 select-none">
+    <div className="space-y-1.5 select-none">
       {/* 1. Hero Card: Total Net Worth + Change vs Last Month */}
-      <Card className="rounded-card bg-surface p-5 shadow-card border border-line/60">
-        <div className="text-caption font-medium text-ink-muted">
-          {t('library.totalNetWorth')}
-        </div>
-        <div className="mt-1 text-hero font-bold tabular-nums text-ink">
-          {money(report.totalNetWorth, locale)}
-        </div>
-
-        <div className="mt-2.5 flex items-center gap-2">
+      <Card className="rounded-card bg-surface p-2.5 px-3.5 shadow-card border border-line/60">
+        <div className="flex items-center justify-between">
+          <span className="text-caption font-medium text-ink-muted">
+            {t('library.totalNetWorth')}
+          </span>
           <div
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-caption font-semibold tabular-nums ${
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption font-semibold tabular-nums ${
               isPositive
                 ? 'bg-income/12 text-income'
                 : isNegative
@@ -61,9 +57,10 @@ export function NetWorthView() {
               {money(report.changeVsLastMonth, locale)} ({Math.abs(report.changePercentage)}%)
             </span>
           </div>
-          <span className="text-caption text-ink-muted">
-            {t('library.vsLastMonth')}
-          </span>
+        </div>
+
+        <div className="text-hero font-bold tabular-nums text-ink leading-tight mt-0.5">
+          {money(report.totalNetWorth, locale)}
         </div>
       </Card>
 
@@ -79,20 +76,20 @@ export function NetWorthView() {
             <div
               key={w.id}
               onClick={() => router.push(`/history?wallet=${w.id}`)}
-              className="flex items-center justify-between p-3.5 hover:bg-surface-2/40 active:bg-surface-2/60 transition-colors cursor-pointer select-none"
+              className="flex items-center justify-between py-1.5 px-3 hover:bg-surface-2/40 active:bg-surface-2/60 transition-colors cursor-pointer select-none"
             >
-              <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center gap-2.5 min-w-0">
                 <div
                   style={{
                     backgroundColor: `${w.color || '#0F766E'}18`,
                     color: w.color || '#0F766E',
                   }}
-                  className="flex size-11 shrink-0 items-center justify-center rounded-full"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full"
                 >
-                  <CategoryIcon name={w.icon || 'wallet'} className="size-5" />
+                  <CategoryIcon name={w.icon || 'wallet'} className="size-4.5" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-body font-semibold text-ink truncate">
+                  <div className="text-body font-semibold text-ink">
                     {name}
                   </div>
                   <div className="text-caption text-ink-muted">
@@ -102,7 +99,7 @@ export function NetWorthView() {
                 </div>
               </div>
 
-              <div className="text-end shrink-0 ps-3">
+              <div className="text-end shrink-0 ps-2.5">
                 <div className="text-body font-semibold tabular-nums text-ink">
                   {money(w.currentBalance, locale)}
                 </div>

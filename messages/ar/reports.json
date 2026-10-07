@@ -156,6 +156,8 @@
     "avgWithdrawal": "المتوسط",
     "allWallets": "كل المحافظ",
     "transfersTotal": "إجمالي التحويلات",
+    "seeAllTransfers": "عرض كل التحويلات",
+    "seeAllWallets": "عرض كل المحافظ",
     "noTransfers": "لا توجد تحويلات مسجلة",
     "noTransfersDesc": "ستظهر هنا التحويلات بين محافظك.",
     "walletHistory": "عرض الحركات"

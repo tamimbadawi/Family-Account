@@ -63,14 +63,14 @@ export function BalanceOverTimeView() {
   const showAll = () => setActiveWalletIds([]);
 
   return (
-    <div className="space-y-2.5 select-none">
+    <div className="space-y-1.5 select-none">
       {/* 1. Period Selector (6 vs 12 months) */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex bg-surface rounded-xl p-1 border border-line/40 shadow-sm">
+        <div className="flex bg-surface rounded-xl p-0.5 border border-line/40 shadow-sm">
           <button
             type="button"
             onClick={() => setPeriodMonths(6)}
-            className={`px-3 py-1.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
+            className={`px-2.5 py-1 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
               periodMonths === 6
                 ? 'bg-accent text-accent-ink shadow-sm'
                 : 'text-ink-muted hover:text-ink'
@@ -81,7 +81,7 @@ export function BalanceOverTimeView() {
           <button
             type="button"
             onClick={() => setPeriodMonths(12)}
-            className={`px-3 py-1.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
+            className={`px-2.5 py-1 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
               periodMonths === 12
                 ? 'bg-accent text-accent-ink shadow-sm'
                 : 'text-ink-muted hover:text-ink'
@@ -110,7 +110,7 @@ export function BalanceOverTimeView() {
         <button
           type="button"
           onClick={showAll}
-          className={`h-8 px-2.5 rounded-full text-caption font-medium border transition-all cursor-pointer ${
+          className={`h-7 px-2.5 rounded-full text-caption font-medium border transition-all cursor-pointer ${
             activeWalletIds.length === 0
               ? 'bg-ink text-canvas border-ink shadow-sm'
               : 'bg-surface text-ink-muted border-line/50 hover:bg-surface-2'
@@ -131,7 +131,7 @@ export function BalanceOverTimeView() {
               key={w.id}
               type="button"
               onClick={() => toggleWallet(w.id)}
-              className={`h-8 px-2.5 rounded-full text-caption font-medium border flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`h-7 px-2 rounded-full text-caption font-medium border flex items-center gap-1.5 transition-all cursor-pointer ${
                 isSelected
                   ? 'bg-surface border-line shadow-sm text-ink font-semibold'
                   : 'bg-surface/50 border-line/30 text-ink-muted/60 opacity-60'
@@ -141,24 +141,24 @@ export function BalanceOverTimeView() {
                 className="size-2 rounded-full shrink-0"
                 style={{ backgroundColor: w.color }}
               />
-              <span className="truncate max-w-[90px]">{name}</span>
+              <span className="whitespace-nowrap">{name}</span>
             </button>
           );
         })}
       </div>
 
       {/* 3. Multi-Line Chart Card */}
-      <Card className="rounded-card bg-surface p-3 shadow-card border border-line/60">
-        <div className="h-[200px] w-full">
+      <Card className="rounded-card bg-surface p-2 shadow-card border border-line/60">
+        <div className="h-[115px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={report.dataPoints}
-              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              margin={{ top: 8, right: 8, left: -20, bottom: 0 }}
             >
               <XAxis
                 dataKey="month"
                 stroke="var(--color-ink-muted)"
-                fontSize={11}
+                tick={{ fontSize: 15, fill: 'var(--color-ink-muted)' }}
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(val) => {
@@ -168,7 +168,7 @@ export function BalanceOverTimeView() {
               />
               <YAxis
                 stroke="var(--color-ink-muted)"
-                fontSize={11}
+                tick={{ fontSize: 15, fill: 'var(--color-ink-muted)' }}
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(val) =>
@@ -246,16 +246,16 @@ export function BalanceOverTimeView() {
           return (
             <div
               key={w.id}
-              className={`flex items-center justify-between p-2.5 select-none transition-opacity ${
+              className={`flex items-center justify-between py-1.5 px-3 select-none transition-opacity ${
                 isVisible ? 'opacity-100' : 'opacity-40'
               }`}
             >
-              <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
                 <span
-                  className="size-2.5 rounded-full shrink-0"
+                  className="size-2 rounded-full shrink-0"
                   style={{ backgroundColor: w.color }}
                 />
-                <span className="text-body font-medium text-ink truncate">
+                <span className="text-body font-medium text-ink">
                   {name}
                 </span>
               </div>
