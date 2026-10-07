@@ -49,11 +49,15 @@ export function InOutPerWalletView() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
             <div
-              style={{
-                backgroundColor: `${w.color || '#0F766E'}18`,
-                color: w.color || '#0F766E',
-              }}
-              className="flex size-7.5 shrink-0 items-center justify-center rounded-full"
+              style={
+                w.color
+                  ? {
+                      backgroundColor: `${w.color}18`,
+                      color: w.color,
+                    }
+                  : undefined
+              }
+              className="flex size-7.5 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent"
             >
               <CategoryIcon name={w.icon || 'wallet'} className="size-3.5" />
             </div>

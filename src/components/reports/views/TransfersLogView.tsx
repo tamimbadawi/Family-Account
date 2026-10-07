@@ -102,8 +102,8 @@ export function TransfersLogView() {
               }`}
             >
               <span
-                className="size-2 rounded-full shrink-0"
-                style={{ backgroundColor: w.color || '#0F766E' }}
+                className={`size-2 rounded-full shrink-0 ${w.color ? '' : 'bg-accent'}`}
+                style={w.color ? { backgroundColor: w.color } : undefined}
               />
               <span className="whitespace-nowrap">{name}</span>
             </button>
