@@ -8,6 +8,7 @@ import {
   FolderTree,
   Globe,
   KeyRound,
+  LifeBuoy,
   LogOut,
   PiggyBank,
   Trash2,
@@ -21,6 +22,7 @@ import { localISODate } from '@/lib/format';
 import { useFamilyMembers } from '@/lib/auth/use-family-members';
 import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
 import { entriesToCsv } from '@/lib/reports/export';
+import { SupportDrawer } from '@/components/settings/SupportDrawer';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
@@ -31,6 +33,7 @@ export default function SettingsPage() {
   const repo = useRepository();
 
   const [isExporting, setIsExporting] = React.useState(false);
+  const [isSupportOpen, setIsSupportOpen] = React.useState(false);
 
   const handleLanguageToggle = () => {
     const nextLocale = locale === 'ar' ? 'en' : 'ar';
@@ -196,6 +199,21 @@ export default function SettingsPage() {
             <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
           )}
         </div>
+
+        {/* Contact support */}
+        <button
+          type="button"
+          onClick={() => setIsSupportOpen(true)}
+          className="w-full flex min-h-[48px] items-center justify-between px-3.5 py-2.5 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+              <LifeBuoy className="size-4.5" />
+            </div>
+            <span className="text-body font-semibold text-ink">{t('support')}</span>
+          </div>
+          <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
+        </button>
       </div>
 
       {/* Family Section */}
@@ -256,6 +274,8 @@ export default function SettingsPage() {
           </div>
         </button>
       </div>
+
+      <SupportDrawer open={isSupportOpen} onOpenChange={setIsSupportOpen} />
     </div>
   );
 }

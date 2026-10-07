@@ -47,5 +47,18 @@
   "subcategoriesCount": "{count} فروع",
   "itemsCount": "{count} بنود",
   "changePassword": "تغيير كلمة السر",
-  "budgets": "الميزانية"
+  "budgets": "الميزانية",
+  "support": "تواصل مع الدعم",
+  "supportHint": "اكتب لنا ما حدث. يمكنك إضافة صور أو لقطات شاشة لتوضيح المشكلة.",
+  "supportMessage": "رسالتك",
+  "supportPlaceholder": "اكتب رسالتك هنا…",
+  "supportPhotos": "الصور ({count} من {max})",
+  "supportAddPhoto": "إضافة صورة",
+  "supportRemovePhoto": "إزالة الصورة",
+  "supportPhotoFailed": "تعذّرت إضافة الصورة. جرّب صورة أخرى.",
+  "supportSendTo": "أرسلها إلى:",
+  "supportSend": "إرسال",
+  "supportSubject": "حساباتنا — طلب مساعدة",
+  "supportSent": "شكرًا — رسالتك جاهزة للإرسال",
+  "supportFailed": "تعذّر فتح الإرسال. حاول مرة أخرى."
 }

@@ -47,5 +47,18 @@
   "subcategoriesCount": "{count} subcategories",
   "itemsCount": "{count} items",
   "changePassword": "Change password",
-  "budgets": "Budgets"
+  "budgets": "Budgets",
+  "support": "Contact support",
+  "supportHint": "Tell us what happened. You can add photos or screenshots to show us.",
+  "supportMessage": "Your message",
+  "supportPlaceholder": "Write your message here…",
+  "supportPhotos": "Photos ({count} of {max})",
+  "supportAddPhoto": "Add a photo",
+  "supportRemovePhoto": "Remove photo",
+  "supportPhotoFailed": "Couldn't add that photo. Try another one.",
+  "supportSendTo": "Send it to:",
+  "supportSend": "Send",
+  "supportSubject": "Family Accounts — help request",
+  "supportSent": "Thank you — your message is ready to send",
+  "supportFailed": "Couldn't open sending. Try again."
 }
