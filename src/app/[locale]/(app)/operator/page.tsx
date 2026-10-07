@@ -6,6 +6,7 @@ import { ChevronLeft, KeyRound, Pause, Play, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import { useRestoreSheetAfterKeyboard } from '@/components/settings/useRestoreSheetAfterKeyboard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,6 +39,8 @@ export default function OperatorPage() {
   const [loadFailed, setLoadFailed] = React.useState(false);
   const [attempt, setAttempt] = React.useState(0);
   const [sheet, setSheet] = React.useState<Sheet>(null);
+  const sheetRef = React.useRef<HTMLDivElement>(null);
+  useRestoreSheetAfterKeyboard(sheetRef, sheet !== null);
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [busy, setBusy] = React.useState(false);
@@ -196,8 +199,8 @@ export default function OperatorPage() {
         )}
       </div>
 
-      <Drawer open={sheet !== null} onOpenChange={(o) => !o && setSheet(null)}>
-        <DrawerContent className="max-h-[96dvh]">
+      <Drawer open={sheet !== null} onOpenChange={(o) => !o && setSheet(null)} repositionInputs>
+        <DrawerContent ref={sheetRef} className="max-h-[96dvh]">
           <div className="min-h-0 overflow-y-auto px-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <DrawerHeader className="px-0 pt-1 pb-2">
               <DrawerTitle className="text-title font-bold text-ink">

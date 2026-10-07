@@ -192,7 +192,9 @@ export default function BudgetsPage() {
 
       {/* Add / change budget sheet */}
       <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerContent className="max-h-[92dvh] px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] overflow-y-auto select-none">
+        <DrawerContent className="max-h-[92dvh] select-none">
+          {/* Only this inner box may scroll — scrolling the sheet itself is swallowed by vaul on iPhone */}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           <DrawerHeader className="px-0 pt-3 pb-2 flex flex-row items-center gap-2">
             {step !== 'category' && !fromList && (
               <button
@@ -309,6 +311,7 @@ export default function BudgetsPage() {
               )}
             </div>
           )}
+          </div>
         </DrawerContent>
       </Drawer>
     </div>
