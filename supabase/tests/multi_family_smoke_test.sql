@@ -119,6 +119,16 @@ begin
   select currency into c from public.households where id = ha;
   r := r || format(E'\n%s admin can swap the main currency (%s)', case when c = 'USD' then 'PASS' else 'FAIL' end, c);
 
+  -- ---------- Only the admin renames the family ----------
+  perform set_config('request.jwt.claim.sub', a_mem::text, true);
+  update public.households set name = 'Renamed by member' where id = ha;
+  get diagnostics n = row_count;
+  r := r || format(E'\n%s member cannot rename the family (%s rows)', case when n = 0 then 'PASS' else 'FAIL' end, n);
+  perform set_config('request.jwt.claim.sub', a_admin::text, true);
+  update public.households set name = 'Family A renamed' where id = ha;
+  get diagnostics n = row_count;
+  r := r || format(E'\n%s admin can rename the family (%s row)', case when n = 1 then 'PASS' else 'FAIL' end, n);
+
   -- ---------- Family B cannot see or touch family A ----------
   perform set_config('request.jwt.claim.sub', b_admin::text, true);
   select (select count(*) from public.households where id = ha)

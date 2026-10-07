@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { ChevronLeft, Crown, KeyRound, UserMinus, UserPlus } from 'lucide-react';
+import { ChevronLeft, Crown, KeyRound, Pencil, UserMinus, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
 import { WalletShortcut } from '@/components/layout/WalletShortcut';
@@ -15,9 +15,11 @@ import { isAuthConfigured } from '@/lib/supabase/client';
 import { familyAdmin, type FamilyList, type FamilyMember } from '@/lib/auth/family-admin';
 import { isEmail, loginLabel, normalizeEmail } from '@/lib/auth/email';
 import { isEnglishName } from '@/lib/members';
+import { FAMILY_NAME_MAX, useFamilyName } from '@/lib/auth/family-name';
 
 type Sheet =
   | { kind: 'add' }
+  | { kind: 'rename' }
   | { kind: 'reset'; member: FamilyMember }
   | { kind: 'remove'; member: FamilyMember }
   | { kind: 'owner'; member: FamilyMember }
@@ -33,6 +35,7 @@ export default function FamilyPage() {
   const tSettings = useTranslations('settings');
   const live = isAuthConfigured();
   const sampleMembers = useHouseholdMembers();
+  const family = useFamilyName();
 
   const [list, setList] = React.useState<FamilyList | null>(null);
   const [loadFailed, setLoadFailed] = React.useState(false);
@@ -96,7 +99,10 @@ export default function FamilyPage() {
 
   const submit = () => {
     if (!sheet || busy) return;
-    if (sheet.kind === 'add') {
+    if (sheet.kind === 'rename') {
+      if (!name.trim()) return setError(t('errors.no_family_name'));
+      void run(() => family.rename(name), t('renamed'));
+    } else if (sheet.kind === 'add') {
       // The name is what the app shows; the email is only what they sign in with
       if (!isEnglishName(name)) return setError(t('errors.bad_name'));
       if (!isEmail(email)) return setError(t('errors.bad_email'));
@@ -117,6 +123,8 @@ export default function FamilyPage() {
     ? (list?.members ?? [])
     : sampleMembers.map((m) => ({ userId: m.userId, displayName: m.displayName, role: m.role, email: '' }));
   const isOwner = live && Boolean(list?.isOwner);
+  // The family admin can change the family's name (sample-data mode: anyone, as there is no admin)
+  const canRename = isOwner || !live;
 
   return (
     <div className="flex h-full flex-col overflow-y-auto overscroll-contain">
@@ -135,6 +143,30 @@ export default function FamilyPage() {
       </div>
 
       <div className="flex-1 space-y-4 px-5 py-4 pb-24">
+        <div className="flex min-h-14 items-center gap-3 rounded-card border border-line/40 bg-surface px-3.5 py-2.5 shadow-card">
+          <div className="min-w-0 flex-1">
+            <div className="text-caption text-ink-muted">{t('familyName')}</div>
+            {family.name === null ? (
+              <Skeleton className="mt-1 h-5 w-40" />
+            ) : (
+              <div className="truncate text-body font-semibold text-ink">{family.name}</div>
+            )}
+          </div>
+          {canRename && family.name !== null && (
+            <button
+              type="button"
+              aria-label={t('renameFamily')}
+              className={ACTION}
+              onClick={() => {
+                open({ kind: 'rename' });
+                setName(family.name ?? '');
+              }}
+            >
+              <Pencil className="size-5" />
+            </button>
+          )}
+        </div>
+
         <p className="text-body text-ink-muted">{isOwner ? t('ownerHint') : t('memberHint')}</p>
 
         {live && !list && loadFailed ? (
@@ -205,6 +237,7 @@ export default function FamilyPage() {
             <DrawerHeader className="px-0 pt-1 pb-2">
               <DrawerTitle className="text-title font-bold text-ink">
                 {sheet?.kind === 'add' && t('addMember')}
+                {sheet?.kind === 'rename' && t('renameFamily')}
                 {sheet?.kind === 'reset' && t('resetFor', { name: sheet.member.displayName })}
                 {sheet?.kind === 'remove' && t('removeFor', { name: sheet.member.displayName })}
                 {sheet?.kind === 'owner' && t('adminFor', { name: sheet.member.displayName })}
@@ -218,6 +251,16 @@ export default function FamilyPage() {
                 submit();
               }}
             >
+              {sheet?.kind === 'rename' && (
+                <Input
+                  aria-label={t('familyName')}
+                  placeholder={t('familyName')}
+                  value={name}
+                  maxLength={FAMILY_NAME_MAX}
+                  onChange={(e) => setName(e.target.value)}
+                  className="h-14 bg-surface-2 text-body"
+                />
+              )}
               {sheet?.kind === 'add' && (
                 <>
                   <Input
@@ -275,6 +318,7 @@ export default function FamilyPage() {
                 className={`h-14 w-full text-heading font-semibold ${sheet?.kind === 'remove' ? 'bg-danger text-accent-ink' : 'text-accent-ink'}`}
               >
                 {sheet?.kind === 'add' && t('addMember')}
+                {sheet?.kind === 'rename' && t('save')}
                 {sheet?.kind === 'reset' && t('resetPassword')}
                 {sheet?.kind === 'remove' && t('remove')}
                 {sheet?.kind === 'owner' && t('makeAdmin')}

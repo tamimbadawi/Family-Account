@@ -31,11 +31,16 @@
     "add_failed": "Couldn't add them. Check your connection and try again.",
     "email_taken": "This email already has a login. Use another email.",
     "bad_email": "Check the email address",
-    "suspended": "This family is paused. Contact the person who runs the app."
+    "suspended": "This family is paused. Contact the person who runs the app.",
+    "no_family_name": "Write the family's name"
   },
   "tryAgain": "Try again",
   "password": "Password",
   "email": "Email",
   "nameHint": "In English letters. This is the name everyone sees in the app.",
-  "emailHint": "They sign in with this email. No email? Use yours with a tag, like you+mama@gmail.com."
+  "emailHint": "They sign in with this email. No email? Use yours with a tag, like you+mama@gmail.com.",
+  "familyName": "Family name",
+  "renameFamily": "Change family name",
+  "renamed": "Family name changed",
+  "save": "Save"
 }

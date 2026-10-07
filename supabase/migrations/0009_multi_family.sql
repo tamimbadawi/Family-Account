@@ -128,6 +128,15 @@ as $$
   );
 $$;
 
+-- ---------- Only the family admin renames the family (0001 let every member) ----------
+drop policy "members rename household" on public.households;
+create policy "admin renames household" on public.households
+  for update to authenticated
+  using (public.is_member(id) and exists (
+    select 1 from public.household_members m
+    where m.household_id = id and m.user_id = (select auth.uid()) and m.role = 'owner'))
+  with check (public.is_member(id));
+
 -- ---------- Creating a family: invited family admins only ----------
 drop function public.create_household(text, text, text);
 drop function public.add_member(text, text);
