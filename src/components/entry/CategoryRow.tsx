@@ -17,6 +17,8 @@ export interface CategoryRowProps {
   selected: Item | null;
   onPick: (item: Item) => void;
   onClear: () => void;
+  /** The category and group currently open (an entry can be saved at either level). */
+  onPathChange?: (category: Category | null, subcategory: Subcategory | null) => void;
 }
 
 type Step = 'category' | 'subcategory' | 'item';
@@ -28,7 +30,7 @@ const CHIP =
  * One swipeable row of chips: category → group → item.
  * Compact so the whole entry sheet fits one iPhone screen.
  */
-export function CategoryRow({ kind, selected, onPick, onClear }: CategoryRowProps) {
+export function CategoryRow({ kind, selected, onPick, onClear, onPathChange }: CategoryRowProps) {
   const t = useTranslations('entry');
   const tSettings = useTranslations('settings');
   const locale = useLocale();
@@ -49,6 +51,10 @@ export function CategoryRow({ kind, selected, onPick, onClear }: CategoryRowProp
     setSubcategory(null);
     setIsCreating(false);
   }
+
+  React.useEffect(() => {
+    onPathChange?.(category, subcategory);
+  }, [category, subcategory, onPathChange]);
 
   const categories = useCategories(kind);
   const subcategories = useSubcategories(category?.id);
