@@ -6,7 +6,7 @@
 // The admin signs in with them, chooses their own password, then on Welcome finds the family name filled
 // in, types their own name (what the app shows) and picks the family's currencies. See docs/MULTI-FAMILY.md.
 //
-// Family invites: anyone in a family can ask for a friend's family (invite_family, 0011). The open
+// Family invites: anyone in a family can ask for a friend's family (invite_family, 0012). The open
 // requests come back with 'list'; starting a family with an inviteId approves that request.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 

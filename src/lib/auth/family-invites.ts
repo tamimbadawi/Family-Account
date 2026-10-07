@@ -1,4 +1,4 @@
-// Inviting another family (0011_family_invites.sql). Families stay invite-only: a member asks for a
+// Inviting another family (0012_family_invites.sql). Families stay invite-only: a member asks for a
 // friend's family here, and the person who runs the app approves it on /operator by creating the
 // friend's admin login. In sample-data mode the requests only live in memory.
 import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';

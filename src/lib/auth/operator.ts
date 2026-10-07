@@ -21,7 +21,7 @@ export interface WaitingFamily {
   createdAt: string;
 }
 
-/** Someone in a family asked for a friend's family to be started (family_invites, 0011). */
+/** Someone in a family asked for a friend's family to be started (family_invites, 0012). */
 export interface FamilyRequest {
   inviteId: string;
   friendName: string;

@@ -1,4 +1,4 @@
--- 0011_family_invites.sql · anyone in a family can invite another family (2026-10-07)
+-- 0012_family_invites.sql · anyone in a family can invite another family (2026-10-07)
 --
 -- Families stay invite-only (docs/MULTI-FAMILY.md): only the operator creates a family admin.
 -- A member asks for a friend's family with invite_family(name, email); the request waits on

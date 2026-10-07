@@ -1,4 +1,4 @@
--- Family invites smoke test for 0011_family_invites.sql.
+-- Family invites smoke test for 0012_family_invites.sql.
 -- Same pattern as rls_smoke_test.sql: one DO block that always ends with an intentional exception,
 -- so every change (including the throwaway auth users) is rolled back. Safe on the real project.
 --
