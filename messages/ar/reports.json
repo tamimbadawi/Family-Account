@@ -92,6 +92,8 @@
     "cashWithdrawalsDesc": "التحويلات من البنك للكاش",
     "transfersLog": "سجل التحويلات",
     "transfersLogDesc": "سجل التحويلات بين المحافظ",
+    "budgetVsActual": "الميزانية والفعلي",
+    "budgetVsActualDesc": "اللي صرفناه مقارنة بميزانية كل نوع",
     "billsTracker": "متابعة الفواتير",
     "billsTrackerDesc": "فواتير المرافق والخدمات الشهرية",
     "monthlyAverages": "المتوسطات الشهرية",

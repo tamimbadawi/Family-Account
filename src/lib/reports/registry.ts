@@ -1,6 +1,6 @@
 // =========================================================
 // Reports Registry  ·  Family Accounts (حساباتنا)
-// 17 reports across three groups: Money Flow, Banks & Cash, Planning
+// 18 reports across three groups: Money Flow, Banks & Cash, Planning
 // =========================================================
 
 export type ReportGroup = 'flow' | 'wallets' | 'planning';
@@ -126,6 +126,15 @@ export const REPORTS_REGISTRY: ReportDefinition[] = [
   },
 
   // --- Group 3: Planning (التخطيط) — Part A5e ---
+  {
+    id: 'budget-vs-actual',
+    group: 'planning',
+    icon: 'PiggyBank',
+    titleKey: 'budgetVsActual',
+    descKey: 'budgetVsActualDesc',
+    route: '/reports/r/budget-vs-actual',
+    isImplemented: true,
+  },
   {
     id: 'bills-tracker',
     group: 'planning',

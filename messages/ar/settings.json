@@ -46,5 +46,6 @@
   "cancel": "إلغاء",
   "subcategoriesCount": "{count} فروع",
   "itemsCount": "{count} بنود",
-  "changePassword": "تغيير كلمة السر"
+  "changePassword": "تغيير كلمة السر",
+  "budgets": "الميزانية"
 }

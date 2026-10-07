@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, Check, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -17,6 +17,9 @@ import { useRepository, useWallets } from '@/lib/data/provider';
 import { validateEntry } from '@/lib/validation/entry';
 import { generalItemFor } from '@/lib/data/general-item';
 import { previewValue } from '@/lib/format/expression';
+import { money } from '@/lib/format';
+import { budgetPercent } from '@/lib/reports/budgets';
+import { budgetWarningsForEntry } from '@/components/budgets/budget-warning';
 
 import {
   Drawer,
@@ -51,6 +54,8 @@ interface EntrySheetFormProps {
 function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheetFormProps) {
   const t = useTranslations('entry');
   const tCommon = useTranslations('common');
+  const tBudgets = useTranslations('budgets');
+  const locale = useLocale();
   const repo = useRepository();
   const wallets = useWallets();
 
@@ -180,6 +185,22 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
 
   const canSave = numericAmount > 0 && hasWallets && (isTransfer || hasItem) && !isSubmitting;
 
+  // Soft warning once an expense brings its budget to 80% or more this month (the fullest one only)
+  const warnAboutBudget = async (entryId: string) => {
+    try {
+      const [worst] = await budgetWarningsForEntry(repo, entryId, locale);
+      if (!worst) return;
+      const { progress, label } = worst;
+      const message =
+        progress.level === 'over'
+          ? tBudgets('warnOver', { name: label, amount: money(-progress.remaining, locale, { fractionDigits: 0 }) })
+          : tBudgets('warnNear', { name: label, percent: String(budgetPercent(progress)) });
+      toast.warning(message, { duration: 6000 });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleSave = async () => {
     if (!canSave) return;
 
@@ -225,6 +246,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
             },
             duration: 6000,
           });
+          void warnAboutBudget(created.id);
         }, 300);
       } else if (mode === 'edit' && editingEntry) {
         const originalEntry = { ...editingEntry };
@@ -261,6 +283,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
             },
             duration: 6000,
           });
+          void warnAboutBudget(editingEntry.id);
         }, 300);
       }
     } catch (err) {

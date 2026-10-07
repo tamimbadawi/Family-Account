@@ -5,6 +5,8 @@
 
 import type {
   AccountRow,
+  Budget,
+  BudgetRow,
   Category,
   CategoryRow,
   Entry,
@@ -238,5 +240,33 @@ export function toTransactionRow(e: Entry): TransactionRow {
     created_at: e.createdAt,
     updated_at: e.updatedAt,
     deleted_at: e.deletedAt,
+  };
+}
+
+// ---------- Budget ----------
+
+export function toBudget(row: BudgetRow): Budget {
+  return {
+    id: row.id,
+    householdId: row.household_id,
+    categoryId: row.category_id,
+    subcategoryId: row.subcategory_id,
+    amount: roundMoney(Number(row.amount)),
+    isArchived: row.is_archived,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function toBudgetRow(b: Budget): BudgetRow {
+  return {
+    id: b.id,
+    household_id: b.householdId,
+    category_id: b.categoryId,
+    subcategory_id: b.subcategoryId,
+    amount: roundMoney(b.amount),
+    is_archived: b.isArchived,
+    created_at: b.createdAt,
+    updated_at: b.updatedAt,
   };
 }

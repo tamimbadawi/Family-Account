@@ -465,5 +465,31 @@ describe('MockRepository with fake-indexeddb', () => {
       expect(await emptyDb.transactions.count()).toBeGreaterThan(0);
     });
   });
+
+  it('seeds sample budgets once and keeps one active budget per category or group', async () => {
+    const seeded = await repo.getBudgets();
+    expect(seeded.length).toBeGreaterThanOrEqual(1);
+    expect(seeded.every((b) => b.amount > 0)).toBe(true);
+
+    const [food] = await repo.getCategories('expense');
+    const before = (await repo.getBudgets()).length;
+    const first = await repo.addBudget({ categoryId: food.id, amount: 1234.567 });
+    const again = await repo.addBudget({ categoryId: food.id, amount: 2000 });
+    expect(again.id).toBe(first.id);
+    expect(again.amount).toBe(2000);
+    expect((await repo.getBudgets()).filter((b) => b.categoryId === food.id && !b.subcategoryId)).toHaveLength(1);
+
+    const [group] = await repo.getSubcategories(food.id);
+    const groupBudget = await repo.addBudget({ categoryId: food.id, subcategoryId: group.id, amount: 300 });
+    expect(groupBudget.id).not.toBe(first.id);
+
+    await repo.archiveBudget(first.id);
+    expect((await repo.getBudgets()).some((b) => b.id === first.id)).toBe(false);
+    expect((await repo.getBudgets(true)).some((b) => b.id === first.id)).toBe(true);
+    await repo.archiveBudget(first.id, false);
+    expect((await repo.getBudgets()).length).toBeGreaterThanOrEqual(before);
+
+    await expect(repo.addBudget({ categoryId: food.id, amount: 0 })).rejects.toThrow();
+  });
 });
 
