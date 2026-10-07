@@ -5,11 +5,11 @@
   "denied": "Only the person who runs the app can open this page.",
   "newFamily": "Start a new family",
   "adminEmail": "Family admin's email",
-  "newHint": "The family admin signs in with this email, chooses their own password, then names the family, writes their name and picks the family's currencies.",
+  "newHint": "The admin signs in with this email, chooses their own password, then writes their name and picks the family's currencies. The family name is already filled in.",
   "password": "First password",
   "passwordHint": "At least 6 letters or digits. Send it to them privately; they replace it the first time they sign in.",
   "create": "Create family admin",
-  "created": "{email} can sign in now",
+  "created": "{name} is ready. Send the admin their email and password.",
   "counts": "{members, plural, one {# person} other {# people}} · {wallets, plural, one {# wallet} other {# wallets}} · {entries, plural, one {# entry} other {# entries}}",
   "lastEntry": "Last change {date}",
   "noEntries": "No entries yet",
@@ -34,6 +34,10 @@
     "weak_password": "That password is too easy to guess. Try another one.",
     "email_taken": "This email already has a login.",
     "not_operator": "Only the person who runs the app can do this",
-    "failed": "That didn't work. Check your connection and try again."
-  }
+    "failed": "That didn't work. Check your connection and try again.",
+    "no_family_name": "Write the family's name"
+  },
+  "familyName": "Family name (e.g. Ahmad Badawi)",
+  "waiting": "Waiting for the admin's first sign-in",
+  "unnamed": "New family"
 }

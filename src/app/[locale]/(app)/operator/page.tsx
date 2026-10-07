@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { isAuthConfigured } from '@/lib/supabase/client';
 import { FamilyAdminError } from '@/lib/auth/family-admin';
 import { isEmail, normalizeEmail } from '@/lib/auth/email';
-import { operator, type OperatorFamily } from '@/lib/auth/operator';
+import { operator, type OperatorFamily, type WaitingFamily } from '@/lib/auth/operator';
 import { formatDay } from '@/lib/format';
 
 type Sheet = { kind: 'new' } | { kind: 'reset'; family: OperatorFamily } | { kind: 'status'; family: OperatorFamily } | null;
@@ -32,6 +32,8 @@ export default function OperatorPage() {
   const live = isAuthConfigured();
 
   const [families, setFamilies] = React.useState<OperatorFamily[] | null>(null);
+  const [waiting, setWaiting] = React.useState<WaitingFamily[]>([]);
+  const [familyName, setFamilyName] = React.useState('');
   const [denied, setDenied] = React.useState(false);
   const [loadFailed, setLoadFailed] = React.useState(false);
   const [attempt, setAttempt] = React.useState(0);
@@ -44,10 +46,11 @@ export default function OperatorPage() {
   React.useEffect(() => {
     if (!live) return;
     let cancelled = false;
-    operator<{ families: OperatorFamily[] }>({ action: 'list' })
+    operator<{ families: OperatorFamily[]; waiting: WaitingFamily[] }>({ action: 'list' })
       .then((result) => {
         if (cancelled) return;
         setFamilies(result.families);
+        setWaiting(result.waiting ?? []);
         setLoadFailed(false);
       })
       .catch((err) => {
@@ -62,6 +65,7 @@ export default function OperatorPage() {
 
   const open = (next: Sheet) => {
     setError(null);
+    setFamilyName('');
     setEmail('');
     setPassword('');
     setSheet(next);
@@ -86,11 +90,12 @@ export default function OperatorPage() {
   const submit = () => {
     if (!sheet || busy) return;
     if (sheet.kind === 'new') {
+      if (!familyName.trim()) return setError(t('errors.no_family_name'));
       if (!isEmail(email)) return setError(t('errors.bad_email'));
       if (password.length < 6) return setError(t('errors.short_password'));
       void run(
-        () => operator({ action: 'create_family_admin', email: normalizeEmail(email), password }),
-        t('created', { email: normalizeEmail(email) })
+        () => operator({ action: 'create_family_admin', familyName: familyName.trim(), email: normalizeEmail(email), password }),
+        t('created', { name: familyName.trim() })
       );
     } else if (sheet.kind === 'reset') {
       if (password.length < 6) return setError(t('errors.short_password'));
@@ -141,9 +146,20 @@ export default function OperatorPage() {
               </div>
             ) : !families ? (
               <Skeleton className="h-24 w-full rounded-card" />
-            ) : families.length === 0 ? (
+            ) : families.length === 0 && waiting.length === 0 ? (
               <p className="text-body text-ink-muted">{t('empty')}</p>
             ) : (
+              <>
+              {waiting.map((w) => (
+                <div key={w.email} className="space-y-1 rounded-card border border-dashed border-line bg-surface p-4">
+                  <p className="truncate text-body font-semibold text-ink">{w.familyName || t('unnamed')}</p>
+                  <p dir="ltr" className="truncate text-caption text-ink-muted text-start">
+                    {w.email}
+                  </p>
+                  <p className="text-caption text-ink-muted">{t('waiting')}</p>
+                </div>
+              ))}
+              {
               families.map((f) => (
                 <div key={f.householdId} className="space-y-1 rounded-card border border-line/40 bg-surface p-4 shadow-card">
                   <div className="flex items-start gap-3">
@@ -173,7 +189,8 @@ export default function OperatorPage() {
                     {f.lastEntryAt ? t('lastEntry', { date: formatDay(f.lastEntryAt.slice(0, 10), locale) }) : t('noEntries')}
                   </p>
                 </div>
-              ))
+              ))}
+              </>
             )}
           </>
         )}
@@ -200,6 +217,14 @@ export default function OperatorPage() {
             >
               {sheet?.kind === 'new' && (
                 <>
+                  <Input
+                    aria-label={t('familyName')}
+                    placeholder={t('familyName')}
+                    value={familyName}
+                    onChange={(e) => setFamilyName(e.target.value)}
+                    autoCapitalize="words"
+                    className="h-14 bg-surface-2 text-body"
+                  />
                   <Input
                     type="email"
                     inputMode="email"

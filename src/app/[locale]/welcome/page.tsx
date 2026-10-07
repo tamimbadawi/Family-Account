@@ -27,6 +27,17 @@ export default function WelcomePage() {
   const nameIsValid = isEnglishName(yourName);
   const [saving, setSaving] = React.useState(false);
 
+  // Signed in for real: the family name the operator chose when starting this family
+  React.useEffect(() => {
+    if (!isAuthConfigured()) return;
+    getSupabaseBrowserClient()
+      .auth.getUser()
+      .then(({ data }) => {
+        const chosen = data.user?.app_metadata?.family_name;
+        if (typeof chosen === 'string' && chosen.trim()) setHouseholdName(chosen.trim());
+      });
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (saving || !nameIsValid) return;

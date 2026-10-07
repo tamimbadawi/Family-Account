@@ -14,9 +14,16 @@ export interface OperatorFamily {
   lastEntryAt: string | null;
 }
 
+/** A family admin the operator created who hasn't signed in and set up the family yet. */
+export interface WaitingFamily {
+  email: string;
+  familyName: string;
+  createdAt: string;
+}
+
 type Action =
   | { action: 'list' }
-  | { action: 'create_family_admin'; email: string; password: string }
+  | { action: 'create_family_admin'; familyName: string; email: string; password: string }
   | { action: 'set_status'; householdId: string; status: 'active' | 'suspended' }
   | { action: 'reset_admin_password'; householdId: string; password: string };
 

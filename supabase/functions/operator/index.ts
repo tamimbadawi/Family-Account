@@ -2,9 +2,9 @@
 // Only emails listed in the OPERATOR_EMAILS secret (comma-separated, set in Supabase → Edge Functions
 // → Secrets, never in git) may call it. It returns counts only, never amounts, notes or categories.
 //
-// Starting a family: the operator types the family admin's email and a temporary password. The admin
-// signs in with them, chooses their own password, then names the family, types their own name (what
-// the app shows) and picks the family's currencies. See docs/MULTI-FAMILY.md.
+// Starting a family: the operator types the family's name, its admin's email and a temporary password.
+// The admin signs in with them, chooses their own password, then on Welcome finds the family name filled
+// in, types their own name (what the app shows) and picks the family's currencies. See docs/MULTI-FAMILY.md.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const normalizeEmail = (e: string) => e.trim().toLowerCase();
@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
   }
 
   switch (body.action) {
-    // Every family, with counts only
+    // Every family, with counts only, then families whose admin hasn't signed in and set up yet
     case 'list': {
       const { data: rows, error } = await admin.rpc('operator_families');
       if (error) {
@@ -67,19 +67,30 @@ Deno.serve(async (req) => {
           };
         })
       );
-      return reply(200, { families });
+      const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 });
+      const started = new Set((rows ?? []).map((f: Record<string, unknown>) => f.admin_user_id));
+      const { data: memberRows } = await admin.from('household_members').select('user_id');
+      const inAFamily = new Set((memberRows ?? []).map((m) => m.user_id));
+      const waiting = (users?.users ?? [])
+        .filter((u) => u.app_metadata?.family_admin && !started.has(u.id) && !inAFamily.has(u.id))
+        .map((u) => ({ email: u.email ?? '', familyName: (u.app_metadata?.family_name as string) ?? '', createdAt: u.created_at }));
+      return reply(200, { families, waiting });
     }
 
     case 'create_family_admin': {
       const email = normalizeEmail(body.email ?? '');
       const password = body.password ?? '';
+      const familyName = (body.familyName ?? '').trim().slice(0, 60);
+      if (!familyName) return reply(400, { error: 'no_family_name' });
       if (!EMAIL_RE.test(email)) return reply(400, { error: 'bad_email' });
       if (password.length < 6) return reply(400, { error: 'short_password' });
       const { data: created, error } = await admin.auth.admin.createUser({
         email,
         password,
         email_confirm: true,
-        app_metadata: { family_admin: true }, // only the service role can set this; create_household checks it
+        // Only the service role can set app_metadata: create_household checks family_admin,
+        // and Welcome fills in the family name the operator chose
+        app_metadata: { family_admin: true, family_name: familyName },
         user_metadata: { must_change_password: true },
       });
       if (error || !created.user) {
