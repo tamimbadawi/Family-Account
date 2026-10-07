@@ -6,7 +6,8 @@ import { Check, ChevronLeft, ChevronRight, Shapes } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { CategoryIcon } from '@/components/ui/category-icon';
-import { useCategories, useEntries, useHouseholdMembers, useItems, useSubcategories, useWallets } from '@/lib/data/provider';
+import { useCategories, useEntries, useItems, useSubcategories, useWallets } from '@/lib/data/provider';
+import { useFamilyMembers } from '@/lib/auth/use-family-members';
 import { pickName } from '@/lib/format';
 import { byMember, EMPTY_FILTERS, toListParams, type HistoryFilters } from '@/lib/history/filters';
 import type { Range } from '@/lib/history/period';
@@ -46,7 +47,7 @@ export function FilterSheet({ open, onOpenChange, value, onApply, range }: Filte
   const groups = useSubcategories(draft.categoryId);
   const items = useItems(draft.subcategoryId);
   const wallets = useWallets();
-  const members = useHouseholdMembers();
+  const members = useFamilyMembers();
   const preview = byMember(useEntries(toListParams(draft, range)), draft.memberId);
 
   const name = (row?: { nameAr: string | null; nameEn: string | null } | null) =>

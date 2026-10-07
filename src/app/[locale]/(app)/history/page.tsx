@@ -8,7 +8,6 @@ import type { EnrichedEntry } from '@/lib/data/types';
 import {
   useCategories,
   useEntries,
-  useHouseholdMembers,
   useItems,
   useSubcategories,
   useWallets,
@@ -18,6 +17,7 @@ import { PeriodSwitcher } from '@/components/history/PeriodSwitcher';
 import { rangeOf, toISO, type Period } from '@/lib/history/period';
 import { DayGroup } from '@/components/history/DayGroup';
 import { TypeMenu } from '@/components/history/TypeMenu';
+import { useFamilyMembers } from '@/lib/auth/use-family-members';
 import { FilterSheet } from '@/components/history/FilterSheet';
 import { ItemHistoryCard } from '@/components/history/ItemHistoryCard';
 import {
@@ -60,7 +60,7 @@ function HistoryContent() {
 
   // Names for the active-filter chips
   const wallets = useWallets(true);
-  const members = useHouseholdMembers();
+  const members = useFamilyMembers();
   const categories = useCategories();
   const groups = useSubcategories(filters.categoryId);
   const items = useItems(filters.subcategoryId);
