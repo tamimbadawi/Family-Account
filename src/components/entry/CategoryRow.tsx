@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Check, ChevronLeft, X } from 'lucide-react';
 import type { Category, CategoryKind, Item, Subcategory } from '@/lib/data/types';
 import { useCategories, useItems, useRepository, useSubcategories } from '@/lib/data/provider';
+import { useSaveError } from '@/components/ui/use-save-error';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { pickName } from '@/lib/format';
 import {
@@ -38,6 +39,7 @@ export function CategoryRow({ kind, selected, onPick, onClear, onPathChange, bre
   const tSettings = useTranslations('settings');
   const locale = useLocale();
   const repo = useRepository();
+  const saveError = useSaveError();
   const rowRef = React.useRef<HTMLDivElement>(null);
 
   const [step, setStep] = React.useState<Step>('category');
@@ -85,25 +87,29 @@ export function CategoryRow({ kind, selected, onPick, onClear, onPathChange, bre
   const handleCreate = async ({ nameAr, nameEn, color, icon }: CategoryFormValues) => {
     // A new category or group comes with a matching group/item of the same name and is chosen at once,
     // so Save works straight away (an entry needs an item; nobody should have to build three levels first)
-    if (step === 'category') {
-      const created = await repo.addCategory({ kind, nameAr, nameEn, color, icon });
-      const group = await repo.addSubcategory({ categoryId: created.id, nameAr, nameEn });
-      const item = await repo.addItem({ subcategoryId: group.id, nameAr, nameEn });
-      setCategory(created);
-      setSubcategory(group);
-      setStep('item');
-      onPick(item);
-    } else if (step === 'subcategory' && category) {
-      const created = await repo.addSubcategory({ categoryId: category.id, nameAr, nameEn });
-      const item = await repo.addItem({ subcategoryId: created.id, nameAr, nameEn });
-      setSubcategory(created);
-      setStep('item');
-      onPick(item);
-    } else if (step === 'item' && subcategory) {
-      const created = await repo.addItem({ subcategoryId: subcategory.id, nameAr, nameEn });
-      onPick(created);
+    try {
+      if (step === 'category') {
+        const created = await repo.addCategory({ kind, nameAr, nameEn, color, icon });
+        const group = await repo.addSubcategory({ categoryId: created.id, nameAr, nameEn });
+        const item = await repo.addItem({ subcategoryId: group.id, nameAr, nameEn });
+        setCategory(created);
+        setSubcategory(group);
+        setStep('item');
+        onPick(item);
+      } else if (step === 'subcategory' && category) {
+        const created = await repo.addSubcategory({ categoryId: category.id, nameAr, nameEn });
+        const item = await repo.addItem({ subcategoryId: created.id, nameAr, nameEn });
+        setSubcategory(created);
+        setStep('item');
+        onPick(item);
+      } else if (step === 'item' && subcategory) {
+        const created = await repo.addItem({ subcategoryId: subcategory.id, nameAr, nameEn });
+        onPick(created);
+      }
+      setIsCreating(false);
+    } catch (err) {
+      saveError(err);
     }
-    setIsCreating(false);
   };
 
   // Chosen item: one chip, tap to choose again
