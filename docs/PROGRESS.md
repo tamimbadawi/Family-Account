@@ -77,7 +77,7 @@ _(write what you observed here: every hesitation, question, or complaint)_
 | P2 | Receipt photos: upload first, then save the entry with `photo_path`; a failed upload fails the save (no upload queue — saves are online-only) | B3 | |
 | P3 | Orphan receipts: the 30-day purge hard-deletes entries but not their Storage files. Add cleanup through the Storage API (scheduled edge function or the backup workflow), since SQL cannot delete Storage objects | B5 | |
 | P4 | `remove_member` RPC (owner only) + smoke test: removed member reads/writes nothing and sees no receipts; their entries stay | `0006` written, **apply in B2** | 🔍 |
-| P5 | Backups encrypted with `BACKUP_PASSPHRASE` (Injy only); job fails rather than upload plain SQL | `backup.yml` | ✅ |
+| P5 | Backups encrypted with `BACKUP_PASSPHRASE`; job fails rather than upload plain SQL | `backup.yml` | ✅ |
 | P6 | Money: add a test that client report totals equal the server views (`v_monthly_summary`, `v_account_balances`) to the piaster on the same data | B4 | |
 | P7 | Dates: `localISODate()` in `lib/format`; never `toISOString().slice(0,10)` | fixed in balance corrections + export names | ✅ |
 
@@ -103,7 +103,7 @@ savings goals. Not planned: AI, notifications, bank feeds, investments, multi-cu
 | B5 | `/b5-keepalive-backups` — keep-alive, backups, CSV | AG-2 | `step/b5-keepalive` | |
 | B3 | `/b3-live-sync` — live repository, online-only saves | AG-1 | `step/b3-live-sync` | |
 | B4 | `/b4-reports-live` — reports on server views | AG-2 | `step/b4-reports-live` | |
-| B6 | `/b6-handover` — final QA + handover docs | AG-1 | `step/b6-handover` | |
+| B6 | `/b6-handover` — final QA + launch docs (no ownership transfer, see PLAN.md "Ownership") | AG-1 | `step/b6-handover` | |
 
 ## Log
 | Date | Step | Notes |
@@ -137,3 +137,4 @@ savings goals. Not planned: AI, notifications, bank feeds, investments, multi-cu
 | 2026-10-07 | A8a, #32, #35 | Claude: merged A8a polish (AG-1, #34), + New opens the full Settings category form (#32, Claude builder) and the early-month seed date fix (#35). Each checked on main + PR first (145 tests, typecheck, RTL) and confirmed on production: ui:check 24/24, ui:flows bank/income/expense/date/newcategory all ok. AG-1 -> A8b |
 | 2026-10-07 | Phase A done | Claude: merged Home money row (#38, AG-2), A5d 5 Banks & cash reports (#37, AG-2; flows conflict resolved, kept main's fixed wallet flows + reports_wallets) and A8b Reports polish (#41, AG-1). Each gated on main+PR first (151 tests, typecheck, RTL, ui:flows, ui:check) and confirmed on production. All Phase A steps merged; next is the Family approval gate. AG-1 and AG-2 idle until the family test notes |
 | 2026-10-07 | PR #65 | AG-1: feat(entry): main category and group displayed as breadcrumb beside amount |
+| 2026-10-07 | Ownership | User: no transfer of code or data. App runs on Tamim's Supabase/Vercel/GitHub as operator, with standard encryption (at rest + TLS, RLS between families, gpg backups). Replaces the 2026-10-06 handover plan; PLAN.md "Ownership" section rewritten |
