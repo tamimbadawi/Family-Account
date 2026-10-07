@@ -1,166 +1,138 @@
 # Multi-family plan — one app, many households
 
-Draft 2026-10-07 · proposal for the orchestrator, not yet on the board (`docs/PROGRESS.md`).
+Decided 2026-10-07 · proposal for the orchestrator, not yet on the board (`docs/PROGRESS.md`).
 
-## 1. Where we stand
+## 1. Decisions
 
-The database already supports more than one family. Every table carries `household_id`, every row is
-protected by RLS through `is_member()`, and composite foreign keys stop an entry from pointing at
-another household's wallet or item. `create_household` seeds each new family its own categories and a
-Cash wallet.
+| Question | Decision |
+|---|---|
+| Shape | **One database and one app for every family** (multi-tenant). Each family is a household. |
+| Who runs it | Tamim runs the service (Supabase, Vercel, GitHub) while testing. **Every family has its own family admin** (the household `owner`), who manages only that family. |
+| Login | **Email + password.** The email is the username. No more `name@family.local` usernames. |
+| Joining | **Invite only.** Tamim invites a family admin; the family admin invites their own members. Open sign-up stays off. |
+| Cost | Free and non-commercial: Vercel Hobby + Supabase Free are allowed. |
+| Currencies | Each family picks **1 or 2 currencies** (e.g. EGP + USD). Every wallet holds one currency. No automatic exchange rates. |
 
-What still assumes **one** family:
+## 2. What already works
 
-| # | Assumption | Where | Why it breaks with two families |
+Every table has `household_id`. RLS (`is_member()`) and composite foreign keys keep each family's
+rows apart, and `create_household` seeds each new family its own categories and a Cash wallet.
+Phase B hasn't put real logins in place yet (B2 not merged), so moving from usernames to email logins
+needs **no migration of existing users**.
+
+## 3. What changes
+
+| # | Today | Change | Where |
 |---|---|---|---|
-| 1 | Usernames are global: `mama` → `mama@family.local` | `src/lib/auth/username.ts`, `supabase/functions/family-admin` | Two families can't both have a "mama" or "baba". The "taken" error tells family B a name exists in family A. |
-| 2 | Only the maintainer can create a family's first login (Supabase dashboard, by hand) | PLAN.md "Handover", step 5 | Every new family needs Tamim, and Tamim is meant to have no access after handover. |
-| 3 | The service has one owner: Injy owns Supabase, Vercel, GitHub and the backup passphrase | PLAN.md "Handover to Injy" | With several families on one database, Injy would hold everyone's finances. |
-| 4 | One cache name on the phone: `fa-live` | `src/lib/offline/db.ts` `getDbName()` | If a different person signs in on the same phone, they briefly see the previous family's cached data. |
-| 5 | Currency is hard-coded EGP in 6 places | `lib/format`, `AmountDisplay`, `CategoryDonut`, `IncomeSourcesView`, wallets page | Fine for Egyptian families only. `households.currency` already exists. |
-| 6 | `listUsers({ perPage: 1000 })` scans all logins | `family-admin` `add_member` | Gets slower and eventually wrong past 1,000 users. |
-| 7 | No test proves family A can't read family B | `supabase/tests/rls_smoke_test.sql` covers one household | The main promise of multi-family has no test. |
-| 8 | Backups are one encrypted dump of the whole database | `backup.yml` | One family can't get back only its own data, and whoever holds the passphrase can read every family. |
+| 1 | Username → `name@family.local` | Real email is the login | `lib/auth/username.ts` (remove), Login, Welcome, Settings → Family, `family-admin` |
+| 2 | Tamim creates the first login by hand in the dashboard | Tamim sends an invite email; the admin opens it and sets a password | new `invite-family` edge function |
+| 3 | Admin types a username + temporary password for each member | Admin types the member's email; the member gets an invite email | `family-admin` `add_member` → `invite_member` |
+| 4 | Forgotten password = dashboard only | "Forgot password?" on Login sends a reset email | Login + new `/reset-password` page |
+| 5 | One phone cache `fa-live` | `fa-live-<userId>`, deleted on sign out | `lib/offline/db.ts` |
+| 6 | EGP hard-coded in 6 places | Currency comes from the wallet | `lib/format` + 5 components |
+| 7 | No cross-family test | Smoke test with two households | `supabase/tests/` |
+| 8 | `listUsers({ perPage: 1000 })` scan | Gone (Supabase returns "already registered" itself) | `family-admin` |
 
-## 2. The decision to make first: one shared app, or one copy per family?
+## 4. Login and invites
 
-| | **A. Shared (multi-tenant)** — one Supabase + one Vercel, many households | **B. One copy per family** — each family gets its own Supabase + Vercel from this repo |
+**Emails need a real mail sender.** Supabase's built-in mail is for testing only (a handful of
+emails per hour). Set up **custom SMTP with Resend** (free: 3,000 emails/month, 100/day) under
+Supabase → Authentication → SMTP, with a sender like `no-reply@<domain>`. Without a domain,
+Resend can only send to your own address, so **a domain is required** (or use a Gmail
+app password as SMTP for testing; Gmail allows ~500/day). Email templates (invite, reset password)
+in English + Arabic, in one email.
+
+**Flow 1 — new family (Tamim → family admin)**
+1. Tamim opens `/operator` (only his email, listed in a server-side env var) → *Invite a family* → types the admin's email.
+2. `invite-family` calls `auth.admin.inviteUserByEmail(email, { data: { role: 'family_admin' }, redirectTo: '/welcome' })`.
+3. The admin taps the link in the email → chooses a password → Welcome: family name, own name, currencies (§5) → `create_household`.
+4. `create_household` only works for a user invited as `family_admin` (checked from `auth.users.raw_app_meta_data`, set by the function, not by the user).
+
+**Flow 2 — family member (admin → member)**
+1. Settings → Family → *Add someone* → name + email.
+2. `family-admin` `invite_member` invites the email and adds a `household_members` row (`member`).
+3. The member taps the link → chooses a password → goes straight to Home.
+
+**Parents without email:** the admin can still use an email the family controls (e.g. the
+admin's own Gmail with `+mama`: `injy+mama@gmail.com`). The invite and any reset email then go to the
+admin, who sets things up on the parent's phone. Show this as a hint under the email field.
+
+**Rules**
+- One person = one email = one family (`create_household` and `invite_member` refuse an email already in a family).
+- The admin can: invite, remove (as now: ban the login, keep their entries), hand over the admin role, resend an invite.
+- Supabase Auth settings: sign-up **off**, email confirmation on, invite link valid 24 h, sessions never expire (unchanged).
+- `must_change_password` is no longer needed (people choose their own password from the invite).
+
+## 5. Two currencies per family
+
+**Model.** `households.currencies text[]` with 1–2 ISO codes (first = main). Each wallet has
+`currency`. An entry has no currency of its own: it uses its wallet's. Totals are **never added
+across currencies**.
+
+| Area | Behaviour |
+|---|---|
+| Welcome / Settings | Pick the main currency (default EGP) and optionally a second one from a short list: EGP, USD, EUR, GBP, SAR, AED, KWD, QAR. A currency can be added later. It can only be removed if no wallet uses it. |
+| Wallets | Add wallet asks for the currency only when the family has 2. Can't change once the wallet has entries. |
+| Entry sheet | Amount shows the selected wallet's currency symbol. Nothing else changes. |
+| Transfer between wallets of different currencies | A second amount field appears: "You received" (e.g. 100 USD → 5,000 EGP). Stored as `to_amount`. No exchange-rate service. |
+| Home / Reports | Main currency by default. If the family has 2, a small two-option switch (EGP · USD) at the top. Each currency's numbers are shown on their own. |
+| Breakdown / CSV | A `currency` column; pivots are filtered to one currency at a time. |
+
+**Schema (in `0009`)**
+- `households.currencies text[] not null default '{EGP}'`, check 1–2 items, each in the allowed list.
+- `accounts.currency char(3) not null default 'EGP'`, with a trigger that checks it's in the household's list and can't change once the wallet has entries.
+- `transactions.to_amount numeric(14,2)`: required when a transfer goes between wallets of different currencies, otherwise null.
+- `v_account_balances` uses `to_amount` for incoming cross-currency transfers. The monthly views gain a `currency` column (from the wallet).
+- `households.currency` (single) stays for compatibility and = `currencies[1]`.
+
+**Code**
+- `money(amount, locale, currency)`; `currencySymbol(code, locale)` with Arabic symbols (ج.م, $, €, £, ر.س, د.إ, د.ك, ر.ق). Western digits as always.
+- Report helpers (`lib/reports/*`) take a `currency` filter. Tests: mixed-currency data never sums across currencies.
+- This replaces "Not planned: multi-currency" in PLAN.md.
+
+## 6. Database (`0009_multi_family.sql`)
+- Currency columns and checks from §5.
+- `create_household(p_name, p_display_name, p_locale, p_currencies)`, allowed only for invited family admins.
+- `households.status` (`active` · `suspended`); `is_member()` also requires `active`, so Tamim can lock a family out from the database.
+- **Cross-family smoke test** `supabase/tests/multi_family_smoke_test.sql`: two households. As a member of A, try to select, insert and update every table, view, RPC and the storage path of B. Every line must say PASS. It must pass on production before a second family is invited.
+- Run `get_advisors`, regenerate types.
+
+## 7. Privacy and data (kept small while testing)
+- **Be honest with the families:** Tamim runs the database, so technically he can see every family's data. Say so on a short `/privacy` page (en + ar) and in the invite email. This replaces the "Tamim has no data access" plan in PLAN.md for the multi-family version.
+- `/operator` and the edge-function logs show **counts only** (families, members, last activity, storage used), never amounts, notes or names of categories.
+- Family admin can **export** the family's data (existing CSV) and **delete the family** (typed confirmation, then hard-delete after 30 days). This is the one allowed exception to "nothing is hard-deleted"; add it to AGENTS.md.
+- Backups stay one encrypted weekly dump (enough while testing).
+
+## 8. Free-tier limits
+
+| Supabase free limit | Per family | When it matters |
 |---|---|---|
-| Code changes | The phases below (about 2–3 builder days) | Almost none: a setup guide and a script |
-| New family | Owner gets an invite and is using it in 2 minutes | ~30 min of setup per family (accounts, keys, migrations, deploy) |
-| Who can see the data | Whoever owns the Supabase project sees **all** families | Each family owns its own database. Same privacy model as Injy today |
-| Updates | Push once, every family updated | Each copy has to be redeployed (or stays on its old version) |
-| Free tier | Shared: 500 MB DB, **1 GB receipt photos**, 2 projects | Each family has its own free limits |
-| Pausing | Never: daily use by many families keeps it awake | Each copy needs its own keep-alive |
-| Best for | Friends and relatives who trust **you** with their numbers, or a future product | A few families who each want full ownership, like Injy |
+| Database 500 MB | ~2 MB/year | 100+ families |
+| Storage 1 GB (receipt photos) | ~150 MB/year if a photo every day | **~6 families/year: hits first** |
+| Emails via Resend | a few per family | 100/day, fine |
+| Monthly active users 50,000 | 2–5 | never |
 
-**Recommendation: A (shared), run by a neutral operator account, with Injy's family as household #1.**
-B doesn't scale past a handful of families and turns every fix into N deployments. A works if the
-operator is trusted and Section 4 (privacy) is followed. If the families don't want any one person
-holding their data, choose B and skip to Section 7.
+Actions: compress receipts to ≤ 100 KB, a 100 MB storage quota per family (storage policy +
+a friendly message), and a weekly check in the keep-alive job that emails Tamim at 70% of any limit.
 
-Questions to answer before Phase C starts:
-1. Who is the operator: Tamim, Injy, or a new "app" Gmail? This changes the handover plan (Section 6).
-2. How do new families get in: **invite-only** (recommended) or open sign-up?
-3. Is it free, or will families pay? Vercel Hobby is for **non-commercial use only**, so charging money means Vercel Pro (~$20/mo).
-4. Egypt-only (EGP), or other currencies too?
+## 9. Steps
 
-## 3. Phases
-
-Phase B (one real family) **still finishes first**. Three small changes should go into B2/B3 now
-because they cost nothing then and are painful to change once real logins exist:
-
-### C0 — groundwork, folded into B2/B3 (no visible change)
-- **Usernames scoped to a family.** Login email becomes `<username>@<family-code>.family.local`
-  (for example `mama@badawi7.family.local`). `family-code` is a short code stored on
-  `households.code` (unique, lower case, 4–12 characters, suggested from the family name).
-  Injy's family keeps working because migration renames the existing users once.
-- **Per-user phone cache.** `getDbName()` → `fa-live-<userId>`; Sign out deletes that database.
-- **Currency from the household.** `money()` and the 5 hard-coded spots read `household.currency`
-  (still EGP for everyone). Add `currencySymbol(code, locale)` to `lib/format`.
-
-### C1 — database (migration `0009_multi_family.sql`)
-- `households.code text unique not null` + backfill for existing rows.
-- `households.status` (`active` · `suspended`) and `households.created_by_invite uuid`.
-- Table `family_invites (id, code_hash, created_at, expires_at, used_at, used_by_household)`.
-  No policies: only the edge functions touch it.
-- `create_household(p_name, p_display_name, p_locale, p_currency default 'EGP')` sets `code`.
-- `is_member()` also requires `status = 'active'`, so a suspended family is locked out by the database.
-- **Cross-family RLS test** `supabase/tests/multi_family_smoke_test.sql`: two households. As a member of A,
-  select/insert/update every table, view and storage path of B. Every line must say PASS. This test
-  must pass before any second family is invited.
-- Run `get_advisors` and regenerate types.
-
-### C2 — logins and onboarding
-- **Login screen:** two fields stay two fields. *Family code* is remembered on the phone after the first
-  sign-in and shown as a small line ("Badawi family · change"), so day-to-day it's still name +
-  password. The rule of one primary action per screen still holds.
-- **Invite link for a new family:** the operator creates one in an operator page (C4). The link
-  `/{locale}/start?invite=…` opens a 3-step sheet: family name → your name and username → password.
-  Edge function `start-family` checks the invite, creates the owner's login and calls `create_household`.
-  The owner doesn't have to change a password they just chose themselves.
-- **Adding members** (Settings → Family) works as it does now. Usernames only need to be unique *inside* the family.
-  Remove the global `listUsers` scan: look up the one email directly.
-- **Join link for a member** (optional, nice for parents): the owner taps "Invite by link" and the phone
-  shows a QR or share link that pre-fills the family code on Login.
-- Open sign-up stays **off** in Supabase Auth. Every family enters through an invite.
-
-### C3 — privacy, data rights, recovery
-- **Export my family's data:** the existing CSV export, plus a full JSON export (all tables + receipt
-  photos as a zip) from Settings → Family (owner only).
-- **Delete my family:** owner only, typed confirmation (the one place a confirm dialog is allowed,
-  because it can't be undone). Waits 30 days, then hard-deletes the household, its logins and its
-  storage folder. This is a deliberate exception to rule 6 and needs to be added to AGENTS.md.
-- **Per-family backups:** the weekly job also writes one encrypted file per household
-  (`pg_dump` filtered by `household_id` is awkward, so use a SQL export function per household).
-  Restoring one family no longer means restoring everyone.
-- **Owner forgot password:** today only the dashboard can fix it. Add a "co-owner" option (a second
-  owner who can reset passwords), and an operator reset in C4 that checks identity outside the app
-  (a phone call) before acting.
-- A short privacy page (`/privacy`, both languages): who runs the service, what is stored, no
-  trackers, how to export or delete.
-
-### C4 — operator tools (minimal, no data access)
-- Page `/operator` (only for logins listed in a server-side env var), served by an edge function
-  that returns **counts only**: families, members per family, last activity date, storage used.
-  It never returns entries, amounts or names of categories.
-- Actions: create invite, suspend or unsuspend a family, reset an owner's password.
-- Alerts: the existing advisor and keep-alive emails, plus a weekly check that warns at 70% of
-  database size, storage, or MAU.
-
-### C5 — limits and cost
-| Limit (Supabase free) | Per family (estimate) | Families before it matters |
-|---|---|---|
-| Database 500 MB | ~2 MB/year of entries | 100+ families for years |
-| Storage 1 GB | Receipts at ~150 KB: **~1,000 photos/year** if used daily | **~5–6 families/year**: this hits first |
-| Monthly active users 50,000 | 2–5 | not a concern |
-| Edge function calls 500k/month | small (admin actions only) | not a concern |
-
-Actions: compress receipts harder (target ≤ 100 KB, already in `lib/photos/compress.ts`), add a
-per-household storage quota (e.g. 100 MB) enforced in the storage policy, and plan the move to
-Supabase Pro ($25/mo) at about 10 families. Rate-limit `start-family` and the login (Supabase does
-login rate limiting by default).
-
-### C6 — design and copy
-- Household name in the Home header ("Badawi family") so a parent on a shared phone sees whose books are open.
-- Family code on Settings → Family, with a Share button.
-- Copy review for the new screens (Start, Family code, Export, Delete family) in `en` and `ar`.
-- Quick `/design-review` on Login, Start, Settings → Family at 390×844, `/en` and `/ar` light.
-- Seed categories: keep the Egyptian set. Add a per-currency or per-country template only if non-Egyptian families come.
-
-## 4. Privacy rules for the shared model (add to AGENTS.md §3 when approved)
-1. Every new table has `household_id` and the same three RLS policies. No exceptions.
-2. Edge functions using the service-role key must filter by the caller's household on **every** query,
-   and get a cross-family test.
-3. The operator page and logs never contain amounts, notes, category names or photos.
-4. Storage paths stay `receipts/<household_id>/…`, and the storage policy checks the first folder against `is_member()`.
-5. The cross-family smoke test runs in CI on every migration PR.
-
-## 5. Roadmap and assignment (suggested)
+Phase B (Injy's family on real data) **still finishes first**. Steps M0 change B2/B3 work before it's built, so nothing is done twice.
 
 | Step | What | Needs first | Owner |
 |---|---|---|---|
-| C0 | Scoped usernames, per-user cache, currency from household | folded into **B2/B3** | AG-1 |
-| C1 | `0009_multi_family.sql` + cross-family smoke test + advisors | B1 | Claude (owns Supabase) |
-| C2 | Start-a-family flow, login with family code, `start-family` function, join link | C1, B2 | AG-1 |
-| C3 | Export, delete family, per-family backups, co-owner, privacy page | C1 | AG-2 |
-| C4 | Operator page and function (counts only) | C1 | AG-2 |
-| C5 | Storage quota, receipt size, usage alerts | C1 | Claude |
-| C6 | Household name on Home, copy, design review | C2 | AG-1 |
-| 🚦 | Second family invited only after: cross-family test PASS on production, Injy's family running 2+ weeks without issues, privacy page live | all above | human |
+| M0a | **Email login instead of usernames** in B2: Login with email, Forgot password, `/reset-password`, invite-based Settings → Family | folded into B2 | AG-1 |
+| M0b | Phone cache per user, cleared on sign out | folded into B3 | AG-1 |
+| M1 | `0009_multi_family.sql` (currencies, status, admin-only `create_household`) + cross-family smoke test + advisors + types; Resend SMTP + bilingual email templates | B1 | Claude (owns Supabase) |
+| M2 | `invite-family` function + `/operator` page (invite, list counts, suspend) | M1 | AG-2 |
+| M3 | Welcome with currency choice; `family-admin` → `invite_member`, resend, remove, hand over | M1, M0a | AG-1 |
+| M4 | Two currencies in the app: `money()` with currency, wallet currency, cross-currency transfer, currency switch on Home/Reports, CSV column, tests | M1 | AG-2 |
+| M5 | Privacy page, delete family, storage quota, limit alerts | M1 | AG-2 |
+| M6 | Family name in the Home header, copy review, quick `/design-review` on Login, Welcome, Settings → Family, entry sheet (transfer), Reports | M3, M4 | AG-1 |
+| 🚦 | Invite the 2nd family only after: cross-family test PASS on production, Injy's family using it 2+ weeks, privacy page live | all | human |
 
-## 6. Effect on the current handover plan
-- **If Injy is the operator:** the handover stays as written. Injy also gets `/operator`, and
-  holds the data of every family she invites. Families must know that.
-- **If a neutral operator account runs it** (recommended): Supabase, Vercel and GitHub move to a
-  dedicated "app" account instead of Injy's Gmail. Injy becomes owner of household #1 only, like
-  any other family. The production-approval and encrypted-backup rules stay, with the operator as
-  reviewer and passphrase holder.
-
-## 7. If you choose B (one copy per family) instead
-- Write `docs/NEW-FAMILY.md`: create Supabase project → apply migrations → deploy `family-admin` →
-  create Vercel project from this repo with the 4 env vars → create the owner's login.
-- A `scripts/new-family.sh` that applies migrations and sets env vars through the Supabase and Vercel CLIs.
-- Still do C0's per-user cache and currency changes. Skip C1–C5.
-- Updates: every family's Vercel project deploys from `main`, so a merge updates everyone, but each
-  migration has to be applied once per project. That is the real cost of option B.
+## 10. Docs to update when this is approved
+- PLAN.md: Auth row (email + invites), Sharing row (many households), "Not planned: multi-currency" removed, Handover section (Tamim runs the service).
+- AGENTS.md §3: delete-family exception to rule 6; "every new table has `household_id` + the three RLS policies"; "service-role functions filter by the caller's household on every query".
+- DESIGN.md: currency switch, cross-currency transfer field, Forgot password, invite screens.
+- HANDOVER.md: Resend account and domain, Supabase SMTP settings, `/operator`.
