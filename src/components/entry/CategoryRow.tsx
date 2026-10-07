@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { createPortal } from 'react-dom';
 import { useLocale, useTranslations } from 'next-intl';
 import { Check, ChevronLeft, X } from 'lucide-react';
 import type { Category, CategoryKind, Item, Subcategory } from '@/lib/data/types';
@@ -17,6 +18,8 @@ export interface CategoryRowProps {
   selected: Item | null;
   onPick: (item: Item) => void;
   onClear: () => void;
+  /** Where to show the "you are in" chip (next to the amount); without it the chip stays first in the row. */
+  breadcrumbSlot?: HTMLElement | null;
   /** The category and group currently open (an entry can be saved at either level). */
   onPathChange?: (category: Category | null, subcategory: Subcategory | null) => void;
 }
@@ -30,7 +33,7 @@ const CHIP =
  * One swipeable row of chips: category → group → item.
  * Compact so the whole entry sheet fits one iPhone screen.
  */
-export function CategoryRow({ kind, selected, onPick, onClear, onPathChange }: CategoryRowProps) {
+export function CategoryRow({ kind, selected, onPick, onClear, onPathChange, breadcrumbSlot }: CategoryRowProps) {
   const t = useTranslations('entry');
   const tSettings = useTranslations('settings');
   const locale = useLocale();
@@ -152,17 +155,35 @@ export function CategoryRow({ kind, selected, onPick, onClear, onPathChange }: C
         ? tSettings('addSubcategory')
         : tSettings('addItem');
 
+  // "You are in": the main category (and group), highlighted; tapping it steps back one level
+  const breadcrumb = (
+    <button
+      type="button"
+      onClick={goBack}
+      aria-label={t('backTo', { name: step === 'item' ? name(subcategory) : name(category) })}
+      data-breadcrumb
+      className={`${CHIP} max-w-full gap-1.5 bg-accent-soft px-3 text-accent shadow-card`}
+    >
+      <ChevronLeft className="size-5 shrink-0 rtl:rotate-180" />
+      <span style={category?.color ? { color: category.color } : undefined} className="shrink-0">
+        <CategoryIcon name={category?.icon} className="size-5" />
+      </span>
+      <span className="flex min-w-0 flex-col items-start text-start leading-tight">
+        <span className="max-w-full truncate">{name(category)}</span>
+        {step === 'item' && subcategory && (
+          <span className="max-w-full truncate text-caption font-medium opacity-80">{name(subcategory)}</span>
+        )}
+      </span>
+    </button>
+  );
+
   return (
     <div
       ref={rowRef}
       className="-mx-5 flex gap-2 overflow-x-auto px-5 select-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
-      {step !== 'category' && (
-        <button type="button" onClick={goBack} className={`${CHIP} bg-accent-soft text-accent`}>
-          <ChevronLeft className="size-5 rtl:rotate-180" />
-          <span>{step === 'subcategory' ? name(category) : name(subcategory)}</span>
-        </button>
-      )}
+      {step !== 'category' && !breadcrumbSlot && breadcrumb}
+      {step !== 'category' && breadcrumbSlot && createPortal(breadcrumb, breadcrumbSlot)}
 
       {options.map((o) => (
         <button key={o.id} type="button" onClick={o.onClick} className={`${CHIP} bg-surface-2 text-ink`}>

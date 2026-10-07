@@ -57,5 +57,6 @@
   "changedBy": "آخر تعديل من {name}",
   "swapWallets": "اعكس الاتجاه",
   "chooseCategoryFirst": "اختار الفئة",
-  "chooseSubOrSave": "اختار الفرع / حفظ"
+  "chooseSubOrSave": "اختار الفرع / حفظ",
+  "backTo": "رجوع لـ {name}"
 }

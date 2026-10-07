@@ -57,5 +57,6 @@
   "changedBy": "last changed by {name}",
   "swapWallets": "Swap direction",
   "chooseCategoryFirst": "Choose a category",
-  "chooseSubOrSave": "Choose Sub / Save"
+  "chooseSubOrSave": "Choose Sub / Save",
+  "backTo": "Back to {name}"
 }
