@@ -131,7 +131,6 @@ export function WhoSpentWhatView() {
                     {person.byCategory.slice(0, 4).map((cat) => {
                       const matchedCategory = categories?.find((c) => c.id === cat.id);
                       const icon = matchedCategory?.icon ?? 'Layers';
-                      const color = matchedCategory?.color ?? '#0F766E';
                       const catName = pickName(
                         { name_ar: cat.nameAr, name_en: cat.nameEn },
                         locale
@@ -141,11 +140,15 @@ export function WhoSpentWhatView() {
                         <div key={cat.id} className="flex items-center justify-between gap-2 py-1">
                           <div className="flex items-center gap-2 min-w-0">
                             <div
-                              style={{
-                                backgroundColor: `${color}18`,
-                                color: color,
-                              }}
-                              className="flex size-7 shrink-0 items-center justify-center rounded-full"
+                              style={
+                                matchedCategory?.color
+                                  ? {
+                                      backgroundColor: `${matchedCategory.color}18`,
+                                      color: matchedCategory.color,
+                                    }
+                                  : undefined
+                              }
+                              className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent"
                             >
                               <CategoryIcon name={icon} className="size-3.5" />
                             </div>

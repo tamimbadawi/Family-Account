@@ -46,12 +46,12 @@ export default async function ReportDetailPage({ params }: ReportPageProps) {
   const t = await getTranslations('reports');
 
   return (
-    <div className="flex flex-col gap-2.5 pb-4 select-none">
+    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-6 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex flex-col gap-2.5 select-none">
       {/* 1. Back Navigation & Header */}
       <div className="flex items-center gap-2.5 pt-0.5">
         <Link
           href="/reports?tab=all"
-          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink hover:text-accent active:scale-95 transition-all"
+          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink hover:text-accent active:scale-95 transition-all -ms-1"
           aria-label={t('library.allReportsBack')}
         >
           <ChevronLeft className="size-5 rtl:rotate-180" />

@@ -77,7 +77,6 @@ export function UnusualSpendingView() {
           {unusual.map((cat) => {
             const matchedCategory = categories?.find((c) => c.id === cat.id);
             const icon = matchedCategory?.icon ?? 'AlertCircle';
-            const color = matchedCategory?.color ?? '#C2410C';
             const name = pickName(
               { name_ar: cat.nameAr, name_en: cat.nameEn },
               locale
@@ -92,11 +91,15 @@ export function UnusualSpendingView() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div
-                      style={{
-                        backgroundColor: `${color}18`,
-                        color: color,
-                      }}
-                      className="flex size-10 shrink-0 items-center justify-center rounded-full"
+                      style={
+                        matchedCategory?.color
+                          ? {
+                              backgroundColor: `${matchedCategory.color}18`,
+                              color: matchedCategory.color,
+                            }
+                          : undefined
+                      }
+                      className="flex size-10 shrink-0 items-center justify-center rounded-full bg-expense-soft text-expense"
                     >
                       <CategoryIcon name={icon} className="size-5" />
                     </div>

@@ -146,17 +146,20 @@ export function SearchExportView() {
               );
               const title = itemName || categoryName || t('title');
               const icon = entry.categoryIcon ?? 'Receipt';
-              const color = entry.categoryColor ?? '#0F766E';
 
               return (
                 <div key={entry.id} className="flex items-center justify-between gap-3 py-2.5">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div
-                      style={{
-                        backgroundColor: `${color}18`,
-                        color: color,
-                      }}
-                      className="flex size-9 shrink-0 items-center justify-center rounded-full"
+                      style={
+                        entry.categoryColor
+                          ? {
+                              backgroundColor: `${entry.categoryColor}18`,
+                              color: entry.categoryColor,
+                            }
+                          : undefined
+                      }
+                      className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent"
                     >
                       <CategoryIcon name={icon} className="size-4" />
                     </div>
@@ -164,8 +167,8 @@ export function SearchExportView() {
                       <span className="text-body font-semibold text-ink truncate block">
                         {title}
                       </span>
-                      <span className="text-caption text-ink-muted tabular-nums truncate block">
-                        {entry.occurredOn} {entry.note ? `· ${entry.note}` : ''}
+                      <span className="text-caption text-ink-muted tabular-nums block">
+                        {entry.occurredOn}
                       </span>
                     </div>
                   </div>
