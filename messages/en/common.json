@@ -15,5 +15,7 @@
   "pickDate": "Pick a day",
   "currency": "EGP",
   "loading": "Loading…",
-  "share": "Share"
+  "share": "Share",
+  "noConnection": "No connection — try again",
+  "saveFailed": "Couldn't save. Try again."
 }

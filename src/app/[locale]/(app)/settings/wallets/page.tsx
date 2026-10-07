@@ -11,6 +11,7 @@ import {
 import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
 import { useRepository, useWallets, useWalletBalances } from '@/lib/data/provider';
+import { useSaveError } from '@/components/ui/use-save-error';
 import type { Wallet, WalletType } from '@/lib/data/types';
 import { money, normalizeDigits, pickName } from '@/lib/format';
 import { CategoryIcon } from '@/components/ui/category-icon';
@@ -39,6 +40,7 @@ export default function WalletManagerPage() {
   const t = useTranslations('settings');
   const tWallets = useTranslations('wallets');
   const repo = useRepository();
+  const saveError = useSaveError();
 
   const [showArchived, setShowArchived] = React.useState(false);
 
@@ -123,8 +125,7 @@ export default function WalletManagerPage() {
         toast.info(tWallets('balanceUpdated'));
       }
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to update balance');
+      saveError(err);
     }
   };
 
@@ -157,8 +158,7 @@ export default function WalletManagerPage() {
       toast.success(t('saved'));
       setIsDrawerOpen(false);
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to save wallet');
+      saveError(err);
     }
   };
 
@@ -169,8 +169,7 @@ export default function WalletManagerPage() {
       toast.success(willArchive ? t('archive') : t('unarchive'));
       setIsDrawerOpen(false);
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to change wallet archive state');
+      saveError(err);
     }
   };
 

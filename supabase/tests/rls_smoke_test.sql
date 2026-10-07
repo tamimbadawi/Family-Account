@@ -30,7 +30,12 @@ begin
   -- Mom creates the household
   perform set_config('request.jwt.claim.sub', mom::text, true);
   perform set_config('request.jwt.claims', json_build_object('sub', mom, 'role', 'authenticated')::text, true);
-  hid := public.create_household('Smoke', 'Mom', 'ar');
+  -- create_family (0009+) on Supabase; CI applies only 0001, which has create_household
+  if to_regprocedure('public.create_family(text, text, text, text[])') is not null then
+    execute 'select public.create_family($1, $2, $3)' into hid using 'Smoke', 'Mom', 'ar';
+  else
+    execute 'select public.create_household($1, $2, $3)' into hid using 'Smoke', 'Mom', 'ar';
+  end if;
   select count(*) into n from public.items;
   r := r || format(E'\n%s seed created items (%s)', case when n > 20 then 'PASS' else 'FAIL' end, n);
 

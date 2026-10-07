@@ -29,7 +29,7 @@ begin
   r := r || format(E'\n%s person without an invite cannot create a family', case when ok then 'PASS' else 'FAIL' end);
   ok := false;
   begin perform public.create_household('X', 'Nobody', 'en'); exception when others then ok := true; end;
-  r := r || format(E'\n%s the older create_household() follows the same rule', case when ok then 'PASS' else 'FAIL' end);
+  r := r || format(E'\n%s the older create_household() is closed to signed-in users', case when ok then 'PASS' else 'FAIL' end);
   ok := false;
   begin perform public.add_member('mf-a-' || a_admin || '@test.local', 'Anna'); exception when others then ok := true; end;
   r := r || format(E'\n%s add_member(email) is switched off', case when ok then 'PASS' else 'FAIL' end);
@@ -201,6 +201,16 @@ begin
   perform set_config('request.jwt.claim.sub', a_mem::text, true);
   select count(*) into n from public.transactions where household_id = ha;
   r := r || format(E'\n%s suspended family reads no entries (%s)', case when n = 0 then 'PASS' else 'FAIL' end, n);
+  perform set_config('request.jwt.claim.sub', a_admin::text, true);
+  ok := false;
+  begin perform public.set_household_currencies('{USD,EGP}'); exception when others then ok := true; end;
+  r := r || format(E'\n%s suspended family admin cannot change currencies', case when ok then 'PASS' else 'FAIL' end);
+  ok := false;
+  begin perform public.keepalive(); exception when others then ok := true; end;
+  r := r || format(E'\n%s signed-in users cannot call keepalive()', case when ok then 'PASS' else 'FAIL' end);
+  ok := false;
+  begin perform 1 from public.heartbeat; exception when others then ok := true; end;
+  r := r || format(E'\n%s signed-in users cannot read heartbeat', case when ok then 'PASS' else 'FAIL' end);
   perform set_config('request.jwt.claim.sub', b_admin::text, true);
   select count(*) into n from public.accounts where household_id = hb;
   r := r || format(E'\n%s other families keep working (%s wallets)', case when n = 1 then 'PASS' else 'FAIL' end, n);

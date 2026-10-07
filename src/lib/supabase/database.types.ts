@@ -73,6 +73,64 @@ export type Database = {
           },
         ]
       }
+      budgets: {
+        Row: {
+          amount: number
+          category_id: string
+          created_at: string
+          household_id: string
+          id: string
+          is_archived: boolean
+          is_starter: boolean
+          subcategory_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category_id: string
+          created_at?: string
+          household_id: string
+          id?: string
+          is_archived?: boolean
+          is_starter?: boolean
+          subcategory_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category_id?: string
+          created_at?: string
+          household_id?: string
+          id?: string
+          is_archived?: boolean
+          is_starter?: boolean
+          subcategory_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budgets_household_id_category_id_fkey"
+            columns: ["household_id", "category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "budgets_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_household_id_subcategory_id_fkey"
+            columns: ["household_id", "subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "subcategories"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           color: string | null
@@ -608,6 +666,7 @@ export type Database = {
           wallets: number
         }[]
       }
+      seed_budgets: { Args: { hid: string }; Returns: undefined }
       seed_corrections: { Args: { hid: string }; Returns: undefined }
       seed_defaults: { Args: { hid: string }; Returns: undefined }
       set_family_status: {
