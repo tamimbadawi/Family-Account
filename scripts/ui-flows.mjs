@@ -695,6 +695,65 @@ const FLOWS = {
       );
     }
   },
+  async history_filter(page) {
+    await page.goto(BASE + '/en/history', { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    // Filter → Food → Groceries → Supermarket, then "Show N entries"
+    await tap(page, 'Filter');
+    const sheet = page.getByRole('dialog').last();
+    await sheet.getByText('Any category').first().waitFor({ timeout: 8000 });
+    await sheet.getByRole('button', { name: /Any category/ }).click();
+    await sleep(350);
+    await sheet.getByRole('button', { name: 'Food', exact: true }).click();
+    await sleep(350);
+    await sheet.getByRole('button', { name: 'Groceries', exact: true }).click();
+    await sleep(350);
+    await sheet.getByRole('button', { name: 'Supermarket', exact: true }).click();
+    await sleep(350);
+    const show = sheet.getByRole('button', { name: /^Show \d+ entr/ });
+    await assertUsable(page, show, 'Show N entries button');
+    const expected = Number((await show.innerText()).match(/\d+/)[0]);
+    await show.click();
+    await sleep(900);
+    // History card + chip, and every row is a Supermarket entry
+    await assertUsable(page, page.locator('[data-item-history]'), 'item history card');
+    await assertUsable(page, page.getByRole('button', { name: 'Remove filter Supermarket' }), 'Supermarket filter chip');
+    const rows = await page.locator('[data-entry-row]').allInnerTexts();
+    if (rows.length !== expected) throw new Error(`list shows ${rows.length} entries, the sheet promised ${expected}`);
+    if (rows.some((r) => !r.includes('Supermarket'))) throw new Error('a non-Supermarket entry is in the filtered list');
+    // Tapping last month's bar opens that month
+    const before = (await page.locator('[data-month-label]').innerText()).trim();
+    const bars = page.locator('[data-item-history] [aria-pressed]');
+    await bars.nth((await bars.count()) - 2).click();
+    await sleep(600);
+    const after = (await page.locator('[data-month-label]').innerText()).trim();
+    if (after === before) throw new Error('tapping a bar did not change the month');
+    // Dropdown → Money in: Supermarket has no income, so the filtered empty state shows
+    await page.getByRole('button', { name: 'Show', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Money in' }).click();
+    await sleep(600);
+    const none = page.getByText('Nothing matches this month');
+    await none.scrollIntoViewIfNeeded();
+    await assertUsable(page, none, 'filtered empty state');
+    // Removing the chip and switching back to All shows the whole month again
+    await tap(page, 'Remove filter Supermarket');
+    await page.getByRole('button', { name: 'Show', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'All' }).click();
+    await sleep(600);
+    if ((await page.locator('[data-item-history]').count()) !== 0) throw new Error('history card stayed after removing the filter');
+    // Day / week / month / year: the label follows, the arrows step one period, Month brings it back
+    const label = page.locator('[data-month-label]');
+    for (const [name, check] of [['Week', /–/], ['Year', /^\d{4}$/], ['Day', /,/], ['Month', /^[A-Z][a-z]+ \d{4}$/]]) {
+      await page.getByRole('button', { name: 'Show by day, week, month or year' }).click();
+      await page.getByRole('menuitem', { name, exact: true }).click();
+      await sleep(500);
+      const text = (await label.innerText()).trim();
+      if (!check.test(text)) throw new Error(`${name} view shows "${text}"`);
+    }
+    const monthNow = (await label.innerText()).trim();
+    await tap(page, 'Previous month');
+    if ((await label.innerText()).trim() === monthNow) throw new Error('Previous month arrow did nothing');
+  },
 };
 
 const MULTI_LOCALE_FLOW_NAMES = [

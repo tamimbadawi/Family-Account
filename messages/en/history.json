@@ -9,5 +9,83 @@
   "addEntry": "Add entry",
   "prevMonth": "Previous month",
   "nextMonth": "Next month",
-  "clearWalletFilter": "Show all wallets"
+  "clearWalletFilter": "Show all wallets",
+  "moves": "Moves",
+  "showType": "Show",
+  "filter": "Filter",
+  "clearAll": "Clear all",
+  "back": "Back",
+  "category": "Category, group or item",
+  "chooseCategory": "Choose a category",
+  "anyCategory": "Any category",
+  "allOf": "All of {name}",
+  "wallet": "Wallet",
+  "anyWallet": "Any wallet",
+  "who": "Who entered it",
+  "anyone": "Anyone",
+  "showResults": "Show results",
+  "showCount": "{count, plural, =0 {No entries this month} one {Show 1 entry} other {Show # entries}}",
+  "removeFilter": "Remove filter {name}",
+  "emptyFilteredHint": "Try another period, or remove a filter.",
+  "period": {
+    "day": "Day",
+    "week": "Week",
+    "month": "Month",
+    "year": "Year"
+  },
+  "choosePeriod": "Show by day, week, month or year",
+  "prev": {
+    "day": "Previous day",
+    "week": "Previous week",
+    "month": "Previous month",
+    "year": "Previous year"
+  },
+  "next": {
+    "day": "Next day",
+    "week": "Next week",
+    "month": "Next month",
+    "year": "Next year"
+  },
+  "thisPeriod": {
+    "day": "This day",
+    "week": "This week",
+    "month": "This month",
+    "year": "This year"
+  },
+  "vsPrevious": {
+    "day": "{percent}% vs the day before",
+    "week": "{percent}% vs last week",
+    "month": "{percent}% vs last month",
+    "year": "{percent}% vs last year"
+  },
+  "times": {
+    "day": "{count, plural, =0 {None this day} one {1 time this day} other {# times this day}}",
+    "week": "{count, plural, =0 {None this week} one {1 time this week} other {# times this week}}",
+    "month": "{count, plural, =0 {None this month} one {1 time this month} other {# times this month}}",
+    "year": "{count, plural, =0 {None this year} one {1 time this year} other {# times this year}}"
+  },
+  "usually": {
+    "day": "Usually {amount} a day",
+    "week": "Usually {amount} a week",
+    "month": "Usually {amount} a month",
+    "year": "Usually {amount} a year"
+  },
+  "last6": {
+    "day": "Last 6 days",
+    "week": "Last 6 weeks",
+    "month": "Last 6 months",
+    "year": "Last 6 years"
+  },
+  "empty": {
+    "day": "Nothing logged this day",
+    "week": "Nothing logged this week",
+    "month": "Nothing logged this month",
+    "year": "Nothing logged this year"
+  },
+  "emptyFiltered": {
+    "day": "Nothing matches this day",
+    "week": "Nothing matches this week",
+    "month": "Nothing matches this month",
+    "year": "Nothing matches this year"
+  }
 }

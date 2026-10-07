@@ -73,6 +73,7 @@ export function EntryRow({ entry, onClick }: EntryRowProps) {
 
   return (
     <div
+      data-entry-row
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       onClick={onClick}
