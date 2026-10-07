@@ -65,3 +65,28 @@ jobs:
           name: db-backup-${{ github.run_number }}
           path: out/db-backup.tar.gz.gpg
           retention-days: 90
+
+      - uses: actions/checkout@v4
+        if: steps.check.outputs.run == 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.run == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.check.outputs.run == 'true'
+        run: npm ci
+
+      - name: Purge orphan receipts
+        if: steps.check.outputs.run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ] || [ -z "$SUPABASE_URL" ]; then
+            echo "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set yet — skipping purge."
+          else
+            node scripts/purge-orphan-receipts.mjs
+          fi
