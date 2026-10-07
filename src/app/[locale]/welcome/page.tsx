@@ -47,7 +47,7 @@ export default function WelcomePage() {
       // Real sign-in: the first person to sign in creates the household and becomes its owner (admin)
       try {
         const supabase = getSupabaseBrowserClient();
-        const { error } = await supabase.rpc('create_household', {
+        const { error } = await supabase.rpc('create_family', {
           p_name: householdName.trim() || 'عائلتنا',
           p_display_name: yourName.trim(),
           p_locale: locale,
@@ -56,7 +56,7 @@ export default function WelcomePage() {
         if (error) throw error;
         router.replace('/');
       } catch (err) {
-        console.error('create_household failed:', err);
+        console.error('create_family failed:', err);
         setSaving(false);
       }
       return;

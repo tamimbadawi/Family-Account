@@ -25,30 +25,36 @@ begin
   -- ---------- Who may create a family ----------
   perform set_config('request.jwt.claim.sub', nobody::text, true);
   ok := false;
-  begin perform public.create_household('X', 'Nobody', 'en', '{EGP}'); exception when others then ok := true; end;
+  begin perform public.create_family('X', 'Nobody', 'en', '{EGP}'); exception when others then ok := true; end;
   r := r || format(E'\n%s person without an invite cannot create a family', case when ok then 'PASS' else 'FAIL' end);
+  ok := false;
+  begin perform public.create_household('X', 'Nobody', 'en'); exception when others then ok := true; end;
+  r := r || format(E'\n%s the older create_household() follows the same rule', case when ok then 'PASS' else 'FAIL' end);
+  ok := false;
+  begin perform public.add_member('mf-a-' || a_admin || '@test.local', 'Anna'); exception when others then ok := true; end;
+  r := r || format(E'\n%s add_member(email) is switched off', case when ok then 'PASS' else 'FAIL' end);
 
   perform set_config('request.jwt.claim.sub', a_admin::text, true);
   ok := false;
-  begin perform public.create_household('A', 'Anna', 'en', '{EGP,USD,EUR}'); exception when others then ok := true; end;
+  begin perform public.create_family('A', 'Anna', 'en', '{EGP,USD,EUR}'); exception when others then ok := true; end;
   r := r || format(E'\n%s three currencies are rejected', case when ok then 'PASS' else 'FAIL' end);
   ok := false;
-  begin perform public.create_household('A', 'Anna', 'en', '{EGP,egp}'); exception when others then ok := true; end;
+  begin perform public.create_family('A', 'Anna', 'en', '{EGP,egp}'); exception when others then ok := true; end;
   r := r || format(E'\n%s the same currency twice is rejected', case when ok then 'PASS' else 'FAIL' end);
   ok := false;
-  begin perform public.create_household('A', 'Anna', 'en', '{EG}'); exception when others then ok := true; end;
+  begin perform public.create_family('A', 'Anna', 'en', '{EG}'); exception when others then ok := true; end;
   r := r || format(E'\n%s a malformed currency code is rejected', case when ok then 'PASS' else 'FAIL' end);
 
-  ha := public.create_household('Family A', 'Anna', 'en', '{egp, usd}');
+  ha := public.create_family('Family A', 'Anna', 'en', '{egp, usd}');
   select array_to_string(currencies, ',') || '/' || currency into c from public.households where id = ha;
   r := r || format(E'\n%s family chooses its own currencies, main first (%s)', case when c = 'EGP,USD/EGP' then 'PASS' else 'FAIL' end, c);
 
   ok := false;
-  begin perform public.create_household('A2', 'Anna', 'en', '{EGP}'); exception when others then ok := true; end;
+  begin perform public.create_family('A2', 'Anna', 'en', '{EGP}'); exception when others then ok := true; end;
   r := r || format(E'\n%s a family admin cannot create a second family', case when ok then 'PASS' else 'FAIL' end);
 
   perform set_config('request.jwt.claim.sub', b_admin::text, true);
-  hb := public.create_household('Family B', 'Badr', 'ar', '{SAR}');
+  hb := public.create_family('Family B', 'Badr', 'ar', '{SAR}');
 
   -- The family-admin Edge Function adds members with the service role
   execute 'reset role';

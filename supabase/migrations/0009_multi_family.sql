@@ -7,8 +7,10 @@
 --   Every wallet holds one of them; an entry uses its wallet's currency. Amounts are never
 --   added across currencies, and a transfer between two currencies stores what arrived (to_amount).
 -- * The operator can suspend a family: is_member() then answers false for everyone in it.
--- * add_member(email) is dropped: with real email logins it would let any admin pull any
+-- * add_member(email) is switched off: with real email logins it would let any admin pull any
 --   registered person into their family. Members are added by the family-admin function.
+-- * Nothing is dropped (no destructive statements): the rename policy is altered in place,
+--   create_household(3 args) delegates to the new create_family(4 args).
 
 -- ---------- Currencies ----------
 create or replace function public.valid_currencies(c text[])
@@ -129,19 +131,19 @@ as $$
 $$;
 
 -- ---------- Only the family admin renames the family (0001 let every member) ----------
-drop policy "members rename household" on public.households;
-create policy "admin renames household" on public.households
-  for update to authenticated
+alter policy "members rename household" on public.households
   using (public.is_member(id) and exists (
     select 1 from public.household_members m
     where m.household_id = id and m.user_id = (select auth.uid()) and m.role = 'owner'))
   with check (public.is_member(id));
 
 -- ---------- Creating a family: invited family admins only ----------
-drop function public.create_household(text, text, text);
-drop function public.add_member(text, text);
+create or replace function public.add_member(p_email text, p_display_name text)
+returns void language plpgsql security definer set search_path = ''
+as $$ begin raise exception 'Members are added from Settings > Family' using errcode = '42501'; end $$;
+revoke execute on function public.add_member(text, text) from public, anon, authenticated;
 
-create or replace function public.create_household(
+create or replace function public.create_family(
   p_name text, p_display_name text, p_locale text default 'en', p_currencies text[] default '{EGP}')
 returns uuid language plpgsql security definer set search_path = ''
 as $$
@@ -169,6 +171,11 @@ begin
   perform public.seed_corrections(hid);
   return hid;
 end $$;
+
+-- Older app versions call create_household(name, display_name, locale): same rules, main currency EGP
+create or replace function public.create_household(p_name text, p_display_name text, p_locale text default 'en')
+returns uuid language sql security definer set search_path = ''
+as $$ select public.create_family(p_name, p_display_name, p_locale, '{EGP}'::text[]) $$;
 
 -- ---------- Views: currency on every amount, never summed across currencies ----------
 create or replace view public.v_transactions with (security_invoker = true) as
@@ -266,10 +273,10 @@ revoke execute on function public.valid_currencies(text[]) from public, anon;
 revoke execute on function public.sync_main_currency() from public, anon, authenticated;
 revoke execute on function public.check_account_currency() from public, anon, authenticated;
 revoke execute on function public.check_txn_currency() from public, anon, authenticated;
-revoke execute on function public.create_household(text, text, text, text[]) from public, anon;
+revoke execute on function public.create_family(text, text, text, text[]) from public, anon;
 revoke execute on function public.set_household_currencies(text[]) from public, anon;
 grant  execute on function public.valid_currencies(text[]),
-  public.create_household(text, text, text, text[]),
+  public.create_family(text, text, text, text[]),
   public.set_household_currencies(text[]) to authenticated;
 
 revoke execute on function public.operator_families() from public, anon, authenticated;

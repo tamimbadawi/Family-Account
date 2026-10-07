@@ -533,13 +533,21 @@ export type Database = {
       }
     }
     Functions: {
-      create_household: {
+      add_member: {
+        Args: { p_display_name: string; p_email: string }
+        Returns: undefined
+      }
+      create_family: {
         Args: {
           p_currencies?: string[]
           p_display_name: string
           p_locale?: string
           p_name: string
         }
+        Returns: string
+      }
+      create_household: {
+        Args: { p_display_name: string; p_locale?: string; p_name: string }
         Returns: string
       }
       is_member: { Args: { hid: string }; Returns: boolean }
