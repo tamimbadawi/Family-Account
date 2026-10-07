@@ -101,3 +101,20 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+// When a new version takes over, drop the cached pages and reload every open
+// window. iPhone home-screen apps stay alive in the background running the old
+// JavaScript, and older builds have no in-page updater, so the worker itself
+// has to move them onto the new version. A first install has no pages-cache yet
+// (that load wasn't controlled), so new visitors aren't reloaded.
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    (async () => {
+      const hadOldPages = await caches.delete('pages-cache');
+      if (!hadOldPages) return;
+      await self.clients.claim();
+      const windows = await self.clients.matchAll({ type: 'window' });
+      await Promise.all(windows.map((client) => client.navigate(client.url).catch(() => null)));
+    })(),
+  );
+});
