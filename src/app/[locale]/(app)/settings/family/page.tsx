@@ -184,36 +184,38 @@ export default function FamilyPage() {
           >
             <ChevronLeft className="size-6 rtl:rotate-180" />
           </Link>
-          <h1 className="truncate text-title font-bold text-ink">{t('title')}</h1>
-        </div>
-        <WalletShortcut />
-      </div>
-
-      <div className="flex-1 space-y-4 px-5 py-4 pb-24">
-        <div className="flex min-h-14 items-center gap-3 rounded-card border border-line/40 bg-surface px-3.5 py-2.5 shadow-card">
-          <div className="min-w-0 flex-1">
-            <div className="text-caption text-ink-muted">{t('familyName')}</div>
-            {family.name === null ? (
-              <Skeleton className="mt-1 h-5 w-40" />
-            ) : (
-              <div className="truncate text-body font-semibold text-ink">{family.name}</div>
-            )}
-          </div>
-          {canRename && family.name !== null && (
+          <h1 className="shrink-0 text-title font-bold text-ink">{t('title')}</h1>
+          {family.name === null ? (
+            <Skeleton className="h-6 w-24" />
+          ) : canRename ? (
             <button
               type="button"
-              aria-label={t('renameFamily')}
-              className={ACTION}
+              aria-label={`${t('renameFamily')}: ${family.name}`}
+              className="flex h-11 min-w-0 cursor-pointer items-center gap-1.5 text-title font-semibold text-accent transition-opacity active:opacity-70"
               onClick={() => {
                 open({ kind: 'rename' });
                 setName(family.name ?? '');
               }}
             >
-              <Pencil className="size-5" />
+              <span aria-hidden className="text-ink-faint">·</span>
+              <span dir="auto" className="truncate">
+                {family.name}
+              </span>
+              <Pencil className="size-4 shrink-0" />
             </button>
+          ) : (
+            <span className="flex min-w-0 items-center gap-1.5 text-title font-semibold text-accent">
+              <span aria-hidden className="text-ink-faint">·</span>
+              <span dir="auto" className="truncate">
+                {family.name}
+              </span>
+            </span>
           )}
         </div>
+        <WalletShortcut />
+      </div>
 
+      <div className="flex-1 space-y-4 px-5 py-4 pb-24">
         <p className="text-body text-ink-muted">{isOwner ? t('ownerHint') : t('memberHint')}</p>
 
         {live && !list && loadFailed ? (
