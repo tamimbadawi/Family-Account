@@ -2,17 +2,33 @@
 
 import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Calendar, Plus, X } from 'lucide-react';
+import { Calendar, Plus, SlidersHorizontal, X } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import type { EnrichedEntry, EntryType } from '@/lib/data/types';
-import { useEntries, useWallets } from '@/lib/data/provider';
+import type { EnrichedEntry } from '@/lib/data/types';
+import {
+  useCategories,
+  useEntries,
+  useHouseholdMembers,
+  useItems,
+  useSubcategories,
+  useWallets,
+} from '@/lib/data/provider';
 import { useEntrySheet } from '@/components/entry/EntrySheetContext';
 import { MonthSwitcher } from '@/components/history/MonthSwitcher';
 import { DayGroup } from '@/components/history/DayGroup';
+import { TypeMenu } from '@/components/history/TypeMenu';
+import { FilterSheet } from '@/components/history/FilterSheet';
+import { ItemHistoryCard } from '@/components/history/ItemHistoryCard';
+import {
+  activeFilterCount,
+  byMember,
+  EMPTY_FILTERS,
+  focusLevel,
+  toListParams,
+  type HistoryFilters,
+} from '@/lib/history/filters';
 import { Skeleton } from '@/components/ui/skeleton';
 import { pickName } from '@/lib/format';
-
-type FilterType = 'all' | 'expense' | 'income';
 
 function HistoryContent() {
   const locale = useLocale();
@@ -21,20 +37,14 @@ function HistoryContent() {
   const searchParams = useSearchParams();
   const walletParam = searchParams.get('wallet') || undefined;
 
+  // Filters; a wallet opened from "Our money" (?wallet=) starts the list on that wallet
+  const [filters, setFilters] = React.useState<HistoryFilters>({ ...EMPTY_FILTERS, walletId: walletParam });
   const [prevWalletParam, setPrevWalletParam] = React.useState(walletParam);
-  const [overrideWalletId, setOverrideWalletId] = React.useState<string | undefined | null>(null);
-
   if (walletParam !== prevWalletParam) {
     setPrevWalletParam(walletParam);
-    setOverrideWalletId(null);
+    setFilters((f) => ({ ...f, walletId: walletParam }));
   }
-
-  const activeWalletId = overrideWalletId !== null ? overrideWalletId : walletParam;
-
-  const wallets = useWallets(true);
-  const activeWallet = React.useMemo(() => {
-    return wallets?.find((w) => w.id === activeWalletId);
-  }, [wallets, activeWalletId]);
+  const [filterOpen, setFilterOpen] = React.useState(false);
 
   // Current month 'YYYY-MM'
   const currentMonthDefault = React.useMemo(() => {
@@ -45,16 +55,49 @@ function HistoryContent() {
   }, []);
 
   const [selectedMonth, setSelectedMonth] = React.useState<string>(currentMonthDefault);
-  const [filter, setFilter] = React.useState<FilterType>('all');
 
-  const queryType: EntryType | undefined =
-    filter === 'all' ? undefined : (filter as EntryType);
+  const entries = byMember(useEntries(toListParams(filters, { month: selectedMonth })), filters.memberId);
 
-  const entries = useEntries({
-    month: selectedMonth,
-    type: queryType,
-    accountId: activeWalletId,
-  });
+  // Names for the active-filter chips
+  const wallets = useWallets(true);
+  const members = useHouseholdMembers();
+  const categories = useCategories();
+  const groups = useSubcategories(filters.categoryId);
+  const items = useItems(filters.subcategoryId);
+  const nameOf = (row?: { nameAr: string | null; nameEn: string | null } | null) =>
+    row ? pickName({ name_ar: row.nameAr, name_en: row.nameEn }, locale) : '';
+  const focus = focusLevel(filters);
+  const focusName =
+    focus === 'item'
+      ? nameOf(items?.find((i) => i.id === filters.itemId))
+      : focus === 'subcategory'
+        ? nameOf(groups?.find((g) => g.id === filters.subcategoryId))
+        : focus === 'category'
+          ? nameOf(categories?.find((c) => c.id === filters.categoryId))
+          : '';
+  const chips: { key: string; label: string; clear: () => void }[] = [];
+  if (focus && focusName) {
+    chips.push({
+      key: 'category',
+      label: focusName,
+      clear: () => setFilters((f) => ({ ...f, categoryId: undefined, subcategoryId: undefined, itemId: undefined })),
+    });
+  }
+  if (filters.walletId) {
+    chips.push({
+      key: 'wallet',
+      label: nameOf(wallets?.find((w) => w.id === filters.walletId)) || '…',
+      clear: () => setFilters((f) => ({ ...f, walletId: undefined })),
+    });
+  }
+  if (filters.memberId) {
+    chips.push({
+      key: 'member',
+      label: members.find((m) => m.userId === filters.memberId)?.displayName ?? '…',
+      clear: () => setFilters((f) => ({ ...f, memberId: undefined })),
+    });
+  }
+  const filterCount = activeFilterCount(filters);
 
   // Group entries by occurredOn
   const dayGroups = React.useMemo(() => {
@@ -73,73 +116,66 @@ function HistoryContent() {
 
   const isLoading = entries === undefined;
   const isEmpty = entries !== undefined && entries.length === 0;
+  const isFiltered = filterCount > 0 || filters.type !== 'all';
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* Controls: Month switcher and filter chips */}
+      {/* Controls: month, type dropdown + Filter, active filters */}
       <div className="px-5 pt-1 pb-3 space-y-3 shrink-0">
         <MonthSwitcher
           value={selectedMonth}
           onChange={setSelectedMonth}
         />
 
-        {/* Filter chips (All / Expenses / Income) */}
-        <div className="grid grid-cols-3 gap-1.5 p-1 bg-surface-2 rounded-2xl select-none">
+        <div className="flex gap-2">
+          <TypeMenu value={filters.type} onChange={(type) => setFilters((f) => ({ ...f, type }))} />
           <button
             type="button"
-            onClick={() => setFilter('all')}
-            className={`h-11 rounded-xl text-body font-medium transition-all cursor-pointer ${
-              filter === 'all'
-                ? 'bg-surface text-ink font-semibold shadow-sm'
-                : 'text-ink-muted hover:text-ink'
+            onClick={() => setFilterOpen(true)}
+            className={`relative flex h-12 shrink-0 items-center gap-2 rounded-2xl px-4 text-body font-semibold shadow-card transition-transform active:scale-[0.98] cursor-pointer select-none ${
+              filterCount > 0 ? 'bg-accent text-accent-ink' : 'bg-surface text-ink'
             }`}
           >
-            {t('all')}
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter('expense')}
-            className={`h-11 rounded-xl text-body font-medium transition-all cursor-pointer ${
-              filter === 'expense'
-                ? 'bg-surface text-expense font-semibold shadow-sm'
-                : 'text-ink-muted hover:text-ink'
-            }`}
-          >
-            {t('expenses')}
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter('income')}
-            className={`h-11 rounded-xl text-body font-medium transition-all cursor-pointer ${
-              filter === 'income'
-                ? 'bg-surface text-income font-semibold shadow-sm'
-                : 'text-ink-muted hover:text-ink'
-            }`}
-          >
-            {t('incomes')}
+            <SlidersHorizontal className="size-5" />
+            <span>{t('filter')}</span>
+            {filterCount > 0 && (
+              <span className="flex size-6 items-center justify-center rounded-full bg-accent-ink text-caption font-bold text-accent tabular-nums">
+                {filterCount}
+              </span>
+            )}
           </button>
         </div>
 
-        {activeWallet && (
-          <div className="flex items-center gap-2 pt-0.5">
-            <button
-              type="button"
-              onClick={() => setOverrideWalletId(undefined)}
-              aria-label={t('clearWalletFilter')}
-              className="inline-flex items-center gap-2 min-h-12 px-4 rounded-full bg-accent/12 text-accent text-caption font-semibold cursor-pointer active:scale-95 transition-transform"
-            >
-              <span>
-                {pickName({ name_ar: activeWallet.nameAr, name_en: activeWallet.nameEn }, locale) ||
-                  activeWallet.id}
-              </span>
-              <X className="size-4" aria-hidden />
-            </button>
+        {chips.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {chips.map((chip) => (
+              <button
+                key={chip.key}
+                type="button"
+                onClick={chip.clear}
+                aria-label={t('removeFilter', { name: chip.label })}
+                className="inline-flex min-h-12 max-w-full items-center gap-2 rounded-full bg-accent/12 px-4 text-caption font-semibold text-accent cursor-pointer active:scale-95 transition-transform"
+              >
+                <span className="truncate">{chip.label}</span>
+                <X className="size-4 shrink-0" aria-hidden />
+              </button>
+            ))}
           </div>
         )}
       </div>
 
+      <FilterSheet
+        open={filterOpen}
+        onOpenChange={setFilterOpen}
+        value={filters}
+        onApply={setFilters}
+        month={selectedMonth}
+      />
+
       {/* Main content: list of day groups or empty / loading state */}
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {focus && <ItemHistoryCard filters={filters} month={selectedMonth} onMonthChange={setSelectedMonth} />}
+
         {isLoading && (
           <div className="px-5 py-3 space-y-4">
             <div className="space-y-3 bg-surface p-4 rounded-card border border-line/40">
@@ -176,7 +212,15 @@ function HistoryContent() {
           </div>
         )}
 
-        {isEmpty && (
+        {/* Filtered and nothing matches: a short note, so it stays on screen under the history card */}
+        {isEmpty && isFiltered && (
+          <div className="px-6 py-8 text-center select-none">
+            <h3 className="text-heading font-bold text-ink mb-1">{t('emptyFiltered')}</h3>
+            <p className="text-body text-ink-muted">{t('emptyFilteredHint')}</p>
+          </div>
+        )}
+
+        {isEmpty && !isFiltered && (
           <div className="flex flex-col items-center justify-center px-6 py-16 text-center select-none">
             <div className="flex size-20 items-center justify-center rounded-full bg-surface-2 text-ink-muted mb-4 shadow-sm">
               <Calendar className="size-10 stroke-[1.5]" />
@@ -205,7 +249,7 @@ function HistoryContent() {
                 key={group.date}
                 date={group.date}
                 entries={group.entries}
-                filter={filter}
+                filter={filters.type === 'transfer' ? 'all' : filters.type}
                 onEntryClick={(entry) => openEdit(entry)}
               />
             ))}
