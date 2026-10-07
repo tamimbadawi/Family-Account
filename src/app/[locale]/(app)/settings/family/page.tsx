@@ -186,25 +186,29 @@ export default function FamilyPage() {
           </Link>
           <h1 className="shrink-0 text-title font-bold text-ink">{t('title')}</h1>
           {family.name === null ? (
-            <Skeleton className="h-6 w-24 rounded-full" />
+            <Skeleton className="h-6 w-24" />
           ) : canRename ? (
             <button
               type="button"
               aria-label={`${t('renameFamily')}: ${family.name}`}
-              className="flex h-11 min-w-0 cursor-pointer items-center gap-1.5 rounded-full bg-surface-2 ps-3.5 pe-3 text-body font-semibold text-ink-muted transition-transform active:scale-95"
+              className="flex h-11 min-w-0 cursor-pointer items-center gap-1.5 text-title font-semibold text-accent transition-opacity active:opacity-70"
               onClick={() => {
                 open({ kind: 'rename' });
                 setName(family.name ?? '');
               }}
             >
+              <span aria-hidden className="text-ink-faint">·</span>
               <span dir="auto" className="truncate">
                 {family.name}
               </span>
               <Pencil className="size-4 shrink-0" />
             </button>
           ) : (
-            <span dir="auto" className="min-w-0 truncate text-body font-semibold text-ink-muted">
-              {family.name}
+            <span className="flex min-w-0 items-center gap-1.5 text-title font-semibold text-accent">
+              <span aria-hidden className="text-ink-faint">·</span>
+              <span dir="auto" className="truncate">
+                {family.name}
+              </span>
             </span>
           )}
         </div>
