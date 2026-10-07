@@ -283,7 +283,7 @@ export default function CategoryManagerPage() {
           <button
             type="button"
             onClick={() => setIsReordering(!isReordering)}
-            className="text-body font-semibold text-accent hover:opacity-80 transition-opacity cursor-pointer shrink-0"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center px-2 rounded-xl text-body font-semibold text-accent hover:opacity-80 active:bg-surface-2 transition-all cursor-pointer shrink-0"
           >
             {isReordering ? t('done') : t('reorder')}
           </button>

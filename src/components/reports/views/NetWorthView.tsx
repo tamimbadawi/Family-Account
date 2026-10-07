@@ -80,11 +80,15 @@ export function NetWorthView() {
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <div
-                  style={{
-                    backgroundColor: `${w.color || '#0F766E'}18`,
-                    color: w.color || '#0F766E',
-                  }}
-                  className="flex size-9 shrink-0 items-center justify-center rounded-full"
+                  style={
+                    w.color
+                      ? {
+                          backgroundColor: `${w.color}18`,
+                          color: w.color,
+                        }
+                      : undefined
+                  }
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent"
                 >
                   <CategoryIcon name={w.icon || 'wallet'} className="size-4.5" />
                 </div>
