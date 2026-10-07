@@ -729,7 +729,7 @@ const FLOWS = {
     const after = (await page.locator('[data-month-label]').innerText()).trim();
     if (after === before) throw new Error('tapping a bar did not change the month');
     // Dropdown → Money in: Supermarket has no income, so the filtered empty state shows
-    await page.getByRole('button', { name: 'Show' }).click();
+    await page.getByRole('button', { name: 'Show', exact: true }).click();
     await page.getByRole('menuitem', { name: 'Money in' }).click();
     await sleep(600);
     const none = page.getByText('Nothing matches this month');
@@ -737,10 +737,22 @@ const FLOWS = {
     await assertUsable(page, none, 'filtered empty state');
     // Removing the chip and switching back to All shows the whole month again
     await tap(page, 'Remove filter Supermarket');
-    await page.getByRole('button', { name: 'Show' }).click();
+    await page.getByRole('button', { name: 'Show', exact: true }).click();
     await page.getByRole('menuitem', { name: 'All' }).click();
     await sleep(600);
     if ((await page.locator('[data-item-history]').count()) !== 0) throw new Error('history card stayed after removing the filter');
+    // Day / week / month / year: the label follows, the arrows step one period, Month brings it back
+    const label = page.locator('[data-month-label]');
+    for (const [name, check] of [['Week', /–/], ['Year', /^\d{4}$/], ['Day', /,/], ['Month', /^[A-Z][a-z]+ \d{4}$/]]) {
+      await page.getByRole('button', { name: 'Show by day, week, month or year' }).click();
+      await page.getByRole('menuitem', { name, exact: true }).click();
+      await sleep(500);
+      const text = (await label.innerText()).trim();
+      if (!check.test(text)) throw new Error(`${name} view shows "${text}"`);
+    }
+    const monthNow = (await label.innerText()).trim();
+    await tap(page, 'Previous month');
+    if ((await label.innerText()).trim() === monthNow) throw new Error('Previous month arrow did nothing');
   },
 };
 

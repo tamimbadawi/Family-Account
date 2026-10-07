@@ -5,28 +5,26 @@ import { useLocale, useTranslations } from 'next-intl';
 import { TrendingDown, TrendingUp } from 'lucide-react';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { useCategories, useEntries, useItems, useSubcategories } from '@/lib/data/provider';
-import { money, pickName, shiftMonth } from '@/lib/format';
+import { money, pickName } from '@/lib/format';
+import { barLabel, bucketIndex, lastPeriods, type Period } from '@/lib/history/period';
 import { byMember, focusLevel, toListParams, type HistoryFilters } from '@/lib/history/filters';
 
-const MONTHS = 6;
-
-function lastDayOf(month: string): string {
-  const [y, m] = month.split('-').map(Number);
-  return `${month}-${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`;
-}
+const BARS = 6;
 
 /**
- * The history of one category, group or item (like the Reports drill-down): this month's total,
- * how often, the average, the change from last month, and six months of bars. Tapping a bar opens that month.
+ * The history of one category, group or item (like the Reports drill-down): this period's total,
+ * how often, the usual amount, the change from the period before, and six bars. Tapping a bar opens that period.
  */
 export function ItemHistoryCard({
   filters,
-  month,
-  onMonthChange,
+  period,
+  anchor,
+  onAnchorChange,
 }: {
   filters: HistoryFilters;
-  month: string;
-  onMonthChange: (month: string) => void;
+  period: Period;
+  anchor: string;
+  onAnchorChange: (anchor: string) => void;
 }) {
   const t = useTranslations('history');
   const locale = useLocale();
@@ -43,41 +41,36 @@ export function ItemHistoryCard({
         ? groups?.find((s) => s.id === filters.subcategoryId)
         : category;
 
-  const first = shiftMonth(month, -(MONTHS - 1));
-  const range = byMember(
-    useEntries(toListParams(filters, { startDate: `${first}-01`, endDate: lastDayOf(month) })),
+  const ranges = React.useMemo(() => lastPeriods(period, anchor, BARS), [period, anchor]);
+  const entries = byMember(
+    useEntries(toListParams(filters, { startDate: ranges[0].startDate, endDate: ranges[BARS - 1].endDate })),
     filters.memberId
   );
 
-  const months = React.useMemo(() => Array.from({ length: MONTHS }, (_, i) => shiftMonth(first, i)), [first]);
-  const stats = React.useMemo(() => {
-    const totals = new Map(months.map((m) => [m, { total: 0, count: 0 }]));
-    for (const e of range ?? []) {
+  const buckets = React.useMemo(() => {
+    const totals = ranges.map(() => ({ total: 0, count: 0 }));
+    for (const e of entries ?? []) {
       if (e.type === 'transfer') continue;
-      const bucket = totals.get(e.occurredOn.slice(0, 7));
-      if (bucket) {
-        bucket.total += e.amount;
-        bucket.count += 1;
+      const i = bucketIndex(ranges, e.occurredOn);
+      if (i >= 0) {
+        totals[i].total += e.amount;
+        totals[i].count += 1;
       }
     }
     return totals;
-  }, [range, months]);
+  }, [entries, ranges]);
 
   if (!level || !target) return null;
 
   const isIncome = category?.kind === 'income';
   const tone = isIncome ? 'text-income' : 'text-expense';
   const barTone = isIncome ? 'bg-income' : 'bg-expense';
-  const now = stats.get(month) ?? { total: 0, count: 0 };
-  const before = stats.get(shiftMonth(month, -1)) ?? { total: 0, count: 0 };
-  const max = Math.max(1, ...Array.from(stats.values(), (s) => s.total));
-  const sixMonthTotal = Array.from(stats.values()).reduce((sum, s) => sum + s.total, 0);
-  const activeMonths = Array.from(stats.values()).filter((s) => s.count > 0).length;
+  const now = buckets[BARS - 1];
+  const before = buckets[BARS - 2];
+  const max = Math.max(1, ...buckets.map((b) => b.total));
+  const allTotal = buckets.reduce((sum, b) => sum + b.total, 0);
+  const activePeriods = buckets.filter((b) => b.count > 0).length;
   const change = before.total > 0 ? Math.round(((now.total - before.total) / before.total) * 100) : null;
-  const monthLabel = (m: string) =>
-    new Intl.DateTimeFormat(locale.startsWith('ar') ? 'ar-EG' : 'en-EG', { month: 'short', numberingSystem: 'latn' }).format(
-      new Date(Number(m.slice(0, 4)), Number(m.slice(5, 7)) - 1, 1)
-    );
   const name = pickName({ name_ar: target.nameAr, name_en: target.nameEn }, locale);
   const path =
     level === 'category'
@@ -101,7 +94,7 @@ export function ItemHistoryCard({
 
       <div className="mt-3 flex items-end justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-caption text-ink-muted">{t('thisMonth')}</div>
+          <div className="text-caption text-ink-muted">{t(`thisPeriod.${period}`)}</div>
           <div className={`text-title font-bold tabular-nums ${tone}`}>{money(now.total, locale)}</div>
         </div>
         {change !== null && change !== 0 && (
@@ -111,27 +104,28 @@ export function ItemHistoryCard({
             }`}
           >
             {change > 0 ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />}
-            {t('vsLastMonth', { percent: Math.abs(change) })}
+            {t(`vsPrevious.${period}`, { percent: Math.abs(change) })}
           </div>
         )}
       </div>
 
       <div className="mt-1 text-caption text-ink-muted tabular-nums">
-        {t('timesThisMonth', { count: now.count })}
-        {activeMonths > 0 && ` · ${t('monthlyAverage', { amount: money(sixMonthTotal / activeMonths, locale) })}`}
+        {t(`times.${period}`, { count: now.count })}
+        {activePeriods > 0 && ` · ${t(`usually.${period}`, { amount: money(Math.round(allTotal / activePeriods), locale) })}`}
       </div>
 
-      {/* Six months: tap a bar to open that month */}
-      <div className="mt-4 flex h-28 items-end gap-2" role="group" aria-label={t('sixMonths')}>
-        {months.map((m) => {
-          const s = stats.get(m)!;
-          const selected = m === month;
+      {/* Six periods: tap a bar to open that one */}
+      <div className="mt-4 flex h-28 items-end gap-2" role="group" aria-label={t(`last6.${period}`)}>
+        {ranges.map((r, i) => {
+          const s = buckets[i];
+          const selected = i === BARS - 1;
+          const label = barLabel(period, r, locale);
           return (
             <button
-              key={m}
+              key={r.startDate}
               type="button"
-              onClick={() => onMonthChange(m)}
-              aria-label={`${monthLabel(m)} ${money(s.total, locale)}`}
+              onClick={() => onAnchorChange(r.startDate)}
+              aria-label={`${label} ${money(s.total, locale)}`}
               aria-pressed={selected}
               className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1.5 cursor-pointer"
             >
@@ -139,7 +133,7 @@ export function ItemHistoryCard({
                 className={`w-full rounded-lg transition-all ${s.total > 0 ? barTone : 'bg-line'} ${selected ? 'opacity-100' : 'opacity-35'}`}
                 style={{ height: `${Math.max(6, (s.total / max) * 72)}px` }}
               />
-              <span className={`text-caption tabular-nums ${selected ? 'font-bold text-ink' : 'text-ink-muted'}`}>{monthLabel(m)}</span>
+              <span className={`text-caption tabular-nums ${selected ? 'font-bold text-ink' : 'text-ink-muted'}`}>{label}</span>
             </button>
           );
         })}

@@ -9,6 +9,7 @@ import { CategoryIcon } from '@/components/ui/category-icon';
 import { useCategories, useEntries, useHouseholdMembers, useItems, useSubcategories, useWallets } from '@/lib/data/provider';
 import { pickName } from '@/lib/format';
 import { byMember, EMPTY_FILTERS, toListParams, type HistoryFilters } from '@/lib/history/filters';
+import type { Range } from '@/lib/history/period';
 
 type Step = 'main' | 'categories' | 'groups' | 'items';
 
@@ -21,11 +22,11 @@ export interface FilterSheetProps {
   onOpenChange: (open: boolean) => void;
   value: HistoryFilters;
   onApply: (next: HistoryFilters) => void;
-  month: string;
+  range: Range;
 }
 
 /** Bottom sheet to narrow History by category → group → item, wallet and who entered it. */
-export function FilterSheet({ open, onOpenChange, value, onApply, month }: FilterSheetProps) {
+export function FilterSheet({ open, onOpenChange, value, onApply, range }: FilterSheetProps) {
   const t = useTranslations('history');
   const locale = useLocale();
   const [draft, setDraft] = React.useState<HistoryFilters>(value);
@@ -46,7 +47,7 @@ export function FilterSheet({ open, onOpenChange, value, onApply, month }: Filte
   const items = useItems(draft.subcategoryId);
   const wallets = useWallets();
   const members = useHouseholdMembers();
-  const preview = byMember(useEntries(toListParams(draft, { month })), draft.memberId);
+  const preview = byMember(useEntries(toListParams(draft, range)), draft.memberId);
 
   const name = (row?: { nameAr: string | null; nameEn: string | null } | null) =>
     row ? pickName({ name_ar: row.nameAr, name_en: row.nameEn }, locale) : '';
@@ -60,8 +61,14 @@ export function FilterSheet({ open, onOpenChange, value, onApply, month }: Filte
   const title =
     step === 'categories' ? t('chooseCategory') : step === 'groups' ? name(category) : step === 'items' ? name(group) : t('filter');
 
-  const pickRow = (label: string, selected: boolean, onClick: () => void, opts?: { icon?: React.ReactNode; drill?: boolean }) => (
-    <button type="button" onClick={onClick} className={ROW}>
+  const pickRow = (
+    key: string,
+    label: string,
+    selected: boolean,
+    onClick: () => void,
+    opts?: { icon?: React.ReactNode; drill?: boolean }
+  ) => (
+    <button key={key} type="button" onClick={onClick} className={ROW}>
       {opts?.icon}
       <span className={`flex-1 truncate text-body ${selected ? 'font-semibold text-accent' : 'font-medium text-ink'}`}>{label}</span>
       {selected && <Check className="size-5 shrink-0 text-accent" />}
@@ -165,12 +172,13 @@ export function FilterSheet({ open, onOpenChange, value, onApply, month }: Filte
 
             {step === 'categories' && (
               <div className="divide-y divide-line/40 overflow-hidden rounded-card bg-surface-2">
-                {pickRow(t('anyCategory'), !draft.categoryId, () => {
+                {pickRow('any', t('anyCategory'), !draft.categoryId, () => {
                   setDraft({ ...draft, categoryId: undefined, subcategoryId: undefined, itemId: undefined });
                   setStep('main');
                 }, { icon: <Shapes className="size-6 shrink-0 text-ink-muted" /> })}
                 {(categories ?? []).map((c) =>
                   pickRow(
+                    c.id,
                     name(c),
                     draft.categoryId === c.id,
                     () => {
@@ -188,12 +196,13 @@ export function FilterSheet({ open, onOpenChange, value, onApply, month }: Filte
 
             {step === 'groups' && (
               <div className="divide-y divide-line/40 overflow-hidden rounded-card bg-surface-2">
-                {pickRow(t('allOf', { name: name(category) }), !draft.subcategoryId, () => {
+                {pickRow('all', t('allOf', { name: name(category) }), !draft.subcategoryId, () => {
                   setDraft({ ...draft, subcategoryId: undefined, itemId: undefined });
                   setStep('main');
                 })}
                 {(groups ?? []).map((s) =>
                   pickRow(
+                    s.id,
                     name(s),
                     draft.subcategoryId === s.id,
                     () => {
@@ -208,12 +217,12 @@ export function FilterSheet({ open, onOpenChange, value, onApply, month }: Filte
 
             {step === 'items' && (
               <div className="divide-y divide-line/40 overflow-hidden rounded-card bg-surface-2">
-                {pickRow(t('allOf', { name: name(group) }), !draft.itemId, () => {
+                {pickRow('all', t('allOf', { name: name(group) }), !draft.itemId, () => {
                   setDraft({ ...draft, itemId: undefined });
                   setStep('main');
                 })}
                 {(items ?? []).map((i) =>
-                  pickRow(name(i), draft.itemId === i.id, () => {
+                  pickRow(i.id, name(i), draft.itemId === i.id, () => {
                     setDraft({ ...draft, itemId: i.id });
                     setStep('main');
                   })

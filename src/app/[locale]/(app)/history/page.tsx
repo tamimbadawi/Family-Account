@@ -14,7 +14,8 @@ import {
   useWallets,
 } from '@/lib/data/provider';
 import { useEntrySheet } from '@/components/entry/EntrySheetContext';
-import { MonthSwitcher } from '@/components/history/MonthSwitcher';
+import { PeriodSwitcher } from '@/components/history/PeriodSwitcher';
+import { rangeOf, toISO, type Period } from '@/lib/history/period';
 import { DayGroup } from '@/components/history/DayGroup';
 import { TypeMenu } from '@/components/history/TypeMenu';
 import { FilterSheet } from '@/components/history/FilterSheet';
@@ -46,17 +47,16 @@ function HistoryContent() {
   }
   const [filterOpen, setFilterOpen] = React.useState(false);
 
-  // Current month 'YYYY-MM'
-  const currentMonthDefault = React.useMemo(() => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    return `${y}-${m}`;
-  }, []);
+  // Day / week / month / year shown, around an anchor date (starts on this month)
+  const [period, setPeriod] = React.useState<Period>('month');
+  const [anchor, setAnchor] = React.useState(() => toISO(new Date()));
+  const range = rangeOf(period, anchor);
+  const changePeriod = (p: Period, a: string) => {
+    setPeriod(p);
+    setAnchor(a);
+  };
 
-  const [selectedMonth, setSelectedMonth] = React.useState<string>(currentMonthDefault);
-
-  const entries = byMember(useEntries(toListParams(filters, { month: selectedMonth })), filters.memberId);
+  const entries = byMember(useEntries(toListParams(filters, range)), filters.memberId);
 
   // Names for the active-filter chips
   const wallets = useWallets(true);
@@ -122,10 +122,7 @@ function HistoryContent() {
     <div className="flex flex-col h-full min-h-0">
       {/* Controls: month, type dropdown + Filter, active filters */}
       <div className="px-5 pt-1 pb-3 space-y-3 shrink-0">
-        <MonthSwitcher
-          value={selectedMonth}
-          onChange={setSelectedMonth}
-        />
+        <PeriodSwitcher period={period} anchor={anchor} onChange={changePeriod} />
 
         <div className="flex gap-2">
           <TypeMenu value={filters.type} onChange={(type) => setFilters((f) => ({ ...f, type }))} />
@@ -169,12 +166,12 @@ function HistoryContent() {
         onOpenChange={setFilterOpen}
         value={filters}
         onApply={setFilters}
-        month={selectedMonth}
+        range={range}
       />
 
       {/* Main content: list of day groups or empty / loading state */}
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {focus && <ItemHistoryCard filters={filters} month={selectedMonth} onMonthChange={setSelectedMonth} />}
+        {focus && <ItemHistoryCard filters={filters} period={period} anchor={anchor} onAnchorChange={setAnchor} />}
 
         {isLoading && (
           <div className="px-5 py-3 space-y-4">
@@ -215,7 +212,7 @@ function HistoryContent() {
         {/* Filtered and nothing matches: a short note, so it stays on screen under the history card */}
         {isEmpty && isFiltered && (
           <div className="px-6 py-8 text-center select-none">
-            <h3 className="text-heading font-bold text-ink mb-1">{t('emptyFiltered')}</h3>
+            <h3 className="text-heading font-bold text-ink mb-1">{t(`emptyFiltered.${period}`)}</h3>
             <p className="text-body text-ink-muted">{t('emptyFilteredHint')}</p>
           </div>
         )}
@@ -226,7 +223,7 @@ function HistoryContent() {
               <Calendar className="size-10 stroke-[1.5]" />
             </div>
             <h3 className="text-title font-bold text-ink mb-2">
-              {t('emptyMonth')}
+              {t(`empty.${period}`)}
             </h3>
             <p className="text-body text-ink-muted max-w-xs mb-6">
               {t('emptyMonthHint')}
