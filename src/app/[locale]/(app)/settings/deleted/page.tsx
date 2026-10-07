@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { ChevronLeft, RotateCcw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
+import { WalletShortcut } from '@/components/layout/WalletShortcut';
 import { useEntries, useRepository } from '@/lib/data/provider';
 import type { EnrichedEntry } from '@/lib/data/types';
 import { formatDay, money, pickName } from '@/lib/format';
@@ -61,6 +62,7 @@ export default function RecentlyDeletedPage() {
             {t('recentlyDeleted')}
           </h1>
         </div>
+        <WalletShortcut />
       </div>
 
       {/* Description header */}

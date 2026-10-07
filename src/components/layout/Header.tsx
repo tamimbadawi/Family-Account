@@ -2,8 +2,8 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { Wallet } from 'lucide-react';
-import { Link, usePathname } from '@/i18n/navigation';
+import { usePathname } from '@/i18n/navigation';
+import { WalletShortcut } from './WalletShortcut';
 
 export function Header() {
   const tNav = useTranslations('nav');
@@ -14,8 +14,6 @@ export function Header() {
   if (pathname.startsWith('/settings/')) {
     return null;
   }
-
-  const isHome = pathname === '/';
 
   let title = tApp('name');
   if (pathname.startsWith('/history')) {
@@ -29,15 +27,7 @@ export function Header() {
   return (
     <header className="shrink-0 flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-2 select-none">
       <h1 className="text-title font-bold text-ink">{title}</h1>
-      {isHome && (
-        <Link
-          href="/settings/wallets?from=home"
-          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-surface text-accent shadow-xs -me-1 active:scale-95 transition-transform"
-          aria-label={tNav('wallets')}
-        >
-          <Wallet className="size-6" />
-        </Link>
-      )}
+      <WalletShortcut />
     </header>
   );
 }
