@@ -25,7 +25,7 @@ $$;
 
 alter table public.households
   add column currencies text[] not null default '{EGP}',
-  add column status text not null default 'active';
+  add column if not exists status text not null default 'active';
 update public.households set currencies = array[currency::text];
 alter table public.households
   add constraint households_currencies_valid check (public.valid_currencies(currencies)),
