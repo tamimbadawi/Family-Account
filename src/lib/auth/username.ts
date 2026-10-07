@@ -7,9 +7,9 @@ export function usernameToEmail(username: string): string {
   return `${normalizeUsername(username)}@${USERNAME_DOMAIN}`;
 }
 
-/** Lower-case, no spaces: what is stored and compared. */
+/** Lower-case letters, digits and . _ - only: "Aunt Sara" and "aunt sara" both sign in as "auntsara". */
 export function normalizeUsername(username: string): string {
-  return username.trim().toLowerCase().replace(/\s+/g, '');
+  return username.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '');
 }
 
 /** "injy@family.local" -> "injy" (for showing a member's username). */
