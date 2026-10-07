@@ -1,0 +1,21 @@
+{
+  "ourMoney": "فلوسنا",
+  "cash": "كاش",
+  "banks": "البنوك",
+  "total": "إجمالي الرصيد",
+  "updateBalance": "تحديث الرصيد",
+  "howMuchNow": "معاك كام في {wallet} دلوقتي؟",
+  "currentBalance": "الرصيد الحالي",
+  "actualBalance": "الرصيد الفعلي",
+  "balanceUpdated": "تم تحديث الرصيد",
+  "undo": "تراجع",
+  "undone": "تم إلغاء التعديل",
+  "save": "حفظ",
+  "cancel": "إلغاء",
+  "addWallet": "إضافة محفظة",
+  "editWallet": "تعديل المحفظة",
+  "walletName": "اسم المحفظة",
+  "initialBalance": "الرصيد الحالي",
+  "viewHistory": "عرض الحركات",
+  "allWallets": "كل المحافظ"
+}

@@ -20,7 +20,7 @@ export const DEMO_HOUSEHOLD_ID = '11111111-1111-1111-1111-111111111111';
 export const USER_MAMA_ID = '22222222-2222-2222-2222-222222222222';
 export const USER_BABA_ID = '33333333-3333-3333-3333-333333333333';
 
-export const SEED_VERSION = 2;
+export const SEED_VERSION = 4;
 
 export const WALLET_CASH_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
 export const WALLET_BANK_ID = 'aaaaaaaa-0000-0000-0000-000000000002'; // NBE
@@ -64,7 +64,7 @@ export const DEFAULT_WALLETS: AccountRow[] = [
     name_ar: 'كاش',
     name_en: 'Cash',
     type: 'cash',
-    opening_balance: 6000,
+    opening_balance: 12000,
     icon: 'banknote',
     color: '#0F766E',
     sort_order: 0,
@@ -860,6 +860,14 @@ export function generateRealisticEntries(
         deleted_at: null,
       });
     }
+  }
+
+  // Today's samples carry fixed clock times (e.g. noon). Never stamp them after "now",
+  // or they sort above an entry the user saves in the morning.
+  const nowIso = baseDate.toISOString();
+  for (const e of entries) {
+    if (e.created_at > nowIso) e.created_at = nowIso;
+    if (e.updated_at > nowIso) e.updated_at = nowIso;
   }
 
   return entries;
