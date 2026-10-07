@@ -35,6 +35,8 @@ export default function FamilyPage() {
   const sampleMembers = useHouseholdMembers();
 
   const [list, setList] = React.useState<FamilyList | null>(null);
+  const [loadFailed, setLoadFailed] = React.useState(false);
+  const [attempt, setAttempt] = React.useState(0);
   const [sheet, setSheet] = React.useState<Sheet>(null);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -55,13 +57,18 @@ export default function FamilyPage() {
     let cancelled = false;
     familyAdmin<FamilyList>({ action: 'list' })
       .then((result) => {
-        if (!cancelled) setList(result);
+        if (!cancelled) {
+          setList(result);
+          setLoadFailed(false);
+        }
       })
-      .catch(() => toast.error(t('loadFailed')));
+      .catch(() => {
+        if (!cancelled) setLoadFailed(true);
+      });
     return () => {
       cancelled = true;
     };
-  }, [live, t]);
+  }, [live, attempt]);
 
   const open = (next: Sheet) => {
     setError(null);
@@ -128,7 +135,15 @@ export default function FamilyPage() {
       <div className="flex-1 space-y-4 px-5 py-4 pb-24">
         <p className="text-body text-ink-muted">{isOwner ? t('ownerHint') : t('memberHint')}</p>
 
-        <div className="divide-y divide-line/40 rounded-card border border-line/40 bg-surface shadow-card">
+        {live && !list && loadFailed ? (
+          <div className="space-y-3 rounded-card border border-line/40 bg-surface p-4 text-center shadow-card">
+            <p className="text-body text-ink">{t('loadFailed')}</p>
+            <Button variant="outline" onClick={() => setAttempt((a) => a + 1)} className="h-12 w-full text-body font-semibold">
+              {t('tryAgain')}
+            </Button>
+          </div>
+        ) : (
+          <div className="divide-y divide-line/40 rounded-card border border-line/40 bg-surface shadow-card">
           {live && !list
             ? [1, 2].map((i) => (
                 <div key={i} className={ROW}>
@@ -171,7 +186,8 @@ export default function FamilyPage() {
                   )}
                 </div>
               ))}
-        </div>
+          </div>
+        )}
 
         {isOwner && (
           <Button onClick={() => open({ kind: 'add' })} className="h-14 w-full gap-2 text-heading font-semibold text-accent-ink">

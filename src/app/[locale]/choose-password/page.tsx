@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { routeAfterSignIn } from '@/lib/auth/after-sign-in';
 
-const MIN_LENGTH = 8;
+const MIN_LENGTH = 6;
 
 /** First sign-in with a temporary password: the person picks their own, so nobody else ever knows it. */
 export default function ChoosePasswordPage() {

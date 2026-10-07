@@ -22,7 +22,11 @@ type Action =
 
 /** Calls the `family-admin` Edge Function; the server checks that only the owner can change anything. */
 export async function familyAdmin<T = { ok: true }>(body: Action): Promise<T> {
-  const { data, error } = await getSupabaseBrowserClient().functions.invoke('family-admin', { body });
+  const { data, error } = await getSupabaseBrowserClient().functions.invoke('family-admin', {
+    body,
+    // Never leave the screen loading forever: give up after 15 s and show the error
+    signal: AbortSignal.timeout(15000),
+  });
   if (error) {
     // The function answers { error: 'username_taken' | ... }; surface that code
     const context = (error as { context?: Response }).context;
