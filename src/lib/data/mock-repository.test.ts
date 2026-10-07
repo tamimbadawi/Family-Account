@@ -451,6 +451,19 @@ describe('MockRepository with fake-indexeddb', () => {
       const v = await reseedDb.meta.get('seedVersion');
       expect(v?.value).toBe(SEED_VERSION);
     });
+
+    it('re-seeds a store that is marked seeded but has no entries left', async () => {
+      const dbName = `test-empty-${Math.random().toString(36).substring(2, 9)}`;
+      const emptyDb = new FamilyAccountsDB(dbName);
+      const emptyRepo = new MockRepository(emptyDb);
+
+      await emptyRepo.seed();
+      await emptyDb.transactions.clear();
+      expect(await emptyDb.transactions.count()).toBe(0);
+
+      await new MockRepository(emptyDb).ensureSeeded();
+      expect(await emptyDb.transactions.count()).toBeGreaterThan(0);
+    });
   });
 });
 

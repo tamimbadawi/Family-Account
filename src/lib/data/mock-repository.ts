@@ -107,11 +107,15 @@ export class MockRepository implements Repository {
       try {
         const seeded = await this.db.meta.get('seeded');
         const seedVersion = await this.db.meta.get('seedVersion');
+        // A store marked as seeded but holding no entries at all (not even deleted ones) lost its sample
+        // entries somehow; reload the samples instead of showing an empty app forever.
+        const hasEntries = (await this.db.transactions.count()) > 0;
         if (
           seeded &&
           seeded.value === true &&
           seedVersion &&
-          seedVersion.value === SEED_VERSION
+          seedVersion.value === SEED_VERSION &&
+          hasEntries
         ) {
           await this.renameArabicSampleMembers();
           await this.backfillMissingCreators();
