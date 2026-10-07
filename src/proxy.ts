@@ -6,7 +6,7 @@ import { routing } from './i18n/routing';
 const handleI18nRouting = createMiddleware(routing);
 
 // Pages anyone may open without signing in
-const PUBLIC_PAGES = ['/login', '/install', '/styleguide'];
+const PUBLIC_PAGES = ['/login', '/install', '/styleguide', '/~offline'];
 
 function pathWithoutLocale(pathname: string): string {
   const [, maybeLocale, ...rest] = pathname.split('/');
@@ -19,7 +19,7 @@ export async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   // No Supabase configured (local sample-data mode): the app stays open, as in Phase A
-  if (!url || !key || response.headers.get('location')) return response;
+  if (!url || !key || response.headers.get("location")) return response;
 
   // Refresh the session cookies on every request (they travel with the i18n response)
   const supabase = createServerClient(url, key, {
@@ -49,8 +49,7 @@ export async function proxy(request: NextRequest) {
 export default proxy;
 
 export const config = {
-  // Match all pathnames except for
-  // - … if they start with `/api`, `/_next`, `/_vercel`, `/~offline` or `/serwist`
-  // - … the ones containing a dot (e.g. `favicon.ico`, `sw.js`, the manifest and icons)
-  matcher: ['/((?!api|_next|_vercel|~offline|serwist|.*\..*).*)']
+  // Match all pathnames except `/api`, `/_next`, `/_vercel`, `/serwist` and files with a dot
+  // (favicon, sw.js, manifest, icons). A `~` inside this pattern silently made it match only `/`.
+  matcher: ['/((?!api|_next|_vercel|serwist|.*\\..*).*)']
 };
