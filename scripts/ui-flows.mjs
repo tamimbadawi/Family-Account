@@ -13,6 +13,11 @@ fs.mkdirSync(OUT, { recursive: true });
 const VIEWPORTS = [[390, 844], [375, 667], [412, 700]];
 const KEYBOARD = [390, 420]; // what is left of an iPhone screen with the keyboard open
 
+const reportsMessages = {
+  en: JSON.parse(fs.readFileSync(path.resolve('messages/en/reports.json'), 'utf8')),
+  ar: JSON.parse(fs.readFileSync(path.resolve('messages/ar/reports.json'), 'utf8')),
+};
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const btn = (page, name) => page.getByRole('button', { name, exact: true }).or(page.getByRole('radio', { name, exact: true })).first();
 
@@ -294,7 +299,8 @@ const FLOWS = {
     await sleep(500);
   },
 
-  async reports_library(page, { locale }) {
+  async reports_library(page, { locale, vp: [w, h] = [390, 844] }) {
+    const size = `${w}x${h}`;
     await page.goto(`${BASE}/${locale}/reports?tab=all`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(800);
 
@@ -310,128 +316,127 @@ const FLOWS = {
     for (const rId of reports) {
       // Find card link
       const link = page.locator(`a[href*="/reports/r/${rId}"]`).first();
-      await assertUsable(page, link, `link to ${rId}`);
+      await assertUsable(page, link, `link to ${rId} (${locale}/${size})`);
       await link.click();
       await page.waitForURL(`**\/reports/r/${rId}*`, { timeout: 10000 });
       await sleep(400);
 
       // Test month/period switcher where applicable
       if (['this-vs-last-month', 'spending-calendar', 'category-deep-dive'].includes(rId)) {
-        const prevBtn = page.locator('button[aria-label="Previous month"], button[aria-label="الشهر السابق"]').first();
-        if (await prevBtn.isVisible()) {
-          await prevBtn.click();
-          await sleep(300);
-          const nextBtn = page.locator('button[aria-label="Next month"], button[aria-label="الشهر القادم"]').first();
-          if (await nextBtn.isVisible()) {
-            await nextBtn.click();
-            await sleep(300);
-          }
-        }
+        const prevLabel = reportsMessages[locale].previousMonth;
+        const nextLabel = reportsMessages[locale].nextMonth;
+        const prevBtn = page.locator(`button[aria-label="${prevLabel}"]`).first();
+        await assertUsable(page, prevBtn, `Previous month button (${prevLabel}) on ${rId} (${locale}/${size})`);
+        await prevBtn.click();
+        await sleep(300);
+        const nextBtn = page.locator(`button[aria-label="${nextLabel}"]`).first();
+        await assertUsable(page, nextBtn, `Next month button (${nextLabel}) on ${rId} (${locale}/${size})`);
+        await nextBtn.click();
+        await sleep(300);
       }
 
       if (['biggest-expenses', 'income-sources'].includes(rId)) {
-        const p6m = page.getByRole('button', { name: locale === 'ar' ? 'آخر 6 أشهر' : 'Last 6 months' });
-        if (await p6m.isVisible()) {
-          await p6m.click();
-          await sleep(300);
-          const p1m = page.getByRole('button', { name: locale === 'ar' ? 'هذا الشهر' : 'This month' });
-          if (await p1m.isVisible()) {
-            await p1m.click();
-            await sleep(300);
-          }
-        }
+        const last6Label = reportsMessages[locale].periods.last6;
+        const thisMonthLabel = reportsMessages[locale].periods.thisMonth;
+        const p6m = page.getByRole('button', { name: last6Label });
+        await assertUsable(page, p6m, `Last 6 months button (${last6Label}) on ${rId} (${locale}/${size})`);
+        await p6m.click();
+        await sleep(300);
+        const p1m = page.getByRole('button', { name: thisMonthLabel });
+        await assertUsable(page, p1m, `This month button (${thisMonthLabel}) on ${rId} (${locale}/${size})`);
+        await p1m.click();
+        await sleep(300);
       }
 
       // Navigate back using the back button
       const back = page.locator('a[href*="/reports?tab=all"]').first();
-      await assertUsable(page, back, `back button on ${rId}`);
+      await assertUsable(page, back, `back button on ${rId} (${locale}/${size})`);
       await back.click();
       await page.waitForURL(`**\/reports*`, { timeout: 10000 });
       await sleep(400);
     }
   },
 
-  async reports_sheets(page, { locale }) {
+  async reports_sheets(page, { locale, vp: [w, h] = [390, 844] }) {
+    const size = `${w}x${h}`;
+    const tReports = reportsMessages[locale];
+    const seeAllLabel = tReports.seeAllCategories;
+
     // 1. Overview "See all categories" sheet
     await page.goto(`${BASE}/${locale}/reports`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(800);
-    const seeAllOverview = page.getByRole('button', { name: locale === 'ar' ? /عرض كل الأقسام/ : /See all categories/ }).first();
-    if (await seeAllOverview.isVisible()) {
-      await seeAllOverview.click();
-      await sleep(500);
-      const drawer = page.locator('[data-slot="drawer-content"]');
-      await drawer.waitFor({ state: 'visible', timeout: 5000 });
-      await page.keyboard.press('Escape');
-      await sleep(500);
-    }
+    const seeAllOverview = page.getByRole('button', { name: new RegExp(seeAllLabel) }).first();
+    await assertUsable(page, seeAllOverview, `See all categories button on Overview (${locale}/${size})`);
+    await seeAllOverview.click();
+    await sleep(500);
+    const drawer1 = page.locator('[data-slot="drawer-content"]');
+    await drawer1.waitFor({ state: 'visible', timeout: 5000 });
+    await page.keyboard.press('Escape');
+    await sleep(500);
 
     // 2. Breakdown cell sheet
     await page.goto(`${BASE}/${locale}/reports?tab=breakdown`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(800);
     const cell = page.locator('td.tabular-nums').first();
-    if (await cell.isVisible()) {
-      await cell.click();
-      await sleep(500);
-      const drawer = page.locator('[data-slot="drawer-content"]');
-      await drawer.waitFor({ state: 'visible', timeout: 5000 });
-      await page.keyboard.press('Escape');
-      await sleep(500);
-    }
+    await assertUsable(page, cell, `Breakdown cell on Breakdown tab (${locale}/${size})`);
+    await cell.click();
+    await sleep(500);
+    const drawer2 = page.locator('[data-slot="drawer-content"]');
+    await drawer2.waitFor({ state: 'visible', timeout: 5000 });
+    await page.keyboard.press('Escape');
+    await sleep(500);
 
     // 3. This vs last month "See all categories" sheet
     await page.goto(`${BASE}/${locale}/reports/r/this-vs-last-month`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(800);
-    const seeAllTvL = page.getByRole('button', { name: locale === 'ar' ? /عرض كل الأقسام/ : /See all categories/ }).first();
-    if (await seeAllTvL.isVisible()) {
-      await seeAllTvL.click();
-      await sleep(500);
-      const drawer = page.locator('[data-slot="drawer-content"]');
-      await drawer.waitFor({ state: 'visible', timeout: 5000 });
-      await page.keyboard.press('Escape');
-      await sleep(500);
-    }
+    const seeAllTvL = page.getByRole('button', { name: new RegExp(seeAllLabel) }).first();
+    await assertUsable(page, seeAllTvL, `See all categories button on This vs last month (${locale}/${size})`);
+    await seeAllTvL.click();
+    await sleep(500);
+    const drawer3 = page.locator('[data-slot="drawer-content"]');
+    await drawer3.waitFor({ state: 'visible', timeout: 5000 });
+    await page.keyboard.press('Escape');
+    await sleep(500);
 
     // 4. Biggest expenses "See all entries" sheet
     await page.goto(`${BASE}/${locale}/reports/r/biggest-expenses`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(800);
-    const seeAllBig = page.getByRole('button', { name: locale === 'ar' ? /عرض كل الأقسام/ : /See all categories/ }).first();
-    if (await seeAllBig.isVisible()) {
-      await seeAllBig.click();
-      await sleep(500);
-      const drawer = page.locator('[data-slot="drawer-content"]');
-      await drawer.waitFor({ state: 'visible', timeout: 5000 });
-      await page.keyboard.press('Escape');
-      await sleep(500);
-    }
+    const seeAllBig = page.getByRole('button', { name: new RegExp(seeAllLabel) }).first();
+    await assertUsable(page, seeAllBig, `See all categories button on Biggest expenses (${locale}/${size})`);
+    await seeAllBig.click();
+    await sleep(500);
+    const drawer4 = page.locator('[data-slot="drawer-content"]');
+    await drawer4.waitFor({ state: 'visible', timeout: 5000 });
+    await page.keyboard.press('Escape');
+    await sleep(500);
 
     // 5. Spending calendar day sheet
     await page.goto(`${BASE}/${locale}/reports/r/spending-calendar`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(800);
     const dayBtn = page.locator('button.cursor-pointer').filter({ hasText: /\d+/ }).first();
-    if (await dayBtn.isVisible()) {
-      await dayBtn.click();
-      await sleep(500);
-      const drawer = page.locator('[data-slot="drawer-content"]');
-      await drawer.waitFor({ state: 'visible', timeout: 5000 });
-      await page.keyboard.press('Escape');
-      await sleep(500);
-    }
+    await assertUsable(page, dayBtn, `Calendar day button on Spending calendar (${locale}/${size})`);
+    await dayBtn.click();
+    await sleep(500);
+    const drawer5 = page.locator('[data-slot="drawer-content"]');
+    await drawer5.waitFor({ state: 'visible', timeout: 5000 });
+    await page.keyboard.press('Escape');
+    await sleep(500);
 
     // 6. Category deep dive subcategory detail sheet
     await page.goto(`${BASE}/${locale}/reports/r/category-deep-dive`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(800);
     const subRow = page.locator('div[class*="cursor-pointer"]').filter({ hasText: / ج\.م| EGP/ }).first();
-    if (await subRow.isVisible()) {
-      await subRow.click();
-      await sleep(500);
-      const drawer = page.locator('[data-slot="drawer-content"]');
-      await drawer.waitFor({ state: 'visible', timeout: 5000 });
-      await page.keyboard.press('Escape');
-      await sleep(500);
-    }
+    await assertUsable(page, subRow, `Subcategory row on Category deep dive (${locale}/${size})`);
+    await subRow.click();
+    await sleep(500);
+    const drawer6 = page.locator('[data-slot="drawer-content"]');
+    await drawer6.waitFor({ state: 'visible', timeout: 5000 });
+    await page.keyboard.press('Escape');
+    await sleep(500);
   },
 
-  async reports_planning(page, { locale }) {
+  async reports_planning(page, { locale, vp }) {
+    const size = vp ? `${vp[0]}x${vp[1]}` : '';
     await page.goto(`${BASE}/${locale}/reports?tab=all`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(800);
 
@@ -447,13 +452,13 @@ const FLOWS = {
     for (const rId of planningReports) {
       // Ensure Planning group is selected
       const planningChip = page.getByRole('button', { name: locale === 'ar' ? 'التخطيط' : 'Planning' });
-      await assertUsable(page, planningChip, 'Planning group chip');
+      await assertUsable(page, planningChip, `Planning group chip (${locale}/${size})`);
       await planningChip.click();
       await sleep(350);
 
       // Find card link
       const link = page.locator(`a[href*="/reports/r/${rId}"]`).first();
-      await assertUsable(page, link, `link to ${rId}`);
+      await assertUsable(page, link, `link to ${rId} (${locale}/${size})`);
       await link.click();
       await page.waitForURL(`**\/reports/r/${rId}*`, { timeout: 10000 });
       await sleep(400);
@@ -461,52 +466,46 @@ const FLOWS = {
 
       // Test interactive controls per report
       if (['bills-tracker', 'who-spent-what', 'unusual-spending'].includes(rId)) {
-        const prevBtn = page.locator('button[aria-label="Previous month"], button[aria-label="الشهر السابق"]').first();
-        if (await prevBtn.isVisible()) {
-          await prevBtn.click();
-          await sleep(300);
-          const nextBtn = page.locator('button[aria-label="Next month"], button[aria-label="الشهر القادم"]').first();
-          if (await nextBtn.isVisible()) {
-            await nextBtn.click();
-            await sleep(300);
-          }
-        }
+        const prevBtn = page.locator(`button[aria-label="${reportsMessages[locale].previousMonth}"]`).first();
+        await assertUsable(page, prevBtn, `Previous month button on ${rId} (${locale}/${size})`);
+        await prevBtn.click();
+        await sleep(300);
+        const nextBtn = page.locator(`button[aria-label="${reportsMessages[locale].nextMonth}"]`).first();
+        await assertUsable(page, nextBtn, `Next month button on ${rId} (${locale}/${size})`);
+        await nextBtn.click();
+        await sleep(300);
       }
 
       if (rId === 'monthly-averages') {
-        const p3m = page.getByRole('button', { name: locale === 'ar' ? 'آخر 3 أشهر' : 'Last 3 months' });
-        if (await p3m.isVisible()) {
-          await p3m.click();
-          await sleep(300);
-          const p12m = page.getByRole('button', { name: locale === 'ar' ? 'هذه السنة' : 'This year' });
-          if (await p12m.isVisible()) {
-            await p12m.click();
-            await sleep(300);
-          }
-        }
+        const p3m = page.getByRole('button', { name: reportsMessages[locale].periods.last3 });
+        await assertUsable(page, p3m, `Last 3 months button on ${rId} (${locale}/${size})`);
+        await p3m.click();
+        await sleep(300);
+        const p12m = page.getByRole('button', { name: reportsMessages[locale].periods.thisYear });
+        await assertUsable(page, p12m, `This year button on ${rId} (${locale}/${size})`);
+        await p12m.click();
+        await sleep(300);
       }
 
       if (rId === 'search-export') {
         const searchInput = page.locator('input[type="text"]').first();
-        if (await searchInput.isVisible()) {
-          await searchInput.fill('food');
-          await sleep(300);
-          const spentChip = page.getByRole('button', { name: locale === 'ar' ? 'مصروف' : 'Spent' });
-          if (await spentChip.isVisible()) {
-            await spentChip.click();
-            await sleep(300);
-          }
-        }
+        await assertUsable(page, searchInput, `Search input on ${rId} (${locale}/${size})`);
+        await searchInput.fill('food');
+        await sleep(300);
+        const spentChip = page.getByRole('button', { name: reportsMessages[locale].spent });
+        await assertUsable(page, spentChip, `Spent chip on ${rId} (${locale}/${size})`);
+        await spentChip.click();
+        await sleep(300);
       }
 
       if (rId === 'spending-pace') {
         const header = page.locator('h2, h1').first();
-        await assertUsable(page, header, 'spending pace header');
+        await assertUsable(page, header, `spending pace header on ${rId} (${locale}/${size})`);
       }
 
       // Navigate back using the back chevron
       const back = page.locator('a[href*="/reports?tab=all"]').first();
-      await assertUsable(page, back, `back button on ${rId}`);
+      await assertUsable(page, back, `back button on ${rId} (${locale}/${size})`);
       await back.click();
       await page.waitForURL(`**\/reports*`, { timeout: 10000 });
       await sleep(400);
@@ -514,7 +513,8 @@ const FLOWS = {
     }
   },
 
-  async reports_wallets(page, { locale }) {
+  async reports_wallets(page, { locale, vp }) {
+    const size = vp ? `${vp[0]}x${vp[1]}` : '';
     await page.goto(`${BASE}/${locale}/reports?tab=all`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(800);
 
@@ -528,14 +528,14 @@ const FLOWS = {
 
     for (const rId of walletReports) {
       // Ensure Banks & cash group is selected
-      const walletsChip = page.getByRole('button', { name: locale === 'ar' ? 'البنوك والكاش' : 'Banks & cash' });
-      await assertUsable(page, walletsChip, 'Banks & cash group chip');
+      const walletsChip = page.getByRole('button', { name: reportsMessages[locale].library.groupWallets });
+      await assertUsable(page, walletsChip, `Banks & cash group chip (${locale}/${size})`);
       await walletsChip.click();
       await sleep(350);
 
       // Find card link
       const link = page.locator(`a[href*="/reports/r/${rId}"]`).first();
-      await assertUsable(page, link, `link to ${rId}`);
+      await assertUsable(page, link, `link to ${rId} (${locale}/${size})`);
       await link.click();
       await page.waitForURL(`**\/reports/r/${rId}*`, { timeout: 10000 });
       await sleep(400);
@@ -543,47 +543,41 @@ const FLOWS = {
 
       // Test interactive controls per report
       if (rId === 'balance-over-time') {
-        const p12m = page.getByRole('button', { name: locale === 'ar' ? 'آخر 12 شهراً' : 'Last 12 months' });
-        if (await p12m.isVisible()) {
-          await p12m.click();
-          await sleep(300);
-          const p6m = page.getByRole('button', { name: locale === 'ar' ? 'آخر 6 أشهر' : 'Last 6 months' });
-          if (await p6m.isVisible()) {
-            await p6m.click();
-            await sleep(300);
-          }
-        }
+        const p12m = page.getByRole('button', { name: reportsMessages[locale].library.last12Months });
+        await assertUsable(page, p12m, `Last 12 months button on ${rId} (${locale}/${size})`);
+        await p12m.click();
+        await sleep(300);
+        const p6m = page.getByRole('button', { name: reportsMessages[locale].library.last6Months });
+        await assertUsable(page, p6m, `Last 6 months button on ${rId} (${locale}/${size})`);
+        await p6m.click();
+        await sleep(300);
       }
 
       if (['in-out-per-wallet', 'cash-withdrawals'].includes(rId)) {
-        const prevBtn = page.locator('button[aria-label="Previous month"], button[aria-label="الشهر السابق"]').first();
-        if (await prevBtn.isVisible()) {
-          await prevBtn.click();
-          await sleep(300);
-          const nextBtn = page.locator('button[aria-label="Next month"], button[aria-label="الشهر القادم"]').first();
-          if (await nextBtn.isVisible()) {
-            await nextBtn.click();
-            await sleep(300);
-          }
-        }
+        const prevBtn = page.locator(`button[aria-label="${reportsMessages[locale].previousMonth}"]`).first();
+        await assertUsable(page, prevBtn, `Previous month button on ${rId} (${locale}/${size})`);
+        await prevBtn.click();
+        await sleep(300);
+        const nextBtn = page.locator(`button[aria-label="${reportsMessages[locale].nextMonth}"]`).first();
+        await assertUsable(page, nextBtn, `Next month button on ${rId} (${locale}/${size})`);
+        await nextBtn.click();
+        await sleep(300);
       }
 
       if (rId === 'transfers-log') {
-        const cashChip = page.getByRole('button', { name: locale === 'ar' ? 'كاش' : 'Cash' }).first();
-        if (await cashChip.isVisible()) {
-          await cashChip.click();
-          await sleep(300);
-          const allChip = page.getByRole('button', { name: locale === 'ar' ? 'كل المحافظ' : 'All wallets' }).first();
-          if (await allChip.isVisible()) {
-            await allChip.click();
-            await sleep(300);
-          }
-        }
+        const cashChip = page.getByRole('button', { name: reportsMessages[locale].cash }).first();
+        await assertUsable(page, cashChip, `Cash chip on ${rId} (${locale}/${size})`);
+        await cashChip.click();
+        await sleep(300);
+        const allChip = page.getByRole('button', { name: reportsMessages[locale].library.allWallets }).first();
+        await assertUsable(page, allChip, `All wallets chip on ${rId} (${locale}/${size})`);
+        await allChip.click();
+        await sleep(300);
       }
 
       // Navigate back using the back chevron
       const back = page.locator('a[href*="/reports?tab=all"]').first();
-      await assertUsable(page, back, `back button on ${rId}`);
+      await assertUsable(page, back, `back button on ${rId} (${locale}/${size})`);
       await back.click();
       await page.waitForURL(`**\/reports*`, { timeout: 10000 });
       await sleep(400);
