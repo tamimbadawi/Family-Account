@@ -14,10 +14,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
-import { useRepository } from '@/lib/data/provider';
+import { useHouseholdMembers, useRepository } from '@/lib/data/provider';
+import { localISODate } from '@/lib/format';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
+  const familyNames = useHouseholdMembers().map((m) => m.displayName).join(' · ');
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
@@ -66,7 +68,7 @@ export default function SettingsPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `family-accounts-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = `family-accounts-${localISODate()}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -203,7 +205,7 @@ export default function SettingsPage() {
                 {t('family')}
               </div>
               <div className="text-caption text-ink-muted leading-tight">
-                ماما · بابا
+                {familyNames}
               </div>
             </div>
           </div>

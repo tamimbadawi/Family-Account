@@ -3,7 +3,7 @@ import { liveQuery } from 'dexie';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { FamilyAccountsDB } from '../offline/db';
 import { MockRepository } from './mock-repository';
-import { WALLET_BANK_ID, WALLET_CASH_ID } from './mock-seed';
+import { SEED_VERSION, USER_BABA_ID, USER_MAMA_ID, WALLET_BANK_ID, WALLET_CASH_ID } from './mock-seed';
 
 describe('MockRepository with fake-indexeddb', () => {
   let db: FamilyAccountsDB;
@@ -26,8 +26,8 @@ describe('MockRepository with fake-indexeddb', () => {
     const members = await repo.getMembers();
     expect(members).toHaveLength(2);
     const names = members.map((m) => m.displayName);
-    expect(names).toContain('ماما');
-    expect(names).toContain('بابا');
+    expect(names).toContain('Mama');
+    expect(names).toContain('Baba');
 
     const wallets = await repo.getWallets();
     expect(wallets).toHaveLength(4);
@@ -127,6 +127,47 @@ describe('MockRepository with fake-indexeddb', () => {
     const balancesRestored = await repo.walletBalances();
     const cashRestored = balancesRestored.find((w) => w.id === WALLET_CASH_ID)!.balance;
     expect(cashRestored).toBe(cashBefore);
+  });
+
+  it('renames the old Arabic sample members to English on phones already seeded', async () => {
+    await db.household_members.update([(await repo.getHousehold())!.id, USER_MAMA_ID], { display_name: 'ماما' });
+    await db.household_members.update([(await repo.getHousehold())!.id, USER_BABA_ID], { display_name: 'بابا' });
+    const fresh = new MockRepository(db);
+    await fresh.ensureSeeded();
+    const names = (await fresh.getMembers()).map((m) => m.displayName).sort();
+    expect(names).toEqual(['Baba', 'Mama']);
+  });
+
+  it('gives entries saved before creators were recorded to the current member', async () => {
+    const item = (await repo.getItems())[0];
+    const added = await repo.addEntry({ type: 'expense', amount: 10, occurredOn: '2026-10-06', accountId: WALLET_CASH_ID, itemId: item.id });
+    await db.transactions.update(added.id, { created_by: null, updated_by: null });
+    // A new connection = the app starting again (the startup check runs once per connection)
+    const fresh = new MockRepository(new FamilyAccountsDB(db.name));
+    await fresh.ensureSeeded();
+    const listed = (await fresh.listEntries()).find((e) => e.id === added.id);
+    expect(listed?.createdBy).toBe(USER_MAMA_ID);
+    expect(listed?.createdByName).toBe('Mama');
+  });
+
+  it('stamps who added and who last changed an entry', async () => {
+    const item = (await repo.getItems())[0];
+    const added = await repo.addEntry({
+      type: 'expense',
+      amount: 40,
+      occurredOn: '2026-10-06',
+      accountId: WALLET_CASH_ID,
+      itemId: item.id,
+    });
+    expect(added.createdBy).toBe(USER_MAMA_ID);
+
+    repo.currentUserId = USER_BABA_ID;
+    await repo.updateEntry(added.id, { amount: 45 });
+    const listed = (await repo.listEntries()).find((e) => e.id === added.id);
+    expect(listed?.createdBy).toBe(USER_MAMA_ID);
+    expect(listed?.createdByName).toBe('Mama');
+    expect(listed?.updatedBy).toBe(USER_BABA_ID);
+    expect(listed?.updatedByName).toBe('Baba');
   });
 
   it('adds and updates entries with constraint validations', async () => {
@@ -408,7 +449,7 @@ describe('MockRepository with fake-indexeddb', () => {
       // Call ensureSeeded should detect mismatch and reseed
       await reseedRepo.ensureSeeded();
       const v = await reseedDb.meta.get('seedVersion');
-      expect(v?.value).toBe(2);
+      expect(v?.value).toBe(SEED_VERSION);
     });
   });
 });

@@ -52,5 +52,8 @@
   "whichBank": "أي بنك؟",
   "bankName": "اسم البنك",
   "addBank": "إضافة",
-  "back": "رجوع"
+  "back": "رجوع",
+  "addedBy": "أضافها {name}",
+  "changedBy": "آخر تعديل من {name}",
+  "swapWallets": "اعكس الاتجاه"
 }

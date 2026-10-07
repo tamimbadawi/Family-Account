@@ -430,7 +430,7 @@ const FLOWS = {
     await drawer.waitFor({ state: 'visible', timeout: 5000 });
 
     // Tap first wallet row inside sheet
-    const walletRow = drawer.locator('button').filter({ hasText: locale === 'ar' ? 'كاش في البيت' : 'Cash at home' }).first();
+    const walletRow = drawer.locator('button').filter({ hasText: locale === 'ar' ? 'كاش' : 'Cash' }).first();
     await assertUsable(page, walletRow, 'wallet row in OurMoneySheet');
     await walletRow.click();
 
@@ -473,9 +473,99 @@ const FLOWS = {
     await undoBtn.click();
     await sleep(500);
   },
+
+  async reports_planning(page, { locale }) {
+    await page.goto(`${BASE}/${locale}/reports?tab=all`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    const planningReports = [
+      'bills-tracker',
+      'monthly-averages',
+      'who-spent-what',
+      'search-export',
+      'unusual-spending',
+      'spending-pace',
+    ];
+
+    for (const rId of planningReports) {
+      // Ensure Planning group is selected
+      const planningChip = page.getByRole('button', { name: locale === 'ar' ? 'التخطيط' : 'Planning' });
+      await assertUsable(page, planningChip, 'Planning group chip');
+      await planningChip.click();
+      await sleep(350);
+
+      // Find card link
+      const link = page.locator(`a[href*="/reports/r/${rId}"]`).first();
+      await assertUsable(page, link, `link to ${rId}`);
+      await link.click();
+      await page.waitForURL(`**\/reports/r/${rId}*`, { timeout: 10000 });
+      await sleep(400);
+      await page.evaluate(() => window.scrollTo(0, 0));
+
+      // Test interactive controls per report
+      if (['bills-tracker', 'who-spent-what', 'unusual-spending'].includes(rId)) {
+        const prevBtn = page.locator('button[aria-label="Previous month"], button[aria-label="الشهر السابق"]').first();
+        if (await prevBtn.isVisible()) {
+          await prevBtn.click();
+          await sleep(300);
+          const nextBtn = page.locator('button[aria-label="Next month"], button[aria-label="الشهر القادم"]').first();
+          if (await nextBtn.isVisible()) {
+            await nextBtn.click();
+            await sleep(300);
+          }
+        }
+      }
+
+      if (rId === 'monthly-averages') {
+        const p3m = page.getByRole('button', { name: locale === 'ar' ? 'آخر 3 أشهر' : 'Last 3 months' });
+        if (await p3m.isVisible()) {
+          await p3m.click();
+          await sleep(300);
+          const p12m = page.getByRole('button', { name: locale === 'ar' ? 'هذه السنة' : 'This year' });
+          if (await p12m.isVisible()) {
+            await p12m.click();
+            await sleep(300);
+          }
+        }
+      }
+
+      if (rId === 'search-export') {
+        const searchInput = page.locator('input[type="text"]').first();
+        if (await searchInput.isVisible()) {
+          await searchInput.fill('food');
+          await sleep(300);
+          const spentChip = page.getByRole('button', { name: locale === 'ar' ? 'مصروف' : 'Spent' });
+          if (await spentChip.isVisible()) {
+            await spentChip.click();
+            await sleep(300);
+          }
+        }
+      }
+
+      if (rId === 'spending-pace') {
+        const header = page.locator('h2, h1').first();
+        await assertUsable(page, header, 'spending pace header');
+      }
+
+      // Navigate back using the back chevron
+      const back = page.locator('a[href*="/reports?tab=all"]').first();
+      await assertUsable(page, back, `back button on ${rId}`);
+      await back.click();
+      await page.waitForURL(`**\/reports*`, { timeout: 10000 });
+      await sleep(400);
+      await page.evaluate(() => window.scrollTo(0, 0));
+    }
+  },
 };
 
-const MULTI_LOCALE_FLOW_NAMES = ['reports_tabs', 'reports_library', 'reports_sheets', 'our_money', 'update_balance'];
+const MULTI_LOCALE_FLOW_NAMES = [
+  'reports_tabs',
+  'reports_library',
+  'reports_sheets',
+  'reports_planning',
+  'our_money',
+  'update_balance',
+];
 const LOCALES = ['en', 'ar'];
 
 const selected = process.argv.slice(2).filter((a) => FLOWS[a]);

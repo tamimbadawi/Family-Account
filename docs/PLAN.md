@@ -6,7 +6,7 @@ Oct 5, 2026
 
 ## Overview and key decisions
 
-The app is a bilingual (Arabic/English) household money tracker. It runs as an installable iPhone web app. It is built on Next.js 16, Supabase and Vercel, all on free tiers. It logs expenses, income and transfers offline. It syncs when the phone reconnects.
+The app is a bilingual (Arabic/English) household money tracker. It runs as an installable iPhone web app. It is built on Next.js 16, Supabase and Vercel, all on free tiers. It logs expenses, income and transfers straight to the database; saving needs a connection.
 
 | Decision | Choice | Why |
 | --- | --- | --- |
@@ -16,12 +16,12 @@ The app is a bilingual (Arabic/English) household money tracker. It runs as an i
 | Auth | Supabase email + password, public sign-up disabled, sessions never expire | They log in once on each phone, then never again |
 | Sharing | One "household"; both in-laws see and edit the same books | Row Level Security scopes every row to the household |
 | Editing | Full edit; deletes are soft and restorable for 30 days | Mistakes are always recoverable |
-| Offline | Local IndexedDB copy + outbox queue, synced on reconnect | iOS Safari has no Background Sync API, so the app syncs on open/focus |
+| Offline | Online-only saves; the phone keeps a read-only copy of the last data it saw | Everyone using it is online; an offline outbox and sync engine is a lot of moving parts for no real gain (decided 2026-10-07) |
 | PWA | Serwist service worker + iOS-specific install guide screen | `next-pwa` is unmaintained and needs webpack |
 | Uptime | Daily GitHub Action + daily Vercel cron calling the database | Free Supabase projects pause after 7 days of low activity |
 | Cost | $0/month | Supabase Free, Vercel Hobby, GitHub Free |
 
-The main trade-off is that offline support makes data entry "local-first". The Add, Edit and History screens read and write the phone's local copy first, then sync. The Dashboard uses database views when online and shows the last synced numbers when offline.
+The trade-off: with no connection the app still opens and shows the last data it loaded, but Save is refused with a short "No connection — try again" message. Every save goes to Supabase first and only then updates the phone's copy, so there is never anything waiting to sync.
 
 ## Before you start (manual, about 30 minutes)
 
@@ -55,9 +55,9 @@ The screens only ever talk to the repository. Swapping sample data for Supabase 
 
 **Rules the agent must follow (these go into `AGENTS.md`):**
 
-1. **Data writes go through the browser Supabase client.** Do not use Server Actions for writes, because those cannot queue offline. RLS protects every table.
+1. **Data writes go through the browser Supabase client.** Do not use Server Actions for writes; the repository is the one place that talks to Supabase. RLS protects every table.
 2. **Server Components are used only for the login redirect and the Dashboard's first render.** Everything else is a Client Component reading from IndexedDB.
-3. **IDs are UUIDs generated on the phone** (`crypto.randomUUID()`). A queued insert can then be retried safely as an `upsert` without making duplicates.
+3. **IDs are UUIDs generated on the phone** (`crypto.randomUUID()`). A retried save (e.g. after a timeout) is an `upsert` and never makes a duplicate.
 4. **Money is stored as `numeric(14,2)`**, never float. It is formatted with `Intl.NumberFormat` in EGP.
 5. **English is the default locale; Arabic (RTL) is fully supported for wording.** Layout uses Tailwind logical classes (`ms-`, `me-`, `ps-`, `pe-`, `text-start`), never `ml-`/`mr-`/`left`/`right`, so RTL works for free.
 6. **The amount input accepts Arabic-Indic digits** (٠١٢٣٤٥٦٧٨٩) and the Arabic decimal separator (٫), normalising them to Western digits before saving. The iPhone Arabic keyboard types these. **Display always uses Western digits (0–9) in both languages** (`numberingSystem: 'latn'` with `ar-EG`).
@@ -84,7 +84,7 @@ The app should feel like a calm, premium banking app, not a form. The bar is "lo
 1. **Add entry = one bottom sheet, three taps.** Big on-screen number pad (like Apple Cash, no iOS keyboard) → tap a category tile → tap subcategory → tap item → Save. Date defaults to today, with "Today / Yesterday / Pick" chips. Wallet defaults to the last used one.
 2. **Recents first:** the 6 most-used items appear as one-tap tiles above the category grid, so most entries take 2 taps after the amount.
 3. **Undo, not "Are you sure?":** every save, edit and delete shows a toast with a large Undo button for 6 seconds.
-4. **Sync status is quiet:** a small cloud dot reads "Saved on phone" or "Synced". Never show an error dialog for being offline.
+4. **Sync status is quiet:** a small dot shows online / offline. Offline is a short toast when Save is tapped, never an error dialog.
 
 **Component stack:** Tailwind CSS v4 · shadcn/ui (Radix primitives, restyled to the palette above) · Vaul (iOS-style drawers) · Motion (`motion/react`) · Lucide icons · Recharts (dashboard) · Sonner (toasts).
 
@@ -226,23 +226,17 @@ family-accounts/
 
 ## Offline strategy
 
-Every save lands in the phone's IndexedDB instantly and is pushed to Supabase later. The user never waits on the network and never sees an offline error.
+**Decision (2026-10-07): saves are online-only.** Everyone using the app has a connection, so there is no outbox, no background sync and no "Needs attention" queue. This replaces the earlier offline-first design.
 
-1. **Local mirror (Dexie).** Tables `categories`, `subcategories`, `items`, `accounts`, `transactions` mirror the server rows, plus `outbox` and `meta` (sync cursor). A household's data is small: a few thousand rows a year fits easily.
-2. **Writes.** Every add, edit or delete writes the local row and appends an outbox entry `{id, table, op: 'upsert', row, attempts}` in one Dexie transaction. Deletes are upserts that set `deleted_at`. Archives set `is_archived`.
-3. **Push.** `sync()` sends outbox rows in order with `supabase.from(table).upsert(row)`. Client-made UUIDs make retries safe. On success the entry is removed. On error, attempts increase with backoff. A row rejected by the database (for example a check constraint) is kept and flagged in Settings → "Needs attention" instead of being dropped.
-4. **Pull.** It fetches rows with `updated_at > cursor − 5 minutes` from each table and bulk-puts them into Dexie. The 5-minute overlap covers clock skew and in-flight writes.
-5. **When it runs.** Sync runs on app open, on `visibilitychange` to visible, on the `online` event, and after every local write when online. iOS Safari does not support the Background Sync API, so syncing happens only while the app is open. That is fine because they open it to log an entry.
-6. **Conflicts.** The last write to reach the server wins. With two people editing the same entry rarely, this is acceptable and much simpler than merging.
-7. **Order matters.** If a category is created offline and used right away, its outbox entry is queued first, so the foreign keys are satisfied when pushed in order.
-8. **Auth offline.** The Supabase session is kept in storage. An expired access token simply refreshes on the next online sync, and queued writes wait. The proxy only redirects to login when online and the session is truly gone.
-9. **Dashboard offline.** The Overview tab reads the server views when online and cache the result in Dexie `meta`. Offline, they show the cached numbers with a subtle "as of \<time>" label.
-
-10. **Separate local databases per mode.** The Dexie database is named `fa-mock` in mock mode and `fa-live` in live mode, so sample data and practice entries can never be pushed to Supabase or mixed with real data.
-11. **Stale devices re-download.** If a phone's last successful pull is older than 25 days, it does a full pull and drops local rows the server no longer has. The purge hard-deletes soft-deleted entries after 30 days, and an incremental pull cannot see those.
-12. **Dates are local.** `occurred_on` is always computed on the phone in local time (never `toISOString().slice(0, 10)`, which is UTC and lands on yesterday after midnight in Cairo) and always sent explicitly.
-
-Home-screen web apps on iOS are not subject to Safari's 7-day storage eviction for websites, so the local data persists. The data always lives on the server too.
+1. **Local copy (Dexie) is a read cache.** Tables `categories`, `subcategories`, `items`, `accounts`, `transactions` mirror the server rows, plus `meta` (last pull time). Screens keep reading through `useLiveQuery`, so no screen changes when live mode arrives and the app opens instantly.
+2. **Writes go to Supabase first.** Every add, edit, delete or archive is an `upsert` through the browser Supabase client. Only after the server accepts it is the returned row put into Dexie. Deletes set `deleted_at`; archives set `is_archived`.
+3. **No connection → no save.** If `navigator.onLine` is false or the request fails, nothing is written locally; the sheet stays open with the user's input and a toast says "No connection — try again". Never a dialog, never lost typing.
+4. **Pull.** Fetch rows with `updated_at > last pull − 5 minutes` from each table and bulk-put them into Dexie. Runs on app open, on `visibilitychange` to visible, and on the `online` event. If the last pull is older than 25 days, do a full pull and drop local rows the server no longer has (the purge hard-deletes soft-deleted entries after 30 days).
+5. **Conflicts.** The last save to reach the server wins. Acceptable for three people.
+6. **Separate local databases per mode.** `fa-mock` in mock mode and `fa-live` in live mode, so sample data never mixes with real data.
+7. **Dates are local.** `occurred_on` is always computed on the phone in local time (never `toISOString().slice(0, 10)`) and always sent explicitly.
+8. **Balance corrections read the server.** The correction amount is computed from the server balance (`v_account_balances`) at save time, never from the local copy. (PROGRESS.md P1.)
+9. **Receipt photos upload before the entry.** Upload to Storage `receipts/<household_id>/<transaction_id>.jpg`, then save the entry with `photo_path`. If the upload fails, the save fails like any other offline save. Files of purged entries are removed through the Storage API. (PROGRESS.md P2, P3.)
 
 ## PWA setup for iPhone
 
@@ -250,7 +244,7 @@ Use **Serwist**, not `next-pwa`. `next-pwa` is unmaintained and needs webpack, w
 
 **1. Install:** `npm i -D @serwist/turbopack esbuild serwist`. If the Turbopack package gives trouble, the fallback is `@serwist/next` with `next build --webpack` ([webpack guide](https://serwist.pages.dev/docs/next/getting-started)). The agent should read the current guide before writing code.
 
-**2. Service worker (`src/app/sw.ts`):** precache the app shell. Use NetworkFirst for page navigations with the cache as fallback, so cached screens open offline. Use CacheFirst for fonts and icons. Never cache `*.supabase.co` responses, because Dexie handles data. Set the fallback document to `/~offline`.
+**2. Service worker (`src/app/sw.ts`):** precache the app shell. Use NetworkFirst for page navigations with the cache as fallback, so cached screens open offline. Use CacheFirst for fonts and icons. Never cache `*.supabase.co` responses; data always comes from Supabase. Set the fallback document to `/~offline`.
 
 **3. Manifest (`src/app/manifest.ts`):**
 
@@ -511,20 +505,21 @@ the Welcome screen to rpc('create_household'), Settings > Family to rpc('add_mem
 Login errors must be friendly and translated. Sessions persist indefinitely.
 ```
 
-**B3 · Live repository with offline sync**
+**B3 · Live repository (online-only saves)**
 
 ```text
-Read AGENTS.md and "Offline strategy" in docs/PLAN.md. Implement src/lib/offline (Dexie mirror,
-outbox, sync) and live-repository.ts implementing the same interface as the mock. Do not change any
-screen components. Set NEXT_PUBLIC_DATA_MODE=live in Vercel. Test: airplane mode, add 3 entries,
-edit one, reconnect, confirm all 3 reach Supabase exactly once and the sync dot updates.
+Read AGENTS.md and "Offline strategy" in docs/PLAN.md. Implement live-repository.ts with the same
+interface as the mock: writes go to Supabase first, then into the Dexie read cache; pulls refresh the
+cache on open/focus. Do not change any screen components. Set NEXT_PUBLIC_DATA_MODE=live in Vercel.
+Test: add/edit/delete on one phone shows on the other after focus; Save in airplane mode shows the
+"No connection" toast and keeps the typed entry.
 ```
 
 **B4 · Reports on server views**
 
 ```text
 Read AGENTS.md. Point the Reports data methods at v_monthly_summary, v_monthly_category_totals and
-v_account_balances when online, cache the results in Dexie, and show "as of <time>" offline.
+v_account_balances.
 ```
 
 **B5 · Keep-alive, backups, export**
@@ -539,7 +534,7 @@ which GitHub secrets and Vercel env vars to add. Trigger both workflows manually
 
 ```text
 Read AGENTS.md. End-to-end test on the production URL: install, log in, add/edit/delete/restore,
-offline round-trip, add a category at all 3 levels, switch language, export CSV. Run Supabase
+offline Save shows the toast, add a category at all 3 levels, switch language, export CSV. Run Supabase
 get_advisors again. Write docs/HANDOVER.md (for me) and a 1-page Arabic "how to use" guide with
 screenshots (for the family).
 ```
@@ -563,8 +558,8 @@ Handover means the family's accounts own everything, the app runs with no one to
 | Risk | Likelihood | Mitigation |
 | --- | --- | --- |
 | Supabase pauses the project | Low | Two daily pings; Resume button keeps data; owner gets an email |
-| An offline entry never syncs (phone lost before reconnect) | Low | Sync runs on every open; sync dot shows unsynced count |
-| Two people edit the same entry offline | Very low | Last write wins; edits are rare |
+| No signal when they want to log something | Low | Save shows "No connection — try again" and keeps the typed entry |
+| Two people edit the same entry at once | Very low | Last write wins; edits are rare |
 | iOS deletes the installed app's storage | Very low | Server is the source of truth; re-login restores everything |
 | Free-tier limits (500 MB database) | Very low | Decades of household entries fit; the advisor email warns early |
 | Next.js or Supabase breaking changes | None unless redeployed | Nothing auto-upgrades; the deployed build keeps running as is |

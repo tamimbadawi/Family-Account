@@ -84,6 +84,20 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
   const [amountStr, setAmountStr] = React.useState(defaultAmount);
   const [selectedWalletId, setSelectedWalletId] = React.useState<string | null>(defaultWalletId);
   const [selectedToWalletId, setSelectedToWalletId] = React.useState<string | null>(defaultToWalletId);
+
+  // Move: picking the wallet that is already on the other side swaps the two
+  const pickFromWallet = (id: string) => {
+    if (id === selectedToWalletId) setSelectedToWalletId(selectedWalletId);
+    setSelectedWalletId(id);
+  };
+  const pickToWallet = (id: string) => {
+    if (id === selectedWalletId) setSelectedWalletId(selectedToWalletId);
+    setSelectedToWalletId(id);
+  };
+  const swapWallets = () => {
+    setSelectedWalletId(selectedToWalletId);
+    setSelectedToWalletId(selectedWalletId);
+  };
   const [occurredOn, setOccurredOn] = React.useState(defaultOccurredOn);
   const [note, setNote] = React.useState(defaultNote);
   const [selectedItem, setSelectedItem] = React.useState<Item | null>(defaultItem);
@@ -270,19 +284,18 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
 
       {isTransfer ? (
         <div className="flex items-center gap-2">
-          <WalletSelect
-            label={t('from')}
-            value={selectedWalletId}
-            onChange={setSelectedWalletId}
-            exclude={selectedToWalletId}
-          />
-          <ArrowRight className="size-5 shrink-0 text-ink-muted rtl:rotate-180" />
-          <WalletSelect
-            label={t('to')}
-            value={selectedToWalletId}
-            onChange={setSelectedToWalletId}
-            exclude={selectedWalletId}
-          />
+          {/* Both pickers list every wallet: choosing the one already on the other side swaps them,
+              so money can move bank → cash as easily as cash → bank */}
+          <WalletSelect label={t('from')} value={selectedWalletId} onChange={pickFromWallet} />
+          <button
+            type="button"
+            onClick={swapWallets}
+            aria-label={t('swapWallets')}
+            className="flex size-12 shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink-muted transition-transform active:scale-90 cursor-pointer"
+          >
+            <ArrowRight className="size-5 rtl:rotate-180" />
+          </button>
+          <WalletSelect label={t('to')} value={selectedToWalletId} onChange={pickToWallet} />
         </div>
       ) : (
         <CategoryRow
@@ -356,6 +369,39 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
   );
 }
 
+/**
+ * The drawer library pins a pixel height on the sheet while the iPhone keyboard is open (so the
+ * field stays above the keyboard), but it does not always undo it when the keyboard closes —
+ * e.g. after saving a new category the input disappears, and the sheet stayed short and low on
+ * the screen. Once the keyboard is gone, hand the height back to the layout.
+ */
+function useRestoreSheetAfterKeyboard(sheetRef: React.RefObject<HTMLDivElement | null>, isOpen: boolean) {
+  React.useEffect(() => {
+    const viewport = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!isOpen || !viewport) return;
+
+    let frame = 0;
+    const onResize = () => {
+      cancelAnimationFrame(frame);
+      // Run after the library's own resize handler has written its styles
+      frame = requestAnimationFrame(() => {
+        const sheet = sheetRef.current;
+        const keyboardClosed = window.innerHeight - viewport.height < 60;
+        if (sheet && keyboardClosed) {
+          sheet.style.removeProperty('height');
+          sheet.style.removeProperty('bottom');
+        }
+      });
+    };
+
+    viewport.addEventListener('resize', onResize);
+    return () => {
+      cancelAnimationFrame(frame);
+      viewport.removeEventListener('resize', onResize);
+    };
+  }, [sheetRef, isOpen]);
+}
+
 function keepOpenForToasts(e: { target: EventTarget | null; preventDefault: () => void }) {
   if (e.target instanceof Element && e.target.closest('[data-sonner-toaster]')) e.preventDefault();
 }
@@ -363,10 +409,13 @@ function keepOpenForToasts(e: { target: EventTarget | null; preventDefault: () =
 export function EntrySheet() {
   const t = useTranslations('entry');
   const { isOpen, mode, editingEntry, initialType, close } = useEntrySheet();
+  const sheetRef = React.useRef<HTMLDivElement>(null);
+  useRestoreSheetAfterKeyboard(sheetRef, isOpen);
 
   return (
     <Drawer open={isOpen} onOpenChange={(open) => !open && close()} repositionInputs>
       <DrawerContent
+        ref={sheetRef}
         className="max-h-[96dvh]"
         // Tapping Undo on a toast must not close the sheet
         onPointerDownOutside={keepOpenForToasts}
