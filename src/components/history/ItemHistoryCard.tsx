@@ -7,7 +7,7 @@ import { CategoryIcon } from '@/components/ui/category-icon';
 import { useCategories, useEntries, useItems, useSubcategories } from '@/lib/data/provider';
 import { money, pickName } from '@/lib/format';
 import { barLabel, bucketIndex, lastPeriods, type Period } from '@/lib/history/period';
-import { byMember, focusLevel, toListParams, type HistoryFilters } from '@/lib/history/filters';
+import { applyFilters, pickLevel, singlePick, toListParams, type HistoryFilters } from '@/lib/history/filters';
 import { useEntryAuthor } from '@/lib/auth/use-family-members';
 
 const BARS = 6;
@@ -29,24 +29,25 @@ export function ItemHistoryCard({
 }) {
   const t = useTranslations('history');
   const locale = useLocale();
-  const level = focusLevel(filters);
+  const pick = singlePick(filters);
+  const level = pick ? pickLevel(pick) : null;
 
   const categories = useCategories();
-  const groups = useSubcategories(filters.categoryId);
-  const items = useItems(filters.subcategoryId);
-  const category = categories?.find((c) => c.id === filters.categoryId);
+  const groups = useSubcategories(pick?.categoryId);
+  const items = useItems(pick?.subcategoryId);
+  const category = categories?.find((c) => c.id === pick?.categoryId);
   const target =
     level === 'item'
-      ? items?.find((i) => i.id === filters.itemId)
+      ? items?.find((i) => i.id === pick?.itemId)
       : level === 'subcategory'
-        ? groups?.find((s) => s.id === filters.subcategoryId)
+        ? groups?.find((s) => s.id === pick?.subcategoryId)
         : category;
 
   const authorOf = useEntryAuthor();
   const ranges = React.useMemo(() => lastPeriods(period, anchor, BARS), [period, anchor]);
-  const entries = byMember(
+  const entries = applyFilters(
     useEntries(toListParams(filters, { startDate: ranges[0].startDate, endDate: ranges[BARS - 1].endDate })),
-    filters.memberId,
+    filters,
     authorOf
   );
 
@@ -78,7 +79,7 @@ export function ItemHistoryCard({
   const path =
     level === 'category'
       ? null
-      : [category, level === 'item' ? groups?.find((s) => s.id === filters.subcategoryId) : null]
+      : [category, level === 'item' ? groups?.find((s) => s.id === pick?.subcategoryId) : null]
           .filter(Boolean)
           .map((r) => pickName({ name_ar: r!.nameAr, name_en: r!.nameEn }, locale))
           .join(' › ');

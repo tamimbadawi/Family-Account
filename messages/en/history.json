@@ -87,5 +87,7 @@
     "week": "Nothing matches this week",
     "month": "Nothing matches this month",
     "year": "Nothing matches this year"
-  }
+  },
+  "done": "Done",
+  "chosenCount": "{count} chosen"
 }
