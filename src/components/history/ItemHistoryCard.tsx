@@ -8,6 +8,7 @@ import { useCategories, useEntries, useItems, useSubcategories } from '@/lib/dat
 import { money, pickName } from '@/lib/format';
 import { barLabel, bucketIndex, lastPeriods, type Period } from '@/lib/history/period';
 import { byMember, focusLevel, toListParams, type HistoryFilters } from '@/lib/history/filters';
+import { useEntryAuthor } from '@/lib/auth/use-family-members';
 
 const BARS = 6;
 
@@ -41,10 +42,12 @@ export function ItemHistoryCard({
         ? groups?.find((s) => s.id === filters.subcategoryId)
         : category;
 
+  const authorOf = useEntryAuthor();
   const ranges = React.useMemo(() => lastPeriods(period, anchor, BARS), [period, anchor]);
   const entries = byMember(
     useEntries(toListParams(filters, { startDate: ranges[0].startDate, endDate: ranges[BARS - 1].endDate })),
-    filters.memberId
+    filters.memberId,
+    authorOf
   );
 
   const buckets = React.useMemo(() => {
