@@ -19,11 +19,25 @@ export interface WaitingFamily {
   email: string;
   familyName: string;
   createdAt: string;
+  /** When the unused login is deleted (24 h after it was made, 0013_invite_expiry.sql). */
+  expiresAt?: string;
+}
+
+/** Someone in a family asked for a friend's family to be started (family_invites, 0012). */
+export interface FamilyRequest {
+  inviteId: string;
+  friendName: string;
+  email: string;
+  createdAt: string;
+  /** The family that sent the invite, and who in it. */
+  fromFamily: string;
+  fromName: string;
 }
 
 type Action =
   | { action: 'list' }
-  | { action: 'create_family_admin'; familyName: string; email: string; password: string }
+  | { action: 'create_family_admin'; familyName: string; email: string; password: string; inviteId?: string }
+  | { action: 'decline_invite'; inviteId: string }
   | { action: 'set_status'; householdId: string; status: 'active' | 'suspended' }
   | { action: 'reset_admin_password'; householdId: string; password: string };
 

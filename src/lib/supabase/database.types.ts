@@ -196,6 +196,47 @@ export type Database = {
         }
         Relationships: []
       }
+      family_invites: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          email: string
+          friend_name: string
+          household_id: string
+          id: string
+          invited_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          email: string
+          friend_name: string
+          household_id: string
+          id?: string
+          invited_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          email?: string
+          friend_name?: string
+          household_id?: string
+          id?: string
+          invited_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_invites_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       household_members: {
         Row: {
           created_at: string
@@ -631,6 +672,10 @@ export type Database = {
       set_family_status: {
         Args: { p_household_id: string; p_status: string }
         Returns: undefined
+      }
+      invite_family: {
+        Args: { p_email: string; p_friend_name: string }
+        Returns: string
       }
       set_household_currencies: {
         Args: { p_currencies: string[] }

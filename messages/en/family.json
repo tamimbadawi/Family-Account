@@ -32,7 +32,9 @@
     "email_taken": "This email already has a login. Use another email.",
     "bad_email": "Check the email address",
     "suspended": "This family is paused. Contact the person who runs the app.",
-    "no_family_name": "Write the family's name"
+    "no_family_name": "Write the family's name",
+    "no_friend_name": "Write their name",
+    "too_many": "You sent a lot of invites today. Try again tomorrow."
   },
   "tryAgain": "Try again",
   "password": "Password",
@@ -42,5 +44,27 @@
   "familyName": "Family name",
   "renameFamily": "Change family name",
   "renamed": "Family name changed",
-  "save": "Save"
+  "save": "Save",
+  "sendInvite": "Send invite",
+  "inviteTitle": "Family Accounts",
+  "inviteWithLogin": "Join {family} on our family accounts app. Open this link on your iPhone and sign in with your email {email} and the password {password}. You will choose your own password after that.",
+  "inviteCopied": "Invite copied. Paste it in a message.",
+  "inviteFailed": "Couldn't send the invite. Try again.",
+  "otherFamilies": "Spread the word",
+  "otherFamiliesHint": "Know a family who'd love this app? Invite them. Their space is private, just like yours.",
+  "inviteFamily": "Invite a new family",
+  "inviteFamilyHint": "The person who runs the app sets up their family and sends them how to sign in. They must sign in within 24 hours of getting it, or the invite is cancelled.",
+  "friendName": "Their name",
+  "friendEmail": "Their email",
+  "friendEmailHint": "They will sign in with this email.",
+  "sendRequest": "Send invite",
+  "familyInvited": "Invite for {name} sent",
+  "tellThem": "Tell {name}",
+  "familyInviteText": "Hi {name}! We've been using a simple app to keep track of our family's money, and I think you'll love it too. I've invited your family, so you'll get your own private space, and your sign-in details are on the way. Please sign in within 24 hours of getting them, or the invite expires. Here's the app:",
+  "inviteStatus": {
+    "pending": "Waiting",
+    "approved": "Started",
+    "declined": "Not now",
+    "expired": "Expired"
+  }
 }

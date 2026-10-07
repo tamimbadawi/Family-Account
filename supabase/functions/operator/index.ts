@@ -5,6 +5,10 @@
 // Starting a family: the operator types the family's name, its admin's email and a temporary password.
 // The admin signs in with them, chooses their own password, then on Welcome finds the family name filled
 // in, types their own name (what the app shows) and picks the family's currencies. See docs/MULTI-FAMILY.md.
+//
+// Family invites: anyone in a family can ask for a friend's family (invite_family, 0012). The open
+// requests come back with 'list'; starting a family with an inviteId approves that request.
+// A family admin login nobody signs in to within 24 hours is deleted by pg_cron (0013_invite_expiry).
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const normalizeEmail = (e: string) => e.trim().toLowerCase();
@@ -73,8 +77,28 @@ Deno.serve(async (req) => {
       const inAFamily = new Set((memberRows ?? []).map((m) => m.user_id));
       const waiting = (users?.users ?? [])
         .filter((u) => u.app_metadata?.family_admin && !started.has(u.id) && !inAFamily.has(u.id))
-        .map((u) => ({ email: u.email ?? '', familyName: (u.app_metadata?.family_name as string) ?? '', createdAt: u.created_at }));
-      return reply(200, { families, waiting });
+        .map((u) => {
+          // A login never signed in to is deleted 24 h after this (0013_invite_expiry.sql)
+          const start = (u.app_metadata?.invited_at as string) ?? u.created_at;
+          return {
+            email: u.email ?? '',
+            familyName: (u.app_metadata?.family_name as string) ?? '',
+            createdAt: u.created_at,
+            expiresAt: u.last_sign_in_at
+              ? undefined
+              : new Date(new Date(start).getTime() + 24 * 3600 * 1000).toISOString(),
+          };
+        });
+      const { data: inviteRows } = await admin.rpc('operator_family_invites');
+      const requests = (inviteRows ?? []).map((i: Record<string, unknown>) => ({
+        inviteId: i.invite_id,
+        friendName: i.friend_name,
+        email: i.email,
+        createdAt: i.created_at,
+        fromFamily: i.from_family,
+        fromName: i.from_name ?? '',
+      }));
+      return reply(200, { families, waiting, requests });
     }
 
     case 'create_family_admin': {
@@ -102,7 +126,18 @@ Deno.serve(async (req) => {
         console.error('[operator] createUser failed', code);
         return reply(500, { error: 'failed' });
       }
+      if (body.inviteId) {
+        const { error: decideError } = await admin.rpc('decide_family_invite', { p_invite_id: body.inviteId, p_status: 'approved' });
+        if (decideError) console.error('[operator] decide_family_invite failed', decideError.code);
+      }
       return reply(200, { ok: true });
+    }
+
+    // Says no to a family invite request (approving happens by starting the family, above)
+    case 'decline_invite': {
+      if (!body.inviteId) return reply(400, { error: 'bad_request' });
+      const { error } = await admin.rpc('decide_family_invite', { p_invite_id: body.inviteId, p_status: 'declined' });
+      return error ? reply(500, { error: 'failed' }) : reply(200, { ok: true });
     }
 
     case 'set_status': {
