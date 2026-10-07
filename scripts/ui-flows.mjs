@@ -759,6 +759,33 @@ const FLOWS = {
     await tap(page, 'Previous month');
     if ((await label.innerText()).trim() === monthNow) throw new Error('Previous month arrow did nothing');
   },
+  async save_at_level(page) {
+    // Group level: Food → Groceries, no item chosen, Save works and the entry is filed under "Groceries"
+    await openSheet(page);
+    await typeAmount(page, ['6', '5']);
+    await tap(page, 'Food');
+    await tap(page, 'Groceries');
+    let save = await saveButton(page);
+    if ((await save.innerText()).trim() !== 'Save' || (await save.isDisabled())) throw new Error('Save is not available at the group level');
+    await save.click();
+    await sleep(1500);
+    await page.goto(BASE + '/en/history', { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    const rowGroceries = page.locator('[data-entry-row]').filter({ hasText: 'Groceries' }).filter({ hasText: '65' }).first();
+    await rowGroceries.scrollIntoViewIfNeeded();
+    await assertUsable(page, rowGroceries, 'the group-level entry in History');
+    // Category level: only Transport, then Save
+    await openSheet(page);
+    await typeAmount(page, ['3', '5']);
+    await tap(page, 'Transport');
+    save = await saveButton(page);
+    if ((await save.innerText()).trim() !== 'Save' || (await save.isDisabled())) throw new Error('Save is not available at the category level');
+    await save.click();
+    await sleep(1500);
+    const rowTransport = page.locator('[data-entry-row]').filter({ hasText: 'Transport' }).filter({ hasText: '35' }).first();
+    await rowTransport.scrollIntoViewIfNeeded();
+    await assertUsable(page, rowTransport, 'the category-level entry in History');
+  },
 };
 
 const MULTI_LOCALE_FLOW_NAMES = [
