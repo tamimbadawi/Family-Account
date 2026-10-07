@@ -18,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { OurMoneyRow } from '@/components/wallets/OurMoneySheet';
 import { money, pickName } from '@/lib/format';
+import { useSignedInName } from '@/lib/auth/use-signed-in-name';
 
 export default function HomePage() {
   const tHome = useTranslations('home');
@@ -51,14 +52,19 @@ export default function HomePage() {
   // Loading state
   const isLoading = summary === undefined || entries === undefined;
 
-  // Member name for greeting
-  const memberName = members?.[0]?.displayName || 'Mama';
+  // Greet the signed-in person by their own name; sample data's first member only when sign-in is off
+  const signedInName = useSignedInName();
+  const memberName = signedInName === null ? members?.[0]?.displayName || 'Mama' : signedInName;
 
-  // Greeting based on time of day
+  // Greeting based on time of day (just "Good evening" until the name has loaded)
   const isMorning = new Date().getHours() < 12;
-  const greeting = isMorning
-    ? tHome('greetingMorning', { name: memberName })
-    : tHome('greetingEvening', { name: memberName });
+  const greeting = memberName
+    ? isMorning
+      ? tHome('greetingMorning', { name: memberName })
+      : tHome('greetingEvening', { name: memberName })
+    : isMorning
+      ? tHome('greetingMorningPlain')
+      : tHome('greetingEveningPlain');
 
   if (isLoading) {
     return (

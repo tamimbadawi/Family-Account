@@ -45,5 +45,6 @@
   "saved": "تم الحفظ",
   "cancel": "إلغاء",
   "subcategoriesCount": "{count} فروع",
-  "itemsCount": "{count} بنود"
+  "itemsCount": "{count} بنود",
+  "changePassword": "تغيير كلمة السر"
 }
