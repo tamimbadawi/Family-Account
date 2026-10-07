@@ -42,5 +42,14 @@
   "familyName": "Family name",
   "renameFamily": "Change family name",
   "renamed": "Family name changed",
-  "save": "Save"
+  "save": "Save",
+  "invite": "Invite someone",
+  "sendInvite": "Send invite",
+  "inviteTitle": "Family Accounts",
+  "inviteText": "Join {family} on our family accounts app. Open this link on your iPhone to sign in:",
+  "inviteWithLogin": "Join {family} on our family accounts app. Open this link on your iPhone and sign in with your email {email} and the password {password}. You will choose your own password after that.",
+  "inviteOwnerHint": "Send someone the app link by message or WhatsApp. Add them above first so they can sign in.",
+  "inviteMemberHint": "Send someone the app link by message or WhatsApp. The admin still needs to add them before they can sign in.",
+  "inviteCopied": "Invite copied. Paste it in a message.",
+  "inviteFailed": "Couldn't send the invite. Try again."
 }

@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useTranslations } from 'next-intl';
-import { ChevronLeft, Crown, KeyRound, Pencil, UserMinus, UserPlus } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
+import { ChevronLeft, Crown, KeyRound, Pencil, Send, UserMinus, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
 import { WalletShortcut } from '@/components/layout/WalletShortcut';
@@ -15,6 +15,7 @@ import { useHouseholdMembers } from '@/lib/data/provider';
 import { isAuthConfigured } from '@/lib/supabase/client';
 import { familyAdmin, type FamilyList, type FamilyMember } from '@/lib/auth/family-admin';
 import { isEmail, loginLabel, normalizeEmail } from '@/lib/auth/email';
+import { inviteLink, sendInvite } from '@/lib/auth/invite';
 import { isEnglishName } from '@/lib/members';
 import { FAMILY_NAME_MAX, useFamilyName } from '@/lib/auth/family-name';
 
@@ -34,6 +35,7 @@ const ACTION =
 export default function FamilyPage() {
   const t = useTranslations('family');
   const tSettings = useTranslations('settings');
+  const locale = useLocale();
   const live = isAuthConfigured();
   const sampleMembers = useHouseholdMembers();
   const family = useFamilyName();
@@ -84,13 +86,28 @@ export default function FamilyPage() {
     setSheet(next);
   };
 
-  const run = async (work: () => Promise<unknown>, done: string) => {
+  /** Opens the share sheet with the invite; `login` adds the sign-in details for someone just added. */
+  const invite = async (login?: { email: string; password: string }) => {
+    const familyName = family.name ?? '';
+    const text = login
+      ? t('inviteWithLogin', { family: familyName, email: login.email, password: login.password })
+      : t('inviteText', { family: familyName });
+    const result = await sendInvite(t('inviteTitle'), text, inviteLink(window.location.origin, locale));
+    if (result === 'copied') toast.success(t('inviteCopied'));
+    else if (result === 'failed') toast.error(t('inviteFailed'));
+  };
+
+  const run = async (
+    work: () => Promise<unknown>,
+    done: string,
+    action?: { label: string; onClick: () => void }
+  ) => {
     setBusy(true);
     setError(null);
     try {
       await work();
       setSheet(null);
-      toast.success(done);
+      toast.success(done, action && { action, duration: 10000 });
       await load();
     } catch (err) {
       const code = err instanceof Error ? err.message : 'failed';
@@ -109,9 +126,12 @@ export default function FamilyPage() {
       // The name is what the app shows; the email is only what they sign in with
       if (!isEnglishName(name)) return setError(t('errors.bad_name'));
       if (!isEmail(email)) return setError(t('errors.bad_email'));
+      const login = { email: normalizeEmail(email), password };
       void run(
-        () => familyAdmin({ action: 'add_member', email: normalizeEmail(email), displayName: name.trim(), password }),
-        t('added', { name: name.trim() })
+        () => familyAdmin({ action: 'add_member', email: login.email, displayName: name.trim(), password }),
+        t('added', { name: name.trim() }),
+        // Straight after adding someone, offer to send them how to sign in
+        { label: t('sendInvite'), onClick: () => void invite(login) }
       );
     } else if (sheet.kind === 'reset') {
       void run(() => familyAdmin({ action: 'reset_password', userId: sheet.member.userId, password }), t('resetDone'));
@@ -232,6 +252,18 @@ export default function FamilyPage() {
             {t('addMember')}
           </Button>
         )}
+
+        <div className="space-y-2">
+          <Button
+            variant="outline"
+            onClick={() => void invite()}
+            className="h-14 w-full gap-2 text-heading font-semibold text-accent"
+          >
+            <Send className="size-5 rtl:-scale-x-100" />
+            {t('invite')}
+          </Button>
+          <p className="text-caption text-ink-muted">{isOwner ? t('inviteOwnerHint') : t('inviteMemberHint')}</p>
+        </div>
       </div>
 
       <Drawer open={sheet !== null} onOpenChange={(o) => !o && setSheet(null)} repositionInputs>
