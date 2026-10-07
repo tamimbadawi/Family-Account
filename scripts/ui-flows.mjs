@@ -556,6 +556,83 @@ const FLOWS = {
       await page.evaluate(() => window.scrollTo(0, 0));
     }
   },
+
+  async reports_wallets(page, { locale }) {
+    await page.goto(`${BASE}/${locale}/reports?tab=all`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    const walletReports = [
+      'net-worth',
+      'balance-over-time',
+      'in-out-per-wallet',
+      'cash-withdrawals',
+      'transfers-log',
+    ];
+
+    for (const rId of walletReports) {
+      // Ensure Banks & cash group is selected
+      const walletsChip = page.getByRole('button', { name: locale === 'ar' ? 'البنوك والكاش' : 'Banks & cash' });
+      await assertUsable(page, walletsChip, 'Banks & cash group chip');
+      await walletsChip.click();
+      await sleep(350);
+
+      // Find card link
+      const link = page.locator(`a[href*="/reports/r/${rId}"]`).first();
+      await assertUsable(page, link, `link to ${rId}`);
+      await link.click();
+      await page.waitForURL(`**\/reports/r/${rId}*`, { timeout: 10000 });
+      await sleep(400);
+      await page.evaluate(() => window.scrollTo(0, 0));
+
+      // Test interactive controls per report
+      if (rId === 'balance-over-time') {
+        const p12m = page.getByRole('button', { name: locale === 'ar' ? 'آخر 12 شهراً' : 'Last 12 months' });
+        if (await p12m.isVisible()) {
+          await p12m.click();
+          await sleep(300);
+          const p6m = page.getByRole('button', { name: locale === 'ar' ? 'آخر 6 أشهر' : 'Last 6 months' });
+          if (await p6m.isVisible()) {
+            await p6m.click();
+            await sleep(300);
+          }
+        }
+      }
+
+      if (['in-out-per-wallet', 'cash-withdrawals'].includes(rId)) {
+        const prevBtn = page.locator('button[aria-label="Previous month"], button[aria-label="الشهر السابق"]').first();
+        if (await prevBtn.isVisible()) {
+          await prevBtn.click();
+          await sleep(300);
+          const nextBtn = page.locator('button[aria-label="Next month"], button[aria-label="الشهر القادم"]').first();
+          if (await nextBtn.isVisible()) {
+            await nextBtn.click();
+            await sleep(300);
+          }
+        }
+      }
+
+      if (rId === 'transfers-log') {
+        const cashChip = page.getByRole('button', { name: locale === 'ar' ? 'كاش' : 'Cash' }).first();
+        if (await cashChip.isVisible()) {
+          await cashChip.click();
+          await sleep(300);
+          const allChip = page.getByRole('button', { name: locale === 'ar' ? 'كل المحافظ' : 'All wallets' }).first();
+          if (await allChip.isVisible()) {
+            await allChip.click();
+            await sleep(300);
+          }
+        }
+      }
+
+      // Navigate back using the back chevron
+      const back = page.locator('a[href*="/reports?tab=all"]').first();
+      await assertUsable(page, back, `back button on ${rId}`);
+      await back.click();
+      await page.waitForURL(`**\/reports*`, { timeout: 10000 });
+      await sleep(400);
+      await page.evaluate(() => window.scrollTo(0, 0));
+    }
+  },
 };
 
 const MULTI_LOCALE_FLOW_NAMES = [
@@ -563,6 +640,7 @@ const MULTI_LOCALE_FLOW_NAMES = [
   'reports_library',
   'reports_sheets',
   'reports_planning',
+  'reports_wallets',
   'our_money',
   'update_balance',
 ];

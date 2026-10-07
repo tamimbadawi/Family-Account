@@ -137,6 +137,27 @@
     "typicalFullMonth": "المعتاد للشهر كاملاً",
     "aheadPace": "معدل الصرف أعلى من المعتاد",
     "behindPace": "معدل الصرف أقل من المعتاد",
-    "onTrackPace": "معدل الصرف طبيعي"
+    "onTrackPace": "معدل الصرف طبيعي",
+    "totalNetWorth": "إجمالي الثروة",
+    "vsLastMonth": "مقارنة بالشهر السابق",
+    "last6Months": "آخر 6 أشهر",
+    "last12Months": "آخر 12 شهراً",
+    "toggleAll": "الكل",
+    "moneyIn": "داخل",
+    "moneyOut": "خارج",
+    "transfersIn": "تحويلات واردة",
+    "transfersOut": "تحويلات صادرة",
+    "netFlow": "صافي الحركة",
+    "cashSpentSince": "كاش اتصرف بعده",
+    "noWithdrawals": "لا توجد سحوبات نقدية",
+    "noWithdrawalsDesc": "ستظهر هنا التحويلات من الحسابات البنكية للكاش.",
+    "totalWithdrawn": "إجمالي المسحوب",
+    "withdrawalsCount": "{count, plural, one {# سحب} other {# سحوبات}}",
+    "avgWithdrawal": "المتوسط",
+    "allWallets": "كل المحافظ",
+    "transfersTotal": "إجمالي التحويلات",
+    "noTransfers": "لا توجد تحويلات مسجلة",
+    "noTransfersDesc": "ستظهر هنا التحويلات بين محافظك.",
+    "walletHistory": "عرض الحركات"
   }
 }

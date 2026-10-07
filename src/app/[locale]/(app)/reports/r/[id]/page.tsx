@@ -12,6 +12,11 @@ import { BiggestExpensesView } from '@/components/reports/views/BiggestExpensesV
 import { SpendingCalendarView } from '@/components/reports/views/SpendingCalendarView';
 import { IncomeSourcesView } from '@/components/reports/views/IncomeSourcesView';
 import { CategoryDeepDiveView } from '@/components/reports/views/CategoryDeepDiveView';
+import { NetWorthView } from '@/components/reports/views/NetWorthView';
+import { BalanceOverTimeView } from '@/components/reports/views/BalanceOverTimeView';
+import { InOutPerWalletView } from '@/components/reports/views/InOutPerWalletView';
+import { CashWithdrawalsView } from '@/components/reports/views/CashWithdrawalsView';
+import { TransfersLogView } from '@/components/reports/views/TransfersLogView';
 import { BillsTrackerView } from '@/components/reports/views/BillsTrackerView';
 import { MonthlyAveragesView } from '@/components/reports/views/MonthlyAveragesView';
 import { WhoSpentWhatView } from '@/components/reports/views/WhoSpentWhatView';
@@ -65,6 +70,11 @@ export default async function ReportDetailPage({ params }: ReportPageProps) {
       {report.id === 'spending-calendar' && <SpendingCalendarView />}
       {report.id === 'income-sources' && <IncomeSourcesView />}
       {report.id === 'category-deep-dive' && <CategoryDeepDiveView />}
+      {report.id === 'net-worth' && <NetWorthView />}
+      {report.id === 'balance-over-time' && <BalanceOverTimeView />}
+      {report.id === 'in-out-per-wallet' && <InOutPerWalletView />}
+      {report.id === 'cash-withdrawals' && <CashWithdrawalsView />}
+      {report.id === 'transfers-log' && <TransfersLogView />}
       {report.id === 'bills-tracker' && <BillsTrackerView />}
       {report.id === 'monthly-averages' && <MonthlyAveragesView />}
       {report.id === 'who-spent-what' && <WhoSpentWhatView />}
