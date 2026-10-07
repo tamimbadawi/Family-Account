@@ -457,10 +457,11 @@ export function generateRealisticEntries(
     const targetMonth = targetDate.getMonth();
 
     // Determine how many days to simulate in this month:
-    // If it's the current month (mOffset === 0), simulate up to baseDate.getDate() or minimum 6 days
+    // If it's the current month (mOffset === 0), simulate up to today: never future-dated entries
+    // (the filler below tops up past months early in the month)
     let maxDay = new Date(targetYear, targetMonth + 1, 0).getDate();
     if (mOffset === 0) {
-      maxDay = Math.min(maxDay, Math.max(6, baseDate.getDate()));
+      maxDay = Math.min(maxDay, baseDate.getDate());
     }
 
     const dateStr = (day: number) => {
