@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ChevronLeft, Crown, House, KeyRound, Pencil, Send, UserMinus, UserPlus } from 'lucide-react';
+import { ChevronLeft, Crown, Heart, House, KeyRound, Pencil, Send, UserMinus, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
 import { WalletShortcut } from '@/components/layout/WalletShortcut';
@@ -277,9 +277,26 @@ export default function FamilyPage() {
           </Button>
         )}
 
-        <section className="space-y-3 pt-2">
-          <h2 className="text-heading font-semibold text-ink">{t('otherFamilies')}</h2>
-          <p className="text-body text-ink-muted">{t('otherFamiliesHint')}</p>
+        <section className="space-y-3">
+          <div className="space-y-3 rounded-card bg-accent-soft p-4">
+            <div className="flex gap-3">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface text-accent">
+                <Heart className="size-5" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-heading font-semibold text-ink">{t('otherFamilies')}</h2>
+                <p className="text-body text-ink-muted">{t('otherFamiliesHint')}</p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => open({ kind: 'inviteFamily' })}
+              className="h-14 w-full gap-2 border-transparent bg-surface text-heading font-semibold text-accent"
+            >
+              <Send className="size-5 rtl:-scale-x-100" />
+              {t('inviteFamily')}
+            </Button>
+          </div>
           {invites.length > 0 && (
             <div className="divide-y divide-line/40 rounded-card border border-line/40 bg-surface shadow-card">
               {invites.map((i) => (
@@ -304,14 +321,6 @@ export default function FamilyPage() {
               ))}
             </div>
           )}
-          <Button
-            variant="outline"
-            onClick={() => open({ kind: 'inviteFamily' })}
-            className="h-14 w-full gap-2 text-heading font-semibold text-accent"
-          >
-            <Send className="size-5 rtl:-scale-x-100" />
-            {t('inviteFamily')}
-          </Button>
         </section>
       </div>
 
