@@ -17,7 +17,7 @@ begin
 
   perform set_config('request.jwt.claim.sub', mom::text, true);
   perform set_config('request.jwt.claims', json_build_object('sub', mom, 'role', 'authenticated')::text, true);
-  hid := public.create_household('Smoke', 'Mom', 'en');
+  hid := public.create_family('Smoke', 'Mom', 'en');
   select id into food from public.categories where household_id = hid and kind = 'expense' order by sort_order limit 1;
   select id into groceries from public.subcategories where household_id = hid and category_id = food limit 1;
   select id into other_group from public.subcategories where household_id = hid and category_id <> food limit 1;

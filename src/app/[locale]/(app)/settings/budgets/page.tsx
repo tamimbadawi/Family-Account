@@ -12,6 +12,7 @@ import {
   useRepository,
   useSubcategories,
 } from '@/lib/data/provider';
+import { useSaveError } from '@/components/ui/use-save-error';
 import type { Budget, Category, Subcategory } from '@/lib/data/types';
 import { formatExpression, previewValue } from '@/lib/format/expression';
 import { localISODate, money, pickName } from '@/lib/format';
@@ -28,6 +29,7 @@ export default function BudgetsPage() {
   const t = useTranslations('budgets');
   const tSettings = useTranslations('settings');
   const repo = useRepository();
+  const saveError = useSaveError();
   const names = useBudgetNames();
 
   const month = React.useMemo(() => localISODate().slice(0, 7), []);
@@ -106,15 +108,19 @@ export default function BudgetsPage() {
       setOpen(false);
       toast.success(t('saved'));
     } catch (err) {
-      console.error(err);
-      toast.error(t('saveFailed'));
+      saveError(err, t('saveFailed'));
     }
   };
 
   const handleRemove = async () => {
     if (!editing) return;
     const id = editing.id;
-    await repo.archiveBudget(id);
+    try {
+      await repo.archiveBudget(id);
+    } catch (err) {
+      saveError(err, t('saveFailed'));
+      return;
+    }
     setOpen(false);
     toast(t('removed'), {
       action: {

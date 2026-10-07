@@ -14,6 +14,7 @@ import type {
   Subcategory,
 } from '@/lib/data/types';
 import { useRepository, useWallets } from '@/lib/data/provider';
+import { useSaveError } from '@/components/ui/use-save-error';
 import { validateEntry } from '@/lib/validation/entry';
 import { generalItemFor } from '@/lib/data/general-item';
 import { previewValue } from '@/lib/format/expression';
@@ -57,6 +58,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
   const tBudgets = useTranslations('budgets');
   const locale = useLocale();
   const repo = useRepository();
+  const saveError = useSaveError();
   const wallets = useWallets();
 
   // Initial values
@@ -201,13 +203,19 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
     }
   };
 
+  const pendingIdRef = React.useRef<string | null>(null);
   const handleSave = async () => {
     if (!canSave) return;
 
     // At a category or group level: find (or create once) its general item
     let itemId = isTransfer ? null : (selectedItem?.id ?? null);
     if (!isTransfer && !itemId && path.category) {
-      itemId = (await generalItemFor(repo, path.category, path.subcategory)).id;
+      try {
+        itemId = (await generalItemFor(repo, path.category, path.subcategory)).id;
+      } catch (err) {
+        saveError(err);
+        return;
+      }
     }
 
     const payload = {
@@ -230,7 +238,9 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
       setIsSubmitting(true);
 
       if (mode === 'add') {
-        const created = await repo.addEntry(payload);
+        // Same id on every retry of this entry, so a save that reached the server is never duplicated
+        pendingIdRef.current ??= crypto.randomUUID();
+        const created = await repo.addEntry({ ...payload, id: pendingIdRef.current });
         if (photo) await repo.setEntryPhoto(created.id, photo);
 
         setIsSuccess(true);
@@ -287,8 +297,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
         }, 300);
       }
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to save');
+      saveError(err);
     } finally {
       setIsSubmitting(false);
     }
@@ -312,8 +321,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
         duration: 6000,
       });
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to delete');
+      saveError(err);
     }
   };
 

@@ -13,7 +13,7 @@ begin
   execute 'set local role authenticated';
   perform set_config('request.jwt.claim.sub', mom::text, true);
   perform set_config('request.jwt.claims', json_build_object('sub', mom, 'role', 'authenticated')::text, true);
-  hid := public.create_household('Smoke', 'Mom', 'en');
+  hid := public.create_family('Smoke', 'Mom', 'en');
 
   insert into storage.objects (bucket_id, name, owner) values ('receipts', hid || '/t1.jpg', mom);
   r := r || E'\nPASS member can store a receipt in own household folder';
