@@ -101,7 +101,7 @@ savings goals. Not planned: AI, notifications, bank feeds, investments, multi-cu
 | B1 | `/b1-database` — migrations, smoke test, advisors, types | AG-1 | `step/b1-database` | ✅ |
 | B2 | `/b2-auth` — Supabase auth, proxy, welcome, family | AG-1 | `step/b2-auth` | |
 | B5 | `/b5-keepalive-backups` — keep-alive, backups, CSV | AG-2 | `step/b5-keepalive` | |
-| B3 | `/b3-live-sync` — live repository, online-only saves | AG-1 | `step/b3-live-sync` | |
+| B3 | `/b3-live-sync` — live repository, online-only saves | Claude | `ccr-719c3adc-klawge` (PR #70) | 🔍 |
 | B4 | `/b4-reports-live` — reports on server views | AG-2 | `step/b4-reports-live` | |
 | B6 | `/b6-handover` — final QA + launch docs (no ownership transfer, see PLAN.md "Ownership") | AG-1 | `step/b6-handover` | |
 
@@ -139,3 +139,4 @@ savings goals. Not planned: AI, notifications, bank feeds, investments, multi-cu
 | 2026-10-07 | PR #65 | AG-1: feat(entry): main category and group displayed as breadcrumb beside amount |
 | 2026-10-07 | Ownership | User: no transfer of code or data. App runs on Tamim's Supabase/Vercel/GitHub as operator, with standard encryption (at rest + TLS, RLS between families, gpg backups). Replaces the 2026-10-06 handover plan; PLAN.md "Ownership" section rewritten |
 | 2026-10-07 | 0010, 0011 | Claude: applied 0010 budgets (smoke 9/9) and 0011 security advisors on production: create_household closed, keepalive anon-only, heartbeat deny-all policy, set_household_currencies refuses suspended families. Smoke on production: RLS 15/15, receipts 4/4, remove_member 7/7, multi-family 40/40. Advisors: 5 accepted WARNs (is_member, create_family, remove_member, set_household_currencies, keepalive for anon) + leaked-password protection (dashboard, paid plans). Types regenerated |
+| 2026-10-07 | B3 | Claude: LiveRepository (saves upsert to Supabase first, Dexie fa-live is a read copy), pull-only sync with server-time cursors, OfflineError + "No connection — try again" toast on every save, P1 (correction from v_account_balances) and P2 (upload receipt first) done, one id per new entry so retries never duplicate, sign-out clears the copy. 226 tests, build ok. Not yet tried on phones: needs NEXT_PUBLIC_DATA_MODE=live on a preview, then the 7 two-phone checks |
