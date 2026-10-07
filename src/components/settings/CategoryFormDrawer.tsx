@@ -4,6 +4,7 @@ import * as React from "react";
 import { useTranslations } from "next-intl";
 import { Drawer as DrawerPrimitive } from "vaul";
 import { ColorIconPicker } from "@/components/settings/ColorIconPicker";
+import { useRestoreSheetAfterKeyboard } from "@/components/settings/useRestoreSheetAfterKeyboard";
 import {
   Drawer,
   DrawerContent,
@@ -97,13 +98,16 @@ export function CategoryFormDrawer({
     }
   };
 
+  const sheetRef = React.useRef<HTMLDivElement>(null);
+  useRestoreSheetAfterKeyboard(sheetRef, open);
+
   const Root = nested ? DrawerPrimitive.NestedRoot : Drawer;
 
   return (
-    <Root open={open} onOpenChange={onOpenChange}>
+    <Root open={open} onOpenChange={onOpenChange} repositionInputs>
       {/* Scroll an inner box, not the sheet: vaul's filler below the sheet would scroll over the buttons */}
-      <DrawerContent className="max-h-[92dvh]">
-        <div className="overflow-y-auto overscroll-contain px-5 pb-8">
+      <DrawerContent ref={sheetRef} className="max-h-[92dvh]">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-8">
           <DrawerHeader className="px-0 pt-4 pb-2">
             <DrawerTitle className="text-title font-bold text-ink text-start">
               {title}
