@@ -39,5 +39,16 @@
   },
   "familyName": "Family name (e.g. Ahmad Badawi)",
   "waiting": "Waiting for the admin's first sign-in",
-  "unnamed": "New family"
+  "unnamed": "New family",
+  "requests": "Invited by other families",
+  "invitedBy": "Invited by {name} ({family})",
+  "startTheirFamily": "Start their family",
+  "decline": "Decline",
+  "declineFor": "Decline {name}?",
+  "declineHint": "No family is created. The family who invited them sees \"Not now\".",
+  "declined": "Invite declined",
+  "sendLogin": "Send login",
+  "loginTitle": "Family Accounts",
+  "loginText": "Your family is ready on the family accounts app. Open this link on your iPhone and sign in with your email {email} and the password {password}. You will choose your own password after that.",
+  "loginCopied": "Login copied. Paste it in a message."
 }

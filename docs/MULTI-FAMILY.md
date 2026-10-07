@@ -23,6 +23,11 @@ Decided 2026-10-07 with the user · not yet on the board (`docs/PROGRESS.md`).
    No email? Use the admin's own with a tag, e.g. `injy+mama@gmail.com`.
 4. **Each member** signs in with their email → chooses their own password → Home.
 
+**Invites from families (0011):** anyone in a family can tap *Invite a new family* in Settings → Family (friend's name + email).
+The request waits under *Invited by other families* on `/operator`; *Start their family* creates the admin login (and marks the
+request approved, for every family that invited that email), *Decline* closes it. The inviting family sees Waiting / Started / Not now.
+At most 5 requests per family per day. Sign-up stays invite-only.
+
 No email is ever sent by the app, so no mail service or domain is needed. "Forgot password" is handled the same way as today:
 the family admin resets a member's password, and Tamim resets a family admin's password from `/operator`.
 Email links (invites, self-service reset) can come later with Resend + a domain (§8).
@@ -43,6 +48,7 @@ Email links (invites, self-service reset) can come later with Resend + a domain 
 | `/operator` page | `(app)/operator/page.tsx`, `messages/*/operator.json` | done |
 | `money(amount, locale, { currency })`, `currencySymbol`, `currencyChoices` | `lib/format/currency.ts` | done |
 | Database types | `lib/supabase/database.types.ts` | hand-edited; regenerate after applying 0009 |
+| Family invites: `family_invites` table, `invite_family` (members), `operator_family_invites` / `decide_family_invite` (service role) + smoke test, 14 checks | `0011_family_invites.sql`, `supabase/tests/family_invites_smoke_test.sql` | written, **not applied**; 14/14 PASS locally |
 
 ## 4. To go live (Claude owns Supabase and Vercel)
 1. Apply `0006`, `0007` (pending since B2) and `0009` with `apply_migration`; run all four smoke tests with `execute_sql`; run `get_advisors`; regenerate types.

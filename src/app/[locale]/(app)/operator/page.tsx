@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ChevronLeft, KeyRound, Pause, Play, Plus } from 'lucide-react';
+import { ChevronLeft, KeyRound, Pause, Play, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
@@ -13,10 +13,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { isAuthConfigured } from '@/lib/supabase/client';
 import { FamilyAdminError } from '@/lib/auth/family-admin';
 import { isEmail, normalizeEmail } from '@/lib/auth/email';
-import { operator, type OperatorFamily, type WaitingFamily } from '@/lib/auth/operator';
+import { operator, type FamilyRequest, type OperatorFamily, type WaitingFamily } from '@/lib/auth/operator';
+import { inviteLink, sendInvite } from '@/lib/auth/invite';
 import { formatDay } from '@/lib/format';
 
-type Sheet = { kind: 'new' } | { kind: 'reset'; family: OperatorFamily } | { kind: 'status'; family: OperatorFamily } | null;
+type Sheet =
+  | { kind: 'new'; request?: FamilyRequest }
+  | { kind: 'decline'; request: FamilyRequest }
+  | { kind: 'reset'; family: OperatorFamily } | { kind: 'status'; family: OperatorFamily } | null;
 
 const ACTION =
   'flex size-11 shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink-muted transition-transform active:scale-95 cursor-pointer';
@@ -34,6 +38,7 @@ export default function OperatorPage() {
 
   const [families, setFamilies] = React.useState<OperatorFamily[] | null>(null);
   const [waiting, setWaiting] = React.useState<WaitingFamily[]>([]);
+  const [requests, setRequests] = React.useState<FamilyRequest[]>([]);
   const [familyName, setFamilyName] = React.useState('');
   const [denied, setDenied] = React.useState(false);
   const [loadFailed, setLoadFailed] = React.useState(false);
@@ -49,11 +54,12 @@ export default function OperatorPage() {
   React.useEffect(() => {
     if (!live) return;
     let cancelled = false;
-    operator<{ families: OperatorFamily[]; waiting: WaitingFamily[] }>({ action: 'list' })
+    operator<{ families: OperatorFamily[]; waiting: WaitingFamily[]; requests?: FamilyRequest[] }>({ action: 'list' })
       .then((result) => {
         if (cancelled) return;
         setFamilies(result.families);
         setWaiting(result.waiting ?? []);
+        setRequests(result.requests ?? []);
         setLoadFailed(false);
       })
       .catch((err) => {
@@ -74,13 +80,17 @@ export default function OperatorPage() {
     setSheet(next);
   };
 
-  const run = async (work: () => Promise<unknown>, done: string) => {
+  const run = async (
+    work: () => Promise<unknown>,
+    done: string,
+    action?: { label: string; onClick: () => void }
+  ) => {
     setBusy(true);
     setError(null);
     try {
       await work();
       setSheet(null);
-      toast.success(done);
+      toast.success(done, action && { action, duration: 10000 });
       setAttempt((a) => a + 1);
     } catch (err) {
       const code = err instanceof Error ? err.message : 'failed';
@@ -96,10 +106,27 @@ export default function OperatorPage() {
       if (!familyName.trim()) return setError(t('errors.no_family_name'));
       if (!isEmail(email)) return setError(t('errors.bad_email'));
       if (password.length < 6) return setError(t('errors.short_password'));
+      const login = { email: normalizeEmail(email), password };
       void run(
-        () => operator({ action: 'create_family_admin', familyName: familyName.trim(), email: normalizeEmail(email), password }),
-        t('created', { name: familyName.trim() })
+        () =>
+          operator({
+            action: 'create_family_admin',
+            familyName: familyName.trim(),
+            ...login,
+            ...(sheet.request && { inviteId: sheet.request.inviteId }),
+          }),
+        t('created', { name: familyName.trim() }),
+        // Send the new admin their sign-in details straight away
+        {
+          label: t('sendLogin'),
+          onClick: () =>
+            void sendInvite(t('loginTitle'), t('loginText', login), inviteLink(window.location.origin, locale)).then((r) => {
+              if (r === 'copied') toast.success(t('loginCopied'));
+            }),
+        }
       );
+    } else if (sheet.kind === 'decline') {
+      void run(() => operator({ action: 'decline_invite', inviteId: sheet.request.inviteId }), t('declined'));
     } else if (sheet.kind === 'reset') {
       if (password.length < 6) return setError(t('errors.short_password'));
       void run(
@@ -149,10 +176,45 @@ export default function OperatorPage() {
               </div>
             ) : !families ? (
               <Skeleton className="h-24 w-full rounded-card" />
-            ) : families.length === 0 && waiting.length === 0 ? (
+            ) : families.length === 0 && waiting.length === 0 && requests.length === 0 ? (
               <p className="text-body text-ink-muted">{t('empty')}</p>
             ) : (
               <>
+              {requests.length > 0 && <h2 className="text-heading font-semibold text-ink">{t('requests')}</h2>}
+              {requests.map((q) => (
+                <div key={q.inviteId} className="space-y-2 rounded-card border border-accent/40 bg-surface p-4 shadow-card">
+                  <div className="flex items-start gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-body font-semibold text-ink">{q.friendName}</p>
+                      <p dir="ltr" className="truncate text-caption text-ink-muted text-start">
+                        {q.email}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label={t('decline')}
+                      className={`${ACTION} text-danger`}
+                      onClick={() => open({ kind: 'decline', request: q })}
+                    >
+                      <X className="size-5" />
+                    </button>
+                  </div>
+                  <p className="text-caption text-ink-muted">
+                    {t('invitedBy', { name: q.fromName || q.fromFamily, family: q.fromFamily })} ·{' '}
+                    {formatDay(q.createdAt.slice(0, 10), locale)}
+                  </p>
+                  <Button
+                    onClick={() => {
+                      open({ kind: 'new', request: q });
+                      setFamilyName(q.friendName);
+                      setEmail(q.email);
+                    }}
+                    className="h-12 w-full text-body font-semibold text-accent-ink"
+                  >
+                    {t('startTheirFamily')}
+                  </Button>
+                </div>
+              ))}
               {waiting.map((w) => (
                 <div key={w.email} className="space-y-1 rounded-card border border-dashed border-line bg-surface p-4">
                   <p className="truncate text-body font-semibold text-ink">{w.familyName || t('unnamed')}</p>
@@ -205,6 +267,7 @@ export default function OperatorPage() {
             <DrawerHeader className="px-0 pt-1 pb-2">
               <DrawerTitle className="text-title font-bold text-ink">
                 {sheet?.kind === 'new' && t('newFamily')}
+                {sheet?.kind === 'decline' && t('declineFor', { name: sheet.request.friendName })}
                 {sheet?.kind === 'reset' && t('resetFor', { name: sheet.family.name })}
                 {sheet?.kind === 'status' &&
                   (sheet.family.status === 'active' ? t('pauseFor', { name: sheet.family.name }) : t('resumeFor', { name: sheet.family.name }))}
@@ -258,6 +321,7 @@ export default function OperatorPage() {
                   <p className="text-caption text-ink-muted">{t('passwordHint')}</p>
                 </>
               )}
+              {sheet?.kind === 'decline' && <p className="text-body text-ink-muted">{t('declineHint')}</p>}
               {sheet?.kind === 'status' && (
                 <p className="text-body text-ink-muted">{sheet.family.status === 'active' ? t('pauseHint') : t('resumeHint')}</p>
               )}
@@ -271,10 +335,11 @@ export default function OperatorPage() {
                 type="submit"
                 disabled={busy}
                 className={`h-14 w-full text-heading font-semibold text-accent-ink ${
-                  sheet?.kind === 'status' && sheet.family.status === 'active' ? 'bg-danger' : ''
+                  (sheet?.kind === 'status' && sheet.family.status === 'active') || sheet?.kind === 'decline' ? 'bg-danger' : ''
                 }`}
               >
                 {sheet?.kind === 'new' && t('create')}
+                {sheet?.kind === 'decline' && t('decline')}
                 {sheet?.kind === 'reset' && t('resetPassword')}
                 {sheet?.kind === 'status' && (sheet.family.status === 'active' ? t('pause') : t('resume'))}
               </Button>

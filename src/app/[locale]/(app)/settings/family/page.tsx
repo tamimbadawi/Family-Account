@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ChevronLeft, Crown, KeyRound, Pencil, Send, UserMinus, UserPlus } from 'lucide-react';
+import { ChevronLeft, Crown, House, KeyRound, Pencil, Send, UserMinus, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
 import { WalletShortcut } from '@/components/layout/WalletShortcut';
@@ -16,11 +16,13 @@ import { isAuthConfigured } from '@/lib/supabase/client';
 import { familyAdmin, type FamilyList, type FamilyMember } from '@/lib/auth/family-admin';
 import { isEmail, loginLabel, normalizeEmail } from '@/lib/auth/email';
 import { inviteLink, sendInvite } from '@/lib/auth/invite';
+import { inviteFamily, listFamilyInvites, type SentInvite } from '@/lib/auth/family-invites';
 import { isEnglishName } from '@/lib/members';
 import { FAMILY_NAME_MAX, useFamilyName } from '@/lib/auth/family-name';
 
 type Sheet =
   | { kind: 'add' }
+  | { kind: 'inviteFamily' }
   | { kind: 'rename' }
   | { kind: 'reset'; member: FamilyMember }
   | { kind: 'remove'; member: FamilyMember }
@@ -51,6 +53,15 @@ export default function FamilyPage() {
   const [name, setName] = React.useState('');
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const [invites, setInvites] = React.useState<SentInvite[]>([]);
+
+  // The families this family invited, and whether each was started yet
+  const loadInvites = React.useCallback(() => {
+    listFamilyInvites()
+      .then(setInvites)
+      .catch(() => {});
+  }, []);
+  React.useEffect(loadInvites, [loadInvites]);
 
   const load = React.useCallback(async () => {
     try {
@@ -86,12 +97,12 @@ export default function FamilyPage() {
     setSheet(next);
   };
 
-  /** Opens the share sheet with the invite; `login` adds the sign-in details for someone just added. */
-  const invite = async (login?: { email: string; password: string }) => {
-    const familyName = family.name ?? '';
-    const text = login
-      ? t('inviteWithLogin', { family: familyName, email: login.email, password: login.password })
-      : t('inviteText', { family: familyName });
+  /** Opens the share sheet: sign-in details for a member just added, or a heads-up for an invited family. */
+  const invite = async (to: { login: { email: string; password: string } } | { friend: string }) => {
+    const text =
+      'login' in to
+        ? t('inviteWithLogin', { family: family.name ?? '', email: to.login.email, password: to.login.password })
+        : t('familyInviteText', { name: to.friend });
     const result = await sendInvite(t('inviteTitle'), text, inviteLink(window.location.origin, locale));
     if (result === 'copied') toast.success(t('inviteCopied'));
     else if (result === 'failed') toast.error(t('inviteFailed'));
@@ -108,7 +119,7 @@ export default function FamilyPage() {
       await work();
       setSheet(null);
       toast.success(done, action && { action, duration: 10000 });
-      await load();
+      if (live) await load();
     } catch (err) {
       const code = err instanceof Error ? err.message : 'failed';
       setError(t.has(`errors.${code}`) ? t(`errors.${code}`) : t('errors.failed'));
@@ -131,7 +142,20 @@ export default function FamilyPage() {
         () => familyAdmin({ action: 'add_member', email: login.email, displayName: name.trim(), password }),
         t('added', { name: name.trim() }),
         // Straight after adding someone, offer to send them how to sign in
-        { label: t('sendInvite'), onClick: () => void invite(login) }
+        { label: t('sendInvite'), onClick: () => void invite({ login }) }
+      );
+    } else if (sheet.kind === 'inviteFamily') {
+      const friend = name.trim();
+      if (!friend) return setError(t('errors.no_friend_name'));
+      if (!isEmail(email)) return setError(t('errors.bad_email'));
+      void run(
+        async () => {
+          await inviteFamily(friend, normalizeEmail(email));
+          loadInvites();
+        },
+        t('familyInvited', { name: friend }),
+        // Let the friend know it's coming, from the same tap (the share sheet needs one)
+        { label: t('tellThem', { name: friend }), onClick: () => void invite({ friend }) }
       );
     } else if (sheet.kind === 'reset') {
       void run(() => familyAdmin({ action: 'reset_password', userId: sheet.member.userId, password }), t('resetDone'));
@@ -253,17 +277,42 @@ export default function FamilyPage() {
           </Button>
         )}
 
-        <div className="space-y-2">
+        <section className="space-y-3 pt-2">
+          <h2 className="text-heading font-semibold text-ink">{t('otherFamilies')}</h2>
+          <p className="text-body text-ink-muted">{t('otherFamiliesHint')}</p>
+          {invites.length > 0 && (
+            <div className="divide-y divide-line/40 rounded-card border border-line/40 bg-surface shadow-card">
+              {invites.map((i) => (
+                <div key={i.id} className={ROW}>
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
+                    <House className="size-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-body font-semibold text-ink">{i.friendName}</div>
+                    <div className="truncate text-caption text-ink-muted">
+                      <span dir="ltr">{i.email}</span>
+                    </div>
+                  </div>
+                  <span
+                    className={`shrink-0 text-caption font-semibold ${
+                      i.status === 'approved' ? 'text-income' : i.status === 'declined' ? 'text-ink-muted' : 'text-warning'
+                    }`}
+                  >
+                    {t(`inviteStatus.${i.status}`)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
           <Button
             variant="outline"
-            onClick={() => void invite()}
+            onClick={() => open({ kind: 'inviteFamily' })}
             className="h-14 w-full gap-2 text-heading font-semibold text-accent"
           >
             <Send className="size-5 rtl:-scale-x-100" />
-            {t('invite')}
+            {t('inviteFamily')}
           </Button>
-          <p className="text-caption text-ink-muted">{isOwner ? t('inviteOwnerHint') : t('inviteMemberHint')}</p>
-        </div>
+        </section>
       </div>
 
       <Drawer open={sheet !== null} onOpenChange={(o) => !o && setSheet(null)} repositionInputs>
@@ -272,6 +321,7 @@ export default function FamilyPage() {
             <DrawerHeader className="px-0 pt-1 pb-2">
               <DrawerTitle className="text-title font-bold text-ink">
                 {sheet?.kind === 'add' && t('addMember')}
+                {sheet?.kind === 'inviteFamily' && t('inviteFamily')}
                 {sheet?.kind === 'rename' && t('renameFamily')}
                 {sheet?.kind === 'reset' && t('resetFor', { name: sheet.member.displayName })}
                 {sheet?.kind === 'remove' && t('removeFor', { name: sheet.member.displayName })}
@@ -326,6 +376,35 @@ export default function FamilyPage() {
                   <p className="text-caption text-ink-muted">{t('emailHint')}</p>
                 </>
               )}
+              {sheet?.kind === 'inviteFamily' && (
+                <>
+                  <p className="text-body text-ink-muted">{t('inviteFamilyHint')}</p>
+                  <Input
+                    aria-label={t('friendName')}
+                    placeholder={t('friendName')}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={60}
+                    autoCapitalize="words"
+                    className="h-14 bg-surface-2 text-body"
+                  />
+                  <Input
+                    type="email"
+                    inputMode="email"
+                    dir="ltr"
+                    aria-label={t('friendEmail')}
+                    placeholder={t('friendEmail')}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value.replace(/\s+/g, ''))}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    autoComplete="off"
+                    className="h-14 bg-surface-2 text-body"
+                  />
+                  <p className="text-caption text-ink-muted">{t('friendEmailHint')}</p>
+                </>
+              )}
               {(sheet?.kind === 'add' || sheet?.kind === 'reset') && (
                 <>
                   <Input
@@ -353,6 +432,7 @@ export default function FamilyPage() {
                 className={`h-14 w-full text-heading font-semibold ${sheet?.kind === 'remove' ? 'bg-danger text-accent-ink' : 'text-accent-ink'}`}
               >
                 {sheet?.kind === 'add' && t('addMember')}
+                {sheet?.kind === 'inviteFamily' && t('sendRequest')}
                 {sheet?.kind === 'rename' && t('save')}
                 {sheet?.kind === 'reset' && t('resetPassword')}
                 {sheet?.kind === 'remove' && t('remove')}

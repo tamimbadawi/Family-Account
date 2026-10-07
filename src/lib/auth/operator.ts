@@ -21,9 +21,21 @@ export interface WaitingFamily {
   createdAt: string;
 }
 
+/** Someone in a family asked for a friend's family to be started (family_invites, 0011). */
+export interface FamilyRequest {
+  inviteId: string;
+  friendName: string;
+  email: string;
+  createdAt: string;
+  /** The family that sent the invite, and who in it. */
+  fromFamily: string;
+  fromName: string;
+}
+
 type Action =
   | { action: 'list' }
-  | { action: 'create_family_admin'; familyName: string; email: string; password: string }
+  | { action: 'create_family_admin'; familyName: string; email: string; password: string; inviteId?: string }
+  | { action: 'decline_invite'; inviteId: string }
   | { action: 'set_status'; householdId: string; status: 'active' | 'suspended' }
   | { action: 'reset_admin_password'; householdId: string; password: string };
 

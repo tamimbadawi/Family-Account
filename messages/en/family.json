@@ -32,7 +32,9 @@
     "email_taken": "This email already has a login. Use another email.",
     "bad_email": "Check the email address",
     "suspended": "This family is paused. Contact the person who runs the app.",
-    "no_family_name": "Write the family's name"
+    "no_family_name": "Write the family's name",
+    "no_friend_name": "Write their name",
+    "too_many": "You sent a lot of invites today. Try again tomorrow."
   },
   "tryAgain": "Try again",
   "password": "Password",
@@ -43,13 +45,25 @@
   "renameFamily": "Change family name",
   "renamed": "Family name changed",
   "save": "Save",
-  "invite": "Invite someone",
   "sendInvite": "Send invite",
   "inviteTitle": "Family Accounts",
-  "inviteText": "Join {family} on our family accounts app. Open this link on your iPhone to sign in:",
   "inviteWithLogin": "Join {family} on our family accounts app. Open this link on your iPhone and sign in with your email {email} and the password {password}. You will choose your own password after that.",
-  "inviteOwnerHint": "Send someone the app link by message or WhatsApp. Add them above first so they can sign in.",
-  "inviteMemberHint": "Send someone the app link by message or WhatsApp. The admin still needs to add them before they can sign in.",
   "inviteCopied": "Invite copied. Paste it in a message.",
-  "inviteFailed": "Couldn't send the invite. Try again."
+  "inviteFailed": "Couldn't send the invite. Try again.",
+  "otherFamilies": "Other families",
+  "otherFamiliesHint": "Know a family who would like their own accounts? Invite them. They get their own private space; they never see yours.",
+  "inviteFamily": "Invite a new family",
+  "inviteFamilyHint": "The person who runs the app sets up their family and sends them how to sign in.",
+  "friendName": "Their name",
+  "friendEmail": "Their email",
+  "friendEmailHint": "They will sign in with this email.",
+  "sendRequest": "Send invite",
+  "familyInvited": "Invite for {name} sent",
+  "tellThem": "Tell {name}",
+  "familyInviteText": "Hi {name}, I invited your family to the family accounts app I use. You will get your own private space and your sign-in details soon. This is the app:",
+  "inviteStatus": {
+    "pending": "Waiting",
+    "approved": "Started",
+    "declined": "Not now"
+  }
 }
