@@ -1,4 +1,4 @@
--- Sample data smoke test for 0014_sample_data.sql.
+-- Sample data smoke test for 0014_sample_data.sql and 0015_richer_sample_data.sql.
 -- Same pattern as rls_smoke_test.sql: one DO block that always ends with an intentional exception,
 -- so every change (including the throwaway auth users) is rolled back. Safe on the real project.
 --
@@ -26,7 +26,11 @@ begin
   insert into public.household_members (household_id, user_id, display_name, role) values (ha, member, 'Mo', 'member');
 
   select count(*) into n from public.transactions where household_id = ha and is_sample and deleted_at is null;
-  r := r || format(E'\n%s a new family starts with sample entries (%s)', case when n > 50 then 'PASS' else 'FAIL' end, n);
+  r := r || format(E'\n%s a new family starts with sample entries (%s)', case when n > 200 then 'PASS' else 'FAIL' end, n);
+  select count(*) into n from public.accounts where household_id = ha and is_sample and not is_archived;
+  r := r || format(E'\n%s a new family gets 3 sample banks (%s)', case when n = 3 then 'PASS' else 'FAIL' end, n);
+  r := r || format(E'\n%s sample transfers fill Cash from the banks',
+    case when exists (select 1 from public.transactions where household_id = ha and is_sample and type = 'transfer') then 'PASS' else 'FAIL' end);
   r := r || format(E'\n%s the household says it has sample data',
     case when (select has_sample_data from public.households where id = ha) then 'PASS' else 'FAIL' end);
   r := r || format(E'\n%s no sample entry is dated after today',
@@ -34,8 +38,9 @@ begin
 
   -- A real entry the family added themselves
   insert into public.transactions (id, household_id, type, amount, occurred_on, account_id, item_id)
-  select real_id, ha, 'expense', 99, current_date, t.account_id, t.item_id
-  from public.transactions t where t.household_id = ha and t.type = 'expense' limit 1;
+  select real_id, ha, 'expense', 99, current_date, a.id, t.item_id
+  from public.transactions t join public.accounts a on a.household_id = ha and a.type = 'cash' and not a.is_sample
+  where t.household_id = ha and t.type = 'expense' limit 1;
 
   execute 'set local role authenticated';
   perform set_config('request.jwt.claim.sub', member::text, true);
@@ -50,6 +55,10 @@ begin
   r := r || format(E'\n%s clearing leaves only the family''s own entry (%s left)', case when n = 1 then 'PASS' else 'FAIL' end, n);
   r := r || format(E'\n%s the family''s own entry stays',
     case when exists (select 1 from public.transactions where id = real_id and deleted_at is null) then 'PASS' else 'FAIL' end);
+  select count(*) into n from public.accounts where household_id = ha and is_sample and not is_archived;
+  r := r || format(E'\n%s clearing hides the sample banks (%s visible)', case when n = 0 then 'PASS' else 'FAIL' end, n);
+  r := r || format(E'\n%s Cash stays',
+    case when exists (select 1 from public.accounts where household_id = ha and type = 'cash' and not is_archived) then 'PASS' else 'FAIL' end);
   r := r || format(E'\n%s another family''s samples are untouched',
     case when exists (select 1 from public.transactions where household_id = hb and is_sample and deleted_at is null) then 'PASS' else 'FAIL' end);
 
@@ -58,7 +67,9 @@ begin
   perform public.restore_sample_data();
   execute 'reset role';
   select count(*) into n from public.transactions where household_id = ha and is_sample and deleted_at is null;
-  r := r || format(E'\n%s undo brings the samples back (%s)', case when n > 50 then 'PASS' else 'FAIL' end, n);
+  r := r || format(E'\n%s undo brings the samples back (%s)', case when n > 200 then 'PASS' else 'FAIL' end, n);
+  select count(*) into n from public.accounts where household_id = ha and is_sample and not is_archived;
+  r := r || format(E'\n%s undo shows the sample banks again (%s)', case when n = 3 then 'PASS' else 'FAIL' end, n);
   r := r || format(E'\n%s anon cannot call clear_sample_data',
     case when not has_function_privilege('anon', 'public.clear_sample_data()', 'execute') then 'PASS' else 'FAIL' end);
   r := r || format(E'\n%s nobody calls seed_sample_entries directly',

@@ -235,6 +235,8 @@ export interface AccountRow {
   color: string | null;
   sort_order: number;
   is_archived: boolean;
+  /** Live mode: one of the starter sample banks (0015); hidden when the samples are cleared. */
+  is_sample?: boolean;
   created_at: string;
   updated_at: string;
 }

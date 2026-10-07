@@ -26,6 +26,7 @@ export type Database = {
           icon: string | null
           id: string
           is_archived: boolean
+          is_sample: boolean
           name_ar: string | null
           name_en: string | null
           opening_balance: number
@@ -41,6 +42,7 @@ export type Database = {
           icon?: string | null
           id?: string
           is_archived?: boolean
+          is_sample?: boolean
           name_ar?: string | null
           name_en?: string | null
           opening_balance?: number
@@ -56,6 +58,7 @@ export type Database = {
           icon?: string | null
           id?: string
           is_archived?: boolean
+          is_sample?: boolean
           name_ar?: string | null
           name_en?: string | null
           opening_balance?: number

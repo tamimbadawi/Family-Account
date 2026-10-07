@@ -4,7 +4,7 @@
   "title": "This is sample data",
   "body": "The entries and amounts you see are made up, so you can look around and try everything. Nothing here is real.",
   "adminBody": "When your family is ready, clear the samples and start with your own money. Your categories stay; the entries, budgets and sample balances go, including anything you added for practice.",
-  "adminBodyLive": "When your family is ready, clear the samples and start with your own money. Only the sample entries go, for everyone in the family; your categories, wallets, budgets and anything you added yourselves stay.",
+  "adminBodyLive": "When your family is ready, clear the samples and start with your own money. The sample entries go and the sample banks are hidden, for everyone in the family; your categories, Cash, budgets and anything you added yourselves stay.",
   "memberBody": "{name}, your family admin, can clear the samples when your family is ready to start.",
   "memberBodyPlain": "Your family admin can clear the samples when your family is ready to start.",
   "clear": "Clear sample data and start",
