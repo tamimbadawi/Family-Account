@@ -27,6 +27,12 @@ import { Switch } from '@/components/ui/switch';
 
 const noopSubscribe = () => () => {};
 
+function readBackHref() {
+  const from = new URLSearchParams(window.location.search).get('from');
+  // Internal paths only ("/x", never "//host").
+  return from && from.startsWith('/') && !from.startsWith('//') ? from : '/settings';
+}
+
 export default function WalletManagerPage() {
   const locale = useLocale();
   const t = useTranslations('settings');
@@ -35,12 +41,8 @@ export default function WalletManagerPage() {
 
   const [showArchived, setShowArchived] = React.useState(false);
 
-  // Opened from the Home header shortcut (?from=home): back returns Home.
-  const backHref = React.useSyncExternalStore(
-    noopSubscribe,
-    () => (new URLSearchParams(window.location.search).get('from') === 'home' ? '/' : '/settings'),
-    () => '/settings'
-  );
+  // Opened from a header wallet shortcut (?from=<path>): back returns there.
+  const backHref = React.useSyncExternalStore(noopSubscribe, readBackHref, () => '/settings');
   const wallets = useWallets(showArchived);
   const balances = useWalletBalances();
 
