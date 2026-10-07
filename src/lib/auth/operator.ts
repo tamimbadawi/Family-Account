@@ -19,6 +19,8 @@ export interface WaitingFamily {
   email: string;
   familyName: string;
   createdAt: string;
+  /** When the unused login is deleted (24 h after it was made, 0013_invite_expiry.sql). */
+  expiresAt?: string;
 }
 
 /** Someone in a family asked for a friend's family to be started (family_invites, 0012). */

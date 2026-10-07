@@ -7,7 +7,7 @@ export interface SentInvite {
   id: string;
   friendName: string;
   email: string;
-  status: 'pending' | 'approved' | 'declined';
+  status: 'pending' | 'approved' | 'declined' | 'expired';
   createdAt: string;
 }
 

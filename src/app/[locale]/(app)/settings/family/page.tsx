@@ -312,7 +312,11 @@ export default function FamilyPage() {
                   </div>
                   <span
                     className={`shrink-0 text-caption font-semibold ${
-                      i.status === 'approved' ? 'text-income' : i.status === 'declined' ? 'text-ink-muted' : 'text-warning'
+                      i.status === 'approved'
+                        ? 'text-income'
+                        : i.status === 'declined' || i.status === 'expired'
+                          ? 'text-ink-muted'
+                          : 'text-warning'
                     }`}
                   >
                     {t(`inviteStatus.${i.status}`)}

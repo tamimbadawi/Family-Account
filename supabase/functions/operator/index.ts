@@ -8,6 +8,7 @@
 //
 // Family invites: anyone in a family can ask for a friend's family (invite_family, 0012). The open
 // requests come back with 'list'; starting a family with an inviteId approves that request.
+// A family admin login nobody signs in to within 24 hours is deleted by pg_cron (0013_invite_expiry).
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const normalizeEmail = (e: string) => e.trim().toLowerCase();
@@ -76,7 +77,18 @@ Deno.serve(async (req) => {
       const inAFamily = new Set((memberRows ?? []).map((m) => m.user_id));
       const waiting = (users?.users ?? [])
         .filter((u) => u.app_metadata?.family_admin && !started.has(u.id) && !inAFamily.has(u.id))
-        .map((u) => ({ email: u.email ?? '', familyName: (u.app_metadata?.family_name as string) ?? '', createdAt: u.created_at }));
+        .map((u) => {
+          // A login never signed in to is deleted 24 h after this (0013_invite_expiry.sql)
+          const start = (u.app_metadata?.invited_at as string) ?? u.created_at;
+          return {
+            email: u.email ?? '',
+            familyName: (u.app_metadata?.family_name as string) ?? '',
+            createdAt: u.created_at,
+            expiresAt: u.last_sign_in_at
+              ? undefined
+              : new Date(new Date(start).getTime() + 24 * 3600 * 1000).toISOString(),
+          };
+        });
       const { data: inviteRows } = await admin.rpc('operator_family_invites');
       const requests = (inviteRows ?? []).map((i: Record<string, unknown>) => ({
         inviteId: i.invite_id,

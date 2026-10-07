@@ -37,7 +37,7 @@ export default function OperatorPage() {
   const live = isAuthConfigured();
 
   const [families, setFamilies] = React.useState<OperatorFamily[] | null>(null);
-  const [waiting, setWaiting] = React.useState<WaitingFamily[]>([]);
+  const [waiting, setWaiting] = React.useState<(WaitingFamily & { hoursLeft?: number })[]>([]);
   const [requests, setRequests] = React.useState<FamilyRequest[]>([]);
   const [familyName, setFamilyName] = React.useState('');
   const [denied, setDenied] = React.useState(false);
@@ -58,7 +58,16 @@ export default function OperatorPage() {
       .then((result) => {
         if (cancelled) return;
         setFamilies(result.families);
-        setWaiting(result.waiting ?? []);
+        // Hours until an unused login is deleted, worked out once per load
+        const now = Date.now();
+        setWaiting(
+          (result.waiting ?? []).map((w) => ({
+            ...w,
+            hoursLeft: w.expiresAt
+              ? Math.max(1, Math.ceil((new Date(w.expiresAt).getTime() - now) / 3_600_000))
+              : undefined,
+          }))
+        );
         setRequests(result.requests ?? []);
         setLoadFailed(false);
       })
@@ -221,7 +230,9 @@ export default function OperatorPage() {
                   <p dir="ltr" className="truncate text-caption text-ink-muted text-start">
                     {w.email}
                   </p>
-                  <p className="text-caption text-ink-muted">{t('waiting')}</p>
+                  <p className="text-caption text-ink-muted">
+                    {w.hoursLeft ? t('waitingExpires', { hours: w.hoursLeft }) : t('waiting')}
+                  </p>
                 </div>
               ))}
               {

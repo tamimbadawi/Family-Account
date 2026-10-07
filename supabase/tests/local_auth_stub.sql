@@ -28,6 +28,9 @@ grant execute on function auth.uid() to anon, authenticated;
 --   psql fa_test -f supabase/tests/multi_family_smoke_test.sql
 grant usage on schema public to service_role;
 alter table auth.users add column raw_app_meta_data jsonb not null default '{}'::jsonb;
+-- 0013 (invite expiry) reads when a login was made and whether it was ever used
+alter table auth.users add column created_at timestamptz not null default now();
+alter table auth.users add column last_sign_in_at timestamptz;
 
 -- pg_cron (0002): a no-op schedule()
 create schema cron;

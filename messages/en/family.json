@@ -53,17 +53,18 @@
   "otherFamilies": "Spread the word",
   "otherFamiliesHint": "Know a family who'd love this app? Invite them. Their space is private, just like yours.",
   "inviteFamily": "Invite a new family",
-  "inviteFamilyHint": "The person who runs the app sets up their family and sends them how to sign in.",
+  "inviteFamilyHint": "The person who runs the app sets up their family and sends them how to sign in. They must sign in within 24 hours of getting it, or the invite is cancelled.",
   "friendName": "Their name",
   "friendEmail": "Their email",
   "friendEmailHint": "They will sign in with this email.",
   "sendRequest": "Send invite",
   "familyInvited": "Invite for {name} sent",
   "tellThem": "Tell {name}",
-  "familyInviteText": "Hi {name}! We've been using a simple app to keep track of our family's money, and I think you'll love it too. I've invited your family, so you'll get your own private space, and your sign-in details are on the way. Here's the app:",
+  "familyInviteText": "Hi {name}! We've been using a simple app to keep track of our family's money, and I think you'll love it too. I've invited your family, so you'll get your own private space, and your sign-in details are on the way. Please sign in within 24 hours of getting them, or the invite expires. Here's the app:",
   "inviteStatus": {
     "pending": "Waiting",
     "approved": "Started",
-    "declined": "Not now"
+    "declined": "Not now",
+    "expired": "Expired"
   }
 }
