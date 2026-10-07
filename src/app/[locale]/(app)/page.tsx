@@ -9,7 +9,10 @@ import {
   useMonthSummary,
   useCategoryTotals,
   useMembers,
+  useBudgetProgress,
 } from '@/lib/data/provider';
+import { BudgetAlert } from '@/components/budgets/BudgetAlert';
+import { budgetWarnings } from '@/lib/reports/budgets';
 import { EntryRow } from '@/components/entry/EntryRow';
 import { useEntrySheet } from '@/components/entry/EntrySheetContext';
 import { Card } from '@/components/ui/card';
@@ -33,10 +36,12 @@ export default function HomePage() {
 
   // Responsive limit: at most 3 entries, 2 on 701-749px, 1 on <=700px (iPhone SE 375x667, 412x700)
   const [maxRows, setMaxRows] = React.useState(1);
+  const [isShort, setIsShort] = React.useState(true);
 
   React.useEffect(() => {
     const update = () => {
       setMaxRows(window.innerHeight <= 700 ? 1 : (window.innerHeight < 780 ? 2 : 3));
+      setIsShort(window.innerHeight <= 700);
     };
     update();
     window.addEventListener('resize', update);
@@ -48,6 +53,8 @@ export default function HomePage() {
   const summary = useMonthSummary(currentMonth);
   const topCategories = useCategoryTotals(currentMonth, 'expense', 'category');
   const entries = useEntries({ limit: 3 });
+  const budgetProgress = useBudgetProgress(currentMonth);
+  const warnings = React.useMemo(() => budgetWarnings(budgetProgress ?? []), [budgetProgress]);
 
   // Loading state
   const isLoading = summary === undefined || entries === undefined;
@@ -156,8 +163,12 @@ export default function HomePage() {
         </Card>
       </Link>
 
+      {/* Soft budget warning (80% or more), only when there is one */}
+      {warnings.length > 0 && <BudgetAlert warnings={warnings} />}
+
       {/* 3. Top categories this month */}
-      {displayedCategories.length > 0 && (
+      {/* On short screens a budget warning takes the place of the top categories (still in Reports) */}
+      {displayedCategories.length > 0 && !(isShort && warnings.length > 0) && (
         <section className="space-y-1">
           <h2 className="text-body font-semibold text-ink">
             {tHome('topCategories')}
@@ -220,7 +231,7 @@ export default function HomePage() {
         </div>
 
         <div className="divide-y divide-line rounded-card bg-surface px-4 py-0.5 shadow-card">
-          {entries.slice(0, maxRows).map((entry) => (
+          {entries.slice(0, warnings.length > 0 && !isShort ? maxRows - 1 : maxRows).map((entry) => (
             <EntryRow key={entry.id} entry={entry} onClick={() => openEdit(entry)} />
           ))}
         </div>

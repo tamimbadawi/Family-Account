@@ -786,6 +786,73 @@ const FLOWS = {
     await rowTransport.scrollIntoViewIfNeeded();
     await assertUsable(page, rowTransport, 'the category-level entry in History');
   },
+
+  // Budgets: set one from Settings, see the soft warning on Home, open Budget vs actual, remove it with Undo.
+  async budgets(page, { locale }) {
+    const ar = locale === 'ar';
+    await page.goto(`${BASE}/${locale}/settings`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    const row = page.getByRole('link', { name: ar ? 'الميزانية' : 'Budgets', exact: true });
+    await assertUsable(page, row, 'Budgets row in Settings');
+    await row.click();
+    await page.waitForURL(/\/settings\/budgets/, { timeout: 8000 });
+    await sleep(800);
+
+    const add = page.getByRole('button', { name: ar ? '+ إضافة ميزانية' : '+ Add budget' });
+    await assertUsable(page, add, 'Add budget button');
+    await add.click();
+    await sleep(500);
+    const drawer = page.locator('[data-slot="drawer-content"]');
+    await drawer.waitFor({ state: 'visible', timeout: 5000 });
+    const transport = drawer.getByRole('button', { name: ar ? /^المواصلات/ : /^Transport/ });
+    await assertUsable(page, transport, 'Transport in the category list');
+    await transport.click();
+    await sleep(400);
+    const whole = drawer.getByRole('button', { name: ar ? /المواصلات كله/ : /^All of Transport/ });
+    await assertUsable(page, whole, 'whole-category choice');
+    await whole.click();
+    await sleep(400);
+
+    // A tiny budget so this month is surely over it
+    const backspace = drawer.getByRole('button', { name: ar ? 'امسح آخر رقم' : 'Delete last digit' });
+    await assertUsable(page, backspace, 'backspace key');
+    for (let i = 0; i < 8; i++) await backspace.click();
+    const one = drawer.getByRole('button', { name: '1', exact: true });
+    await assertUsable(page, one, 'key 1 on AmountPad');
+    await one.click();
+    const save = drawer.getByRole('button', { name: ar ? 'حفظ' : 'Save', exact: true });
+    await assertUsable(page, save, 'Save budget button');
+    await save.click();
+    await sleep(800);
+
+    // Home shows the soft warning, which opens Budget vs actual
+    await page.goto(`${BASE}/${locale}`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(1200);
+    const alert = page.locator('a[href$="/reports/r/budget-vs-actual"]').first();
+    await assertUsable(page, alert, 'budget warning on Home');
+    await alert.click();
+    await page.waitForURL(/budget-vs-actual/, { timeout: 8000 });
+    await sleep(1000);
+    const over = page.getByText(ar ? 'عدّينا الميزانية' : 'Over budget').first();
+    await assertUsable(page, over, '"Over budget" in Budget vs actual');
+
+    // Remove it, then Undo
+    await page.goto(`${BASE}/${locale}/settings/budgets`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(1000);
+    const budgetRow = page.getByRole('button', { name: ar ? /^المواصلات/ : /^Transport/ }).first();
+    await assertUsable(page, budgetRow, 'Transport budget in the list');
+    await budgetRow.click();
+    await sleep(500);
+    const remove = page.getByRole('button', { name: ar ? 'إلغاء الميزانية' : 'Remove budget' });
+    await assertUsable(page, remove, 'Remove budget button');
+    await remove.click();
+    await sleep(600);
+    const undo = page.getByRole('button', { name: ar ? 'تراجع' : 'Undo' });
+    await assertUsable(page, undo, 'Undo toast button');
+    await undo.click();
+    await sleep(600);
+    await assertUsable(page, page.getByRole('button', { name: ar ? /^المواصلات/ : /^Transport/ }).first(), 'budget back after Undo');
+  },
 };
 
 const MULTI_LOCALE_FLOW_NAMES = [
@@ -797,6 +864,7 @@ const MULTI_LOCALE_FLOW_NAMES = [
   'our_money',
   'update_balance',
   'download_data',
+  'budgets',
 ];
 const LOCALES = ['en', 'ar'];
 

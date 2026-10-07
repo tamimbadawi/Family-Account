@@ -7,6 +7,7 @@
 // =========================================================
 
 import type {
+  Budget,
   Category,
   CategoryKind,
   CategoryLevel,
@@ -139,6 +140,21 @@ export interface UpdateItemInput {
   sortOrder?: number;
 }
 
+export interface CreateBudgetInput {
+  id?: string;
+  householdId?: string;
+  categoryId: string;
+  /** null or omitted = a budget for the whole category */
+  subcategoryId?: string | null;
+  amount: number; // per month
+  /** Set only by the starter budgets a new family gets. */
+  isStarter?: boolean;
+}
+
+export interface UpdateBudgetInput {
+  amount?: number;
+}
+
 export interface Repository {
   // Household & Members
   getHousehold(): Promise<Household | null>;
@@ -178,6 +194,14 @@ export interface Repository {
   addItem(input: CreateItemInput): Promise<Item>;
   updateItem(id: string, updates: UpdateItemInput): Promise<Item>;
   archiveItem(id: string, archive?: boolean): Promise<void>;
+
+  // Budgets (monthly, per expense category or group)
+  getBudgets(includeArchived?: boolean): Promise<Budget[]>;
+  /** Adds a budget, or updates the active one for the same category/group (one budget per target). */
+  addBudget(input: CreateBudgetInput): Promise<Budget>;
+  updateBudget(id: string, updates: UpdateBudgetInput): Promise<Budget>;
+  /** "Remove" a budget = archive it; archive=false brings it back (Undo). */
+  archiveBudget(id: string, archive?: boolean): Promise<void>;
 
   // Entries (Transactions)
   listEntries(params?: ListEntriesParams): Promise<EnrichedEntry[]>;

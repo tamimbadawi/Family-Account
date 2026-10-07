@@ -11,8 +11,10 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { mockRepository } from './mock-repository';
 import { getLastNMonths } from '@/lib/reports/months';
+import { budgetProgress, type BudgetProgress } from '@/lib/reports/budgets';
 import type { ListEntriesParams, Repository } from './repository';
 import type {
+  Budget,
   Category,
   CategoryKind,
   CategoryLevel,
@@ -272,6 +274,37 @@ export function useItems(
       return repo.getItems(subcategoryId, includeArchived);
     },
     [repo, subcategoryId, includeArchived],
+    undefined
+  );
+}
+
+export function useBudgets(includeArchived = false): Budget[] | undefined {
+  const repo = useRepository();
+
+  return useLiveQuery(
+    async () => {
+      if (typeof window === 'undefined') return [];
+      return repo.getBudgets(includeArchived);
+    },
+    [repo, includeArchived],
+    undefined
+  );
+}
+
+/** Actual vs budget for one month ('YYYY-MM'), fullest budget first. */
+export function useBudgetProgress(month: string): BudgetProgress[] | undefined {
+  const repo = useRepository();
+
+  return useLiveQuery(
+    async () => {
+      if (typeof window === 'undefined') return [];
+      const [budgets, entries] = await Promise.all([
+        repo.getBudgets(),
+        repo.listEntries({ month, type: 'expense' }),
+      ]);
+      return budgetProgress(budgets, entries, month);
+    },
+    [repo, month],
     undefined
   );
 }

@@ -8,6 +8,7 @@ import { localISODate } from '../format';
 import { db as defaultDb, FamilyAccountsDB } from '../offline/db';
 import {
   roundMoney,
+  toBudget,
   toCategory,
   toEntry,
   toHousehold,
@@ -29,6 +30,7 @@ import {
   USER_MAMA_ID,
 } from './mock-seed';
 import type {
+  CreateBudgetInput,
   CreateCategoryInput,
   CreateEntryInput,
   CreateItemInput,
@@ -36,6 +38,7 @@ import type {
   CreateWalletInput,
   ListEntriesParams,
   Repository,
+  UpdateBudgetInput,
   UpdateCategoryInput,
   UpdateEntryInput,
   UpdateItemInput,
@@ -44,6 +47,8 @@ import type {
 } from './repository';
 import type {
   AccountRow,
+  Budget,
+  BudgetRow,
   Category,
   CategoryKind,
   CategoryLevel,
@@ -119,6 +124,7 @@ export class MockRepository implements Repository {
         ) {
           await this.renameArabicSampleMembers();
           await this.backfillMissingCreators();
+          await this.seedSampleBudgets();
           return;
         }
 
@@ -186,6 +192,38 @@ export class MockRepository implements Repository {
         await this.db.meta.put({ key: 'lastSyncedAt', value: new Date().toISOString() });
       }
     );
+    await this.db.budgets.clear();
+    await this.db.meta.delete('budgetsSeeded');
+    await this.seedSampleBudgets();
+  }
+
+  // Starter budgets (once per phone, so existing practice entries are kept): the three biggest expense
+  // categories, each around its usual month (average of the last 3 full months) times a random
+  // 0.8–1.3, rounded to 100. Every phone gets its own amounts, so some start close to the limit.
+  // They are ordinary budgets: the family can change or remove them in Settings → Budgets.
+  private async seedSampleBudgets(): Promise<void> {
+    if ((await this.db.meta.get('budgetsSeeded'))?.value === true) return;
+    const now = new Date();
+    const thisMonth = localISODate(now).slice(0, 7);
+    const months = new Set<string>();
+    for (let i = 1; i <= 3; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.add(localISODate(d).slice(0, 7));
+    }
+    const rows = await this.listEntries({ type: 'expense' });
+    const byCategory = new Map<string, number>();
+    for (const e of rows) {
+      const m = e.occurredOn.slice(0, 7);
+      if (!months.has(m) || m === thisMonth || !e.categoryId) continue;
+      if (e.itemId === ITEM_EXPENSE_BALANCE_CORRECTION_ID) continue;
+      byCategory.set(e.categoryId, (byCategory.get(e.categoryId) ?? 0) + e.amount);
+    }
+    const starter = (monthly: number) => Math.max(300, Math.round((monthly * (0.8 + Math.random() * 0.5)) / 100) * 100);
+    const top = [...byCategory.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+    for (const [categoryId, total] of top) {
+      await this.addBudget({ categoryId, amount: starter(total / months.size), isStarter: true });
+    }
+    await this.db.meta.put({ key: 'budgetsSeeded', value: true });
   }
 
   // Sample members were first seeded as ماما / بابا. Names are now English: rename them in place
@@ -463,6 +501,69 @@ export class MockRepository implements Repository {
   async archiveCategory(id: string, archive = true): Promise<void> {
     await this.ensureSeeded();
     await this.db.categories.update(id, {
+      is_archived: archive,
+      updated_at: new Date().toISOString(),
+    });
+  }
+
+  // ---------- Budgets ----------
+
+  async getBudgets(includeArchived = false): Promise<Budget[]> {
+    let rows = await this.db.budgets.toArray();
+    if (!includeArchived) {
+      rows = rows.filter((b) => !b.is_archived);
+    }
+    rows.sort((a, b) => a.created_at.localeCompare(b.created_at));
+    return rows.map(toBudget);
+  }
+
+  async addBudget(input: CreateBudgetInput): Promise<Budget> {
+    const subcategoryId = input.subcategoryId ?? null;
+    const amount = roundMoney(input.amount);
+    if (!(amount > 0)) {
+      throw new Error('A budget must be more than 0');
+    }
+    // One active budget per category/group: setting it again updates the amount
+    const existing = (await this.db.budgets.where('category_id').equals(input.categoryId).toArray()).find(
+      (b) => !b.is_archived && b.subcategory_id === subcategoryId
+    );
+    if (existing) {
+      return this.updateBudget(existing.id, { amount });
+    }
+
+    const now = new Date().toISOString();
+    const row: BudgetRow = {
+      id: input.id ?? crypto.randomUUID(),
+      household_id: input.householdId ?? DEMO_HOUSEHOLD_ID,
+      category_id: input.categoryId,
+      subcategory_id: subcategoryId,
+      amount,
+      is_starter: input.isStarter ?? false,
+      is_archived: false,
+      created_at: now,
+      updated_at: now,
+    };
+    await this.db.budgets.put(row);
+    return toBudget(row);
+  }
+
+  async updateBudget(id: string, updates: UpdateBudgetInput): Promise<Budget> {
+    const row = await this.db.budgets.get(id);
+    if (!row) {
+      throw new Error(`Budget not found: ${id}`);
+    }
+    const amount = updates.amount !== undefined ? roundMoney(updates.amount) : row.amount;
+    if (!(amount > 0)) {
+      throw new Error('A budget must be more than 0');
+    }
+    // Once the family changes a starter budget, it is theirs
+    const updatedRow: BudgetRow = { ...row, amount, is_starter: false, updated_at: new Date().toISOString() };
+    await this.db.budgets.put(updatedRow);
+    return toBudget(updatedRow);
+  }
+
+  async archiveBudget(id: string, archive = true): Promise<void> {
+    await this.db.budgets.update(id, {
       is_archived: archive,
       updated_at: new Date().toISOString(),
     });
