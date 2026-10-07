@@ -21,8 +21,8 @@ Status legend: ⏳ assigned · 🔍 in review · ✅ merged
 | 6 | A4 | `/a4-history` — History, edit, soft delete, Recently deleted | A3b | `step/a4-history` | ✅ |
 | 7 | A6 | `/a6-settings-categories` — Settings, category & wallet managers, language | A2b | `step/a6-settings` | ✅ |
 | 8 | A5e screens | `/a5c-report-library` part A5e: 6 Planning report screens on the merged logic (`src/lib/reports/planning.ts`), same pattern as A5c | A5c ✅ | `step/a5e-planning-reports` | ✅ |
-| 9 | A8a | `/a8-polish-pass` on what is merged: Login, Home, Add sheet, History, Settings | **A3d, A3c (Claude)** | `step/a8a-polish` | ⏳ |
-| 8 | A8b | `/a8-polish-pass` on Reports (Overview + Breakdown) and a last full sweep | **A5, A5b** | `step/a8b-polish` |  |
+| 9 | A8a | `/a8-polish-pass` on what is merged: Login, Home, Add sheet, History, Settings | **A3d, A3c (Claude)** | `step/a8a-polish` | ✅ |
+| 8 | A8b | `/a8-polish-pass` on Reports (Overview + Breakdown) and a last full sweep | **A5, A5b** | `step/a8b-polish` | ⏳ |
 
 ### AG-2 queue · account-two, folder `C:\Dev\family-accounts\ag2`, port 3002
 
@@ -134,3 +134,4 @@ savings goals. Not planned: AI, notifications, bank feeds, investments, multi-cu
 | 2026-10-07 | Plan | Claude: offline saving dropped at the user's request — everyone using the app is online. B3 is now online-only writes + a Dexie read cache (no outbox, sync queue or "Needs attention"); P1, P2 and the B3 definition of done simplified; PLAN, AGENTS, rule 03, DESIGN, README and the B3/B4/B6 workflows updated |
 | 2026-10-07 | A5e | AG-1: 6 Planning report screens + reports_planning flow. Merged with orchestrator fixes: 11px label -> caption token; sample entries never stamped after now (bank flow failed at 375x667 on production: a seeded noon entry sorted above a just-saved one), seed v3 so phones reseed. Gate on local main: ui:check 42/42, ui:flows 46/46, build ok, 139 tests. AG-1 -> A8a, AG-2 -> A5d while I review |
 | 2026-10-07 | A2c UI | AG-2: Our money sheet, Update balance, Add wallet, History wallet filter + flows. Merged with orchestrator fixes: flows conflict with A5e resolved (both kept), History wallet chip is one 48px button with a translated label, our_money flow uses Cash/كاش, cash opening 12,000 (sample Cash showed -450), seed v4. Gate on local main: ui:check 42/42, ui:flows 58/58, build ok, 139 tests. AG-2 -> A5d |
+| 2026-10-07 | A8a, #32, #35 | Claude: merged A8a polish (AG-1, #34), + New opens the full Settings category form (#32, Claude builder) and the early-month seed date fix (#35). Each checked on main + PR first (145 tests, typecheck, RTL) and confirmed on production: ui:check 24/24, ui:flows bank/income/expense/date/newcategory all ok. AG-1 -> A8b |
