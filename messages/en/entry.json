@@ -55,5 +55,6 @@
   "back": "Back",
   "addedBy": "Added by {name}",
   "changedBy": "last changed by {name}",
-  "swapWallets": "Swap direction"
+  "swapWallets": "Swap direction",
+  "chooseCategoryFirst": "Choose a category"
 }
