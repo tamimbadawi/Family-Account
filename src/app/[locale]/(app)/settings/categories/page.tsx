@@ -38,6 +38,7 @@ import { Switch } from '@/components/ui/switch';
 export default function CategoryManagerPage() {
   const locale = useLocale();
   const t = useTranslations('settings');
+  const tEntry = useTranslations('entry');
   const repo = useRepository();
 
   const [kind, setKind] = React.useState<CategoryKind>('expense');
@@ -299,7 +300,7 @@ export default function CategoryManagerPage() {
                   : 'text-ink-muted hover:text-ink'
               }`}
             >
-              {t('walletCash') === 'كاش' ? 'مصروفات' : 'Money out'}
+              {tEntry('expense')}
             </button>
             <button
               type="button"
@@ -310,7 +311,7 @@ export default function CategoryManagerPage() {
                   : 'text-ink-muted hover:text-ink'
               }`}
             >
-              {t('walletCash') === 'كاش' ? 'دخل' : 'Money in'}
+              {tEntry('income')}
             </button>
           </div>
 

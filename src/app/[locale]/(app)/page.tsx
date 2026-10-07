@@ -131,7 +131,7 @@ export default function HomePage() {
           <span className="text-caption text-ink-muted font-medium">
             {tHome('spentThisMonth')}
           </span>
-          <div className="mt-0.5 text-[32px] sm:text-hero font-bold tabular-nums text-expense leading-tight">
+          <div className="mt-0.5 text-display sm:text-hero font-bold tabular-nums text-expense leading-tight">
             {money(summary?.expense ?? 0, locale)}
           </div>
           <div className="mt-1.5 flex items-center gap-2 text-caption text-ink-muted font-medium">
