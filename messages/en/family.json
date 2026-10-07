@@ -31,5 +31,6 @@
     "owner_only": "Only the admin can do this",
     "cannot_remove_self": "You can't remove yourself",
     "failed": "That didn't work. Check your connection and try again."
-  }
+  },
+  "tryAgain": "Try again"
 }
