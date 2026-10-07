@@ -27,13 +27,11 @@ import type {
 } from '@/lib/data/types';
 import { pickName } from '@/lib/format';
 import { CategoryIcon } from '@/components/ui/category-icon';
-import { ColorIconPicker } from '@/components/settings/ColorIconPicker';
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from '@/components/ui/drawer';
+  CategoryFormDrawer,
+  type CategoryFormInitial,
+  type CategoryFormValues,
+} from '@/components/settings/CategoryFormDrawer';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 
@@ -56,11 +54,8 @@ export default function CategoryManagerPage() {
   const [editingSubcategory, setEditingSubcategory] = React.useState<Subcategory | null>(null);
   const [editingItem, setEditingItem] = React.useState<Item | null>(null);
 
-  // Form fields
-  const [formNameAr, setFormNameAr] = React.useState('');
-  const [formNameEn, setFormNameEn] = React.useState('');
-  const [formColor, setFormColor] = React.useState('#0F766E');
-  const [formIcon, setFormIcon] = React.useState('shopping-basket');
+  // Starting values for the form
+  const [formInitial, setFormInitial] = React.useState<CategoryFormInitial>({});
 
   // Queries
   const categories = useCategories(kind, showArchived);
@@ -77,101 +72,89 @@ export default function CategoryManagerPage() {
   // Open Edit Modals
   const openAddCategory = () => {
     setEditingCategory(null);
-    setFormNameAr('');
-    setFormNameEn('');
-    setFormColor('#0F766E');
-    setFormIcon('tag');
+    setFormInitial({});
     setEditLevel('category');
   };
 
   const openEditCategory = (cat: Category, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingCategory(cat);
-    setFormNameAr(cat.nameAr || '');
-    setFormNameEn(cat.nameEn || '');
-    setFormColor(cat.color || '#0F766E');
-    setFormIcon(cat.icon || 'tag');
+    setFormInitial(cat);
     setEditLevel('category');
   };
 
   const openAddSubcategory = () => {
     setEditingSubcategory(null);
-    setFormNameAr('');
-    setFormNameEn('');
+    setFormInitial({});
     setEditLevel('subcategory');
   };
 
   const openEditSubcategory = (sub: Subcategory, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingSubcategory(sub);
-    setFormNameAr(sub.nameAr || '');
-    setFormNameEn(sub.nameEn || '');
+    setFormInitial(sub);
     setEditLevel('subcategory');
   };
 
   const openAddItem = () => {
     setEditingItem(null);
-    setFormNameAr('');
-    setFormNameEn('');
+    setFormInitial({});
     setEditLevel('item');
   };
 
   const openEditItem = (item: Item, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingItem(item);
-    setFormNameAr(item.nameAr || '');
-    setFormNameEn(item.nameEn || '');
+    setFormInitial(item);
     setEditLevel('item');
   };
 
   // Save Handlers
-  const handleSave = async () => {
-    if (!formNameAr.trim() && !formNameEn.trim()) return;
-
+  const handleSave = async ({ nameAr, nameEn, color, icon }: CategoryFormValues) => {
     try {
       if (editLevel === 'category') {
         if (editingCategory) {
           await repo.updateCategory(editingCategory.id, {
-            nameAr: formNameAr.trim() || null,
-            nameEn: formNameEn.trim() || null,
-            color: formColor,
-            icon: formIcon,
+            nameAr,
+            nameEn,
+            color,
+            icon,
           });
         } else {
           await repo.addCategory({
             kind,
-            nameAr: formNameAr.trim() || null,
-            nameEn: formNameEn.trim() || null,
-            color: formColor,
-            icon: formIcon,
+            nameAr,
+            nameEn,
+            color,
+            icon,
           });
         }
       } else if (editLevel === 'subcategory') {
         if (!selectedCategory) return;
         if (editingSubcategory) {
           await repo.updateSubcategory(editingSubcategory.id, {
-            nameAr: formNameAr.trim() || null,
-            nameEn: formNameEn.trim() || null,
+            nameAr,
+            nameEn,
           });
         } else {
           await repo.addSubcategory({
             categoryId: selectedCategory.id,
-            nameAr: formNameAr.trim() || null,
-            nameEn: formNameEn.trim() || null,
+            nameAr,
+            nameEn,
           });
         }
       } else if (editLevel === 'item') {
         if (!selectedSubcategory) return;
         if (editingItem) {
           await repo.updateItem(editingItem.id, {
-            nameAr: formNameAr.trim() || null,
-            nameEn: formNameEn.trim() || null,
+            nameAr,
+            nameEn,
           });
         } else {
           await repo.addItem({
             subcategoryId: selectedSubcategory.id,
-            nameAr: formNameAr.trim() || null,
-            nameEn: formNameEn.trim() || null,
+            nameAr,
+            nameEn,
           });
         }
       }
@@ -642,124 +625,64 @@ export default function CategoryManagerPage() {
       </div>
 
       {/* Drawer for Add/Edit */}
-      <Drawer open={editLevel !== null} onOpenChange={(open) => !open && setEditLevel(null)}>
-        <DrawerContent className="max-h-[92dvh] px-5 pb-8 overflow-y-auto">
-          <DrawerHeader className="px-0 pt-4 pb-2">
-            <DrawerTitle className="text-title font-bold text-ink text-start">
-              {editLevel === 'category'
-                ? editingCategory
-                  ? t('editCategory')
-                  : t('addCategory')
-                : editLevel === 'subcategory'
-                ? editingSubcategory
-                  ? t('editSubcategory')
-                  : t('addSubcategory')
-                : editingItem
-                ? t('editItem')
-                : t('addItem')}
-            </DrawerTitle>
-          </DrawerHeader>
-
-          <div className="space-y-4 pt-2">
-            {/* Arabic Name */}
-            <div className="space-y-1">
-              <label className="text-caption font-semibold text-ink-muted">
-                {t('nameAr')}
-              </label>
-              <input
-                type="text"
-                dir="rtl"
-                value={formNameAr}
-                onChange={(e) => setFormNameAr(e.target.value)}
-                placeholder="مثال: بقالة"
-                className="w-full h-12 px-4 rounded-xl bg-surface-2 border border-line/50 text-body text-ink focus:outline-none focus:ring-2 focus:ring-accent"
-              />
-            </div>
-
-            {/* English Name */}
-            <div className="space-y-1">
-              <label className="text-caption font-semibold text-ink-muted">
-                {t('nameEn')}
-              </label>
-              <input
-                type="text"
-                dir="ltr"
-                value={formNameEn}
-                onChange={(e) => setFormNameEn(e.target.value)}
-                placeholder="e.g. Groceries"
-                className="w-full h-12 px-4 rounded-xl bg-surface-2 border border-line/50 text-body text-ink focus:outline-none focus:ring-2 focus:ring-accent"
-              />
-            </div>
-
-            {/* Color & Icon picker for categories only */}
-            {editLevel === 'category' && (
-              <ColorIconPicker
-                selectedColor={formColor}
-                selectedIcon={formIcon}
-                onSelectColor={setFormColor}
-                onSelectIcon={setFormIcon}
-              />
-            )}
-
-            {/* Archive section for existing entries */}
-            {((editLevel === 'category' && editingCategory) ||
-              (editLevel === 'subcategory' && editingSubcategory) ||
-              (editLevel === 'item' && editingItem)) && (
-              <div className="pt-2 border-t border-line/40 space-y-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const target =
-                      editLevel === 'category'
-                        ? editingCategory!
-                        : editLevel === 'subcategory'
-                        ? editingSubcategory!
-                        : editingItem!;
-                    handleArchiveToggle(target, editLevel!);
-                  }}
-                  className="w-full flex items-center justify-between p-3.5 rounded-xl bg-surface-2 text-ink hover:bg-surface-2/80 transition-colors"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Archive className="size-5 text-ink-muted" />
-                    <span className="text-body font-semibold">
-                      {(editLevel === 'category'
-                        ? editingCategory
-                        : editLevel === 'subcategory'
-                        ? editingSubcategory
-                        : editingItem
-                      )?.isArchived
-                        ? t('unarchive')
-                        : t('archive')}
-                    </span>
-                  </div>
-                </button>
-                <p className="text-caption text-ink-muted leading-tight px-1">
-                  {t('archiveHint')}
-                </p>
+      <CategoryFormDrawer
+        open={editLevel !== null}
+        onOpenChange={(open) => !open && setEditLevel(null)}
+        level={editLevel ?? 'category'}
+        title={
+          editLevel === 'category'
+            ? editingCategory
+              ? t('editCategory')
+              : t('addCategory')
+            : editLevel === 'subcategory'
+            ? editingSubcategory
+              ? t('editSubcategory')
+              : t('addSubcategory')
+            : editingItem
+            ? t('editItem')
+            : t('addItem')
+        }
+        initial={formInitial}
+        onSave={handleSave}
+      >
+        {/* Archive section for existing entries */}
+        {((editLevel === 'category' && editingCategory) ||
+          (editLevel === 'subcategory' && editingSubcategory) ||
+          (editLevel === 'item' && editingItem)) && (
+          <div className="pt-2 border-t border-line/40 space-y-2">
+            <button
+              type="button"
+              onClick={() => {
+                const target =
+                  editLevel === 'category'
+                    ? editingCategory!
+                    : editLevel === 'subcategory'
+                    ? editingSubcategory!
+                    : editingItem!;
+                handleArchiveToggle(target, editLevel!);
+              }}
+              className="w-full flex items-center justify-between p-3.5 rounded-xl bg-surface-2 text-ink hover:bg-surface-2/80 transition-colors"
+            >
+              <div className="flex items-center gap-2.5">
+                <Archive className="size-5 text-ink-muted" />
+                <span className="text-body font-semibold">
+                  {(editLevel === 'category'
+                    ? editingCategory
+                    : editLevel === 'subcategory'
+                    ? editingSubcategory
+                    : editingItem
+                  )?.isArchived
+                    ? t('unarchive')
+                    : t('archive')}
+                </span>
               </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="pt-4 flex gap-3">
-              <button
-                type="button"
-                onClick={() => setEditLevel(null)}
-                className="flex-1 h-13 rounded-2xl bg-surface-2 text-ink font-semibold active:scale-95 transition-all cursor-pointer"
-              >
-                {t('cancel')}
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={!formNameAr.trim() && !formNameEn.trim()}
-                className="flex-1 h-13 rounded-2xl bg-accent text-accent-ink font-semibold shadow-sm active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-              >
-                {t('save')}
-              </button>
-            </div>
+            </button>
+            <p className="text-caption text-ink-muted leading-tight px-1">
+              {t('archiveHint')}
+            </p>
           </div>
-        </DrawerContent>
-      </Drawer>
+        )}
+      </CategoryFormDrawer>
     </div>
   );
 }

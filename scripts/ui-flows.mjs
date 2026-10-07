@@ -121,10 +121,13 @@ const FLOWS = {
       await page.setViewportSize(keyboard);
       await sleep(400);
     }
-    const input = page.getByRole('textbox').first();
-    await assertUsable(page, input, 'new group name field');
+    // Same form as Settings → Categories: Arabic + English names
+    const form = page.getByRole('dialog').last();
+    await assertUsable(page, form.getByRole('textbox', { name: 'Name in Arabic' }), 'new group Arabic name field');
+    const input = form.getByRole('textbox', { name: 'Name in English' });
+    await assertUsable(page, input, 'new group English name field');
     await input.fill('Bakery test');
-    const save = page.getByRole('button', { name: /^(Save|Saved)$/ }).first();
+    const save = form.getByRole('button', { name: /^(Save|Saved)$/ });
     await assertUsable(page, save, 'Save for the new group');
     const label = (await save.innerText()).trim();
     if (label !== 'Save') throw new Error(`new-group button label is "${label}" (should be "Save")`);
@@ -132,6 +135,25 @@ const FLOWS = {
     await save.click();
     await sleep(800);
     await assertUsable(page, page.getByText('Bakery test').first(), 'the new group after saving');
+  },
+  async newcategory(page) {
+    await openSheet(page);
+    // "+ New" is the last chip of the category row
+    await btn(page, '+ New').scrollIntoViewIfNeeded();
+    await tap(page, '+ New');
+    const form = page.getByRole('dialog').last();
+    await form.getByText('+ Add category').waitFor({ timeout: 5000 });
+    await form.getByRole('textbox', { name: 'Name in Arabic' }).fill('تجربة');
+    await form.getByRole('textbox', { name: 'Name in English' }).fill('Pets test');
+    // Colour and icon pickers, as in Settings
+    if (!(await form.getByText('Color', { exact: true }).isVisible())) throw new Error('no colour picker in new-category form');
+    if (!(await form.getByText('Icon', { exact: true }).isVisible())) throw new Error('no icon picker in new-category form');
+    const save = form.getByRole('button', { name: 'Save', exact: true });
+    await save.scrollIntoViewIfNeeded();
+    await save.click();
+    await sleep(800);
+    // Lands on the new category's groups, ready to add one
+    await assertUsable(page, btn(page, 'Pets test'), 'the new category after saving');
   },
   async photo(page) {
     await page.goto(BASE + '/en/history', { waitUntil: 'networkidle', timeout: 45000 });
