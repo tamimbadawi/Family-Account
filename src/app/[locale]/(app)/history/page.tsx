@@ -139,7 +139,7 @@ function HistoryContent() {
       </div>
 
       {/* Main content: list of day groups or empty / loading state */}
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-32 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {isLoading && (
           <div className="px-5 py-3 space-y-4">
             <div className="space-y-3 bg-surface p-4 rounded-card border border-line/40">
