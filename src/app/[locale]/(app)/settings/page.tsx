@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { useHouseholdMembers, useRepository } from '@/lib/data/provider';
 import { localISODate } from '@/lib/format';
+import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
 import { entriesToCsv } from '@/lib/reports/export';
 
 export default function SettingsPage() {
@@ -55,6 +56,15 @@ export default function SettingsPage() {
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const handleSignOut = async () => {
+    if (!isAuthConfigured()) {
+      toast.info(t('signOut'));
+      return;
+    }
+    await getSupabaseBrowserClient().auth.signOut();
+    router.replace('/login');
   };
 
   return (
@@ -169,7 +179,10 @@ export default function SettingsPage() {
 
       {/* Family Section */}
       <div className="bg-surface rounded-card border border-line/40 shadow-card">
-        <div className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 select-none">
+        <Link
+          href="/settings/family"
+          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+        >
           <div className="flex items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-member-1-soft text-member-1">
               <Users className="size-4.5" />
@@ -183,14 +196,15 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
-        </div>
+          <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
+        </Link>
       </div>
 
       {/* Sign out section */}
       <div className="bg-surface rounded-card border border-line/40 shadow-card">
         <button
           type="button"
-          onClick={() => toast.info(t('signOut'))}
+          onClick={handleSignOut}
           className="w-full flex min-h-[48px] items-center justify-between px-3.5 py-2.5 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
         >
           <div className="flex items-center gap-3">

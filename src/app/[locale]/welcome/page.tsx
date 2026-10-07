@@ -2,17 +2,20 @@
 
 import * as React from 'react';
 import Image from 'next/image';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { db } from '@/lib/offline/db';
 import { DEMO_HOUSEHOLD_ID, USER_MAMA_ID } from '@/lib/data/mock-seed';
 import { isEnglishName } from '@/lib/members';
+import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
+import { emailToUsername } from '@/lib/auth/username';
 
 export default function WelcomePage() {
   const tAuth = useTranslations('auth');
   const router = useRouter();
+  const locale = useLocale();
 
   const [householdName, setHouseholdName] = React.useState('بيت العيلة');
   const [yourName, setYourName] = React.useState('Mama');
@@ -23,6 +26,24 @@ export default function WelcomePage() {
     e.preventDefault();
     if (saving || !nameIsValid) return;
     setSaving(true);
+
+    if (isAuthConfigured()) {
+      // Real sign-in: the first person to sign in creates the household and becomes its owner (admin)
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { error } = await supabase.rpc('create_household', {
+          p_name: householdName.trim() || 'عائلتنا',
+          p_display_name: yourName.trim(),
+          p_locale: locale,
+        });
+        if (error) throw error;
+        router.replace('/');
+      } catch (err) {
+        console.error('create_household failed:', err);
+        setSaving(false);
+      }
+      return;
+    }
 
     try {
       // Store names in the local database
@@ -38,6 +59,17 @@ export default function WelcomePage() {
       router.push('/');
     }
   };
+
+  // Signed in for real: suggest the person's own username as their name (e.g. "Injy")
+  React.useEffect(() => {
+    if (!isAuthConfigured()) return;
+    getSupabaseBrowserClient()
+      .auth.getUser()
+      .then(({ data }) => {
+        const u = emailToUsername(data.user?.email);
+        if (u) setYourName(u.charAt(0).toUpperCase() + u.slice(1));
+      });
+  }, []);
 
   return (
     <div className="mx-auto flex h-dvh max-w-[520px] flex-col justify-between overflow-hidden bg-canvas px-6 pt-[max(env(safe-area-inset-top,0px),1.5rem)] pb-[max(env(safe-area-inset-bottom,0px),1.5rem)] text-ink select-none">
