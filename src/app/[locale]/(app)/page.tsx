@@ -16,6 +16,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CategoryIcon } from '@/components/ui/category-icon';
+import { OurMoneyRow } from '@/components/wallets/OurMoneySheet';
 import { money, pickName } from '@/lib/format';
 
 export default function HomePage() {
@@ -29,12 +30,12 @@ export default function HomePage() {
     return new Date().toISOString().slice(0, 7);
   }, []);
 
-  // Responsive limit: at most 3 entries, 2 on 700-749px, 1 on <700px (iPhone SE 375x667)
+  // Responsive limit: at most 3 entries, 2 on 701-749px, 1 on <=700px (iPhone SE 375x667, 412x700)
   const [maxRows, setMaxRows] = React.useState(1);
 
   React.useEffect(() => {
     const update = () => {
-      setMaxRows(window.innerHeight < 700 ? 1 : (window.innerHeight < 750 ? 2 : 3));
+      setMaxRows(window.innerHeight <= 700 ? 1 : (window.innerHeight < 780 ? 2 : 3));
     };
     update();
     window.addEventListener('resize', update);
@@ -82,6 +83,9 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* Our money skeleton */}
+        <Skeleton className="h-14 rounded-card" />
+
         {/* Recent entries Skeleton */}
         <div className="space-y-2 rounded-card bg-surface p-4 shadow-card">
           <div className="flex items-center justify-between">
@@ -117,7 +121,7 @@ export default function HomePage() {
   const displayedCategories = (topCategories ?? []).slice(0, 3);
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-6 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-3 select-none">
+    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-3 pt-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-2 select-none">
       {/* 1. Greeting */}
       <div>
         <span className="text-body font-medium text-ink-muted">
@@ -127,14 +131,14 @@ export default function HomePage() {
 
       {/* 2. Hero Card */}
       <Link href="/reports" className="block active:scale-[0.99] transition-transform">
-        <Card className="bg-surface p-4 sm:p-5 shadow-card hover:shadow-md transition-shadow">
+        <Card className="bg-surface p-3.5 sm:p-5 shadow-card hover:shadow-md transition-shadow">
           <span className="text-caption text-ink-muted font-medium">
             {tHome('spentThisMonth')}
           </span>
           <div className="mt-0.5 text-[32px] sm:text-hero font-bold tabular-nums text-expense leading-tight">
             {money(summary?.expense ?? 0, locale)}
           </div>
-          <div className="mt-1.5 flex items-center gap-2 text-caption text-ink-muted font-medium">
+          <div className="mt-1 flex items-center gap-2 text-caption text-ink-muted font-medium">
             <span>
               {tHome('incomeShort', { amount: money(summary?.income ?? 0, locale) })}
             </span>
@@ -148,7 +152,7 @@ export default function HomePage() {
 
       {/* 3. Top categories this month */}
       {displayedCategories.length > 0 && (
-        <section className="space-y-1.5">
+        <section className="space-y-1">
           <h2 className="text-body font-semibold text-ink">
             {tHome('topCategories')}
           </h2>
@@ -163,7 +167,7 @@ export default function HomePage() {
               return (
                 <div
                   key={cat.id}
-                  className="flex flex-col items-center justify-center gap-1 rounded-2xl bg-surface p-2 text-center shadow-card select-none"
+                  className="flex flex-col items-center justify-center gap-1 rounded-2xl bg-surface py-1.5 px-2 text-center shadow-card select-none"
                 >
                   <div
                     style={
@@ -174,9 +178,9 @@ export default function HomePage() {
                           }
                         : undefined
                     }
-                    className="flex size-9 items-center justify-center rounded-full bg-accent-soft text-accent"
+                    className="flex size-8 items-center justify-center rounded-full bg-accent-soft text-accent"
                   >
-                    <CategoryIcon name={cat.icon} className="size-4.5" />
+                    <CategoryIcon name={cat.icon} className="size-4" />
                   </div>
                   <span className="truncate w-full text-caption font-medium text-ink">
                     {name}
@@ -191,8 +195,11 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* 4. Recent entries */}
-      <section className="space-y-1.5">
+      {/* 4. Our money row */}
+      <OurMoneyRow />
+
+      {/* 5. Recent entries */}
+      <section className="space-y-1">
         <div className="flex items-center justify-between">
           <h2 className="text-body font-semibold text-ink">
             {tHome('recent')}
