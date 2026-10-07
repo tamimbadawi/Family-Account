@@ -8,6 +8,7 @@ import { useRouter } from '@/i18n/navigation';
 import { useHasSampleData, useRepository } from '@/lib/data/provider';
 import { useFamily, useIsFamilyAdmin } from '@/lib/auth/use-family-members';
 import { isAuthConfigured } from '@/lib/supabase/client';
+import { isOfflineError } from '@/lib/data/errors';
 import { Button } from '@/components/ui/button';
 import {
   Drawer,
@@ -41,11 +42,15 @@ export function SampleDataBadge({ className = '' }: { className?: string }) {
       router.replace('/');
       toast.success(t('cleared'), {
         duration: 6000,
-        action: { label: tCommon('undo'), onClick: () => void undo() },
+        action: {
+          label: tCommon('undo'),
+          onClick: () =>
+            void undo().catch((err) => toast.error(isOfflineError(err) ? tCommon('noConnection') : t('failed'))),
+        },
       });
     } catch (err) {
       console.error(err);
-      toast.error(t('failed'));
+      toast.error(isOfflineError(err) ? tCommon('noConnection') : t('failed'));
     } finally {
       setBusy(false);
     }
@@ -80,7 +85,9 @@ export function SampleDataBadge({ className = '' }: { className?: string }) {
               ? isAuthConfigured() && adminName
                 ? t('memberBody', { name: adminName })
                 : t('memberBodyPlain')
-              : t('adminBody')}
+              : process.env.NEXT_PUBLIC_DATA_MODE === 'live'
+                ? t('adminBodyLive')
+                : t('adminBody')}
           </p>
 
           <div className="space-y-2">

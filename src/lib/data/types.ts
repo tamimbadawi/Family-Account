@@ -210,6 +210,9 @@ export interface HouseholdRow {
   name: string;
   currency: string;
   created_at: string;
+  /** Live mode: the family still has its starter sample entries (0014). */
+  has_sample_data?: boolean;
+  sample_cleared_at?: string | null;
 }
 
 export interface HouseholdMemberRow {
@@ -285,6 +288,8 @@ export interface TransactionRow {
   item_id: string | null;
   note: string | null;
   photo_path?: string | null;
+  /** Live mode: one of the starter sample entries (0014). */
+  is_sample?: boolean;
   created_by: string | null;
   updated_by: string | null;
   created_at: string;
