@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { useHouseholdMembers } from '@/lib/data/provider';
+import { useEntryAuthor, useFamily } from '@/lib/auth/use-family-members';
 import { memberInitial, memberSlot } from '@/lib/members';
 import { cn } from '@/lib/utils';
 
@@ -34,14 +34,18 @@ export function MemberBadge({
   className,
 }: MemberBadgeProps) {
   const t = useTranslations('entry');
-  const members = useHouseholdMembers();
-  if (members.length < 2 || !createdBy) return null;
+  const members = useFamily();
+  const authorOf = useEntryAuthor();
+  const author = authorOf(createdBy);
+  if (members.length < 2 || !createdBy || !author) return null;
 
-  const slot = memberSlot(createdBy, members);
-  const name = createdByName ?? members.find((m) => m.userId === createdBy)?.displayName ?? '';
-  const changedBySomeoneElse = !!updatedBy && updatedBy !== createdBy && !!updatedByName;
+  const slot = memberSlot(author.userId, members);
+  const name = author.displayName || createdByName || '';
+  const editor = updatedBy ? authorOf(updatedBy) : null;
+  const editorName = editor?.displayName ?? updatedByName ?? '';
+  const changedBySomeoneElse = !!editor && editor.userId !== author.userId && !!editorName;
   const label = changedBySomeoneElse
-    ? `${t('addedBy', { name })} · ${t('changedBy', { name: updatedByName })}`
+    ? `${t('addedBy', { name })} · ${t('changedBy', { name: editorName })}`
     : t('addedBy', { name });
 
   return (

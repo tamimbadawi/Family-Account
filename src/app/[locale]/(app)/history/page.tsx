@@ -17,7 +17,7 @@ import { PeriodSwitcher } from '@/components/history/PeriodSwitcher';
 import { rangeOf, toISO, type Period } from '@/lib/history/period';
 import { DayGroup } from '@/components/history/DayGroup';
 import { TypeMenu } from '@/components/history/TypeMenu';
-import { useFamilyMembers } from '@/lib/auth/use-family-members';
+import { useEntryAuthor, useFamilyMembers } from '@/lib/auth/use-family-members';
 import { FilterSheet } from '@/components/history/FilterSheet';
 import { ItemHistoryCard } from '@/components/history/ItemHistoryCard';
 import {
@@ -56,7 +56,8 @@ function HistoryContent() {
     setAnchor(a);
   };
 
-  const entries = byMember(useEntries(toListParams(filters, range)), filters.memberId);
+  const authorOf = useEntryAuthor();
+  const entries = byMember(useEntries(toListParams(filters, range)), filters.memberId, authorOf);
 
   // Names for the active-filter chips
   const wallets = useWallets(true);
