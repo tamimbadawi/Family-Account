@@ -12,8 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useHouseholdMembers } from '@/lib/data/provider';
 import { isAuthConfigured } from '@/lib/supabase/client';
-import { familyAdmin, FamilyAdminError, type FamilyList, type FamilyMember } from '@/lib/auth/family-admin';
-import { normalizeUsername } from '@/lib/auth/username';
+import { familyAdmin, type FamilyList, type FamilyMember } from '@/lib/auth/family-admin';
+import { isEmail, normalizeEmail } from '@/lib/auth/email';
 import { isEnglishName } from '@/lib/members';
 
 type Sheet =
@@ -41,6 +41,7 @@ export default function FamilyPage() {
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [name, setName] = React.useState('');
+  const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
 
   const load = React.useCallback(async () => {
@@ -72,6 +73,7 @@ export default function FamilyPage() {
   const open = (next: Sheet) => {
     setError(null);
     setName('');
+    setEmail('');
     setPassword('');
     setSheet(next);
   };
@@ -86,8 +88,7 @@ export default function FamilyPage() {
       await load();
     } catch (err) {
       const code = err instanceof Error ? err.message : 'failed';
-      const name = err instanceof FamilyAdminError ? (err.details.name ?? '') : '';
-      setError(t.has(`errors.${code}`) ? t(`errors.${code}`, { name }) : t('errors.failed'));
+      setError(t.has(`errors.${code}`) ? t(`errors.${code}`) : t('errors.failed'));
     } finally {
       setBusy(false);
     }
@@ -96,10 +97,11 @@ export default function FamilyPage() {
   const submit = () => {
     if (!sheet || busy) return;
     if (sheet.kind === 'add') {
-      // The name is also what they type to sign in
-      if (!isEnglishName(name) || normalizeUsername(name).length < 2) return setError(t('errors.bad_name'));
+      // The name is what the app shows; the email is only what they sign in with
+      if (!isEnglishName(name)) return setError(t('errors.bad_name'));
+      if (!isEmail(email)) return setError(t('errors.bad_email'));
       void run(
-        () => familyAdmin({ action: 'add_member', username: normalizeUsername(name), displayName: name.trim(), password }),
+        () => familyAdmin({ action: 'add_member', email: normalizeEmail(email), displayName: name.trim(), password }),
         t('added', { name: name.trim() })
       );
     } else if (sheet.kind === 'reset') {
@@ -113,7 +115,7 @@ export default function FamilyPage() {
 
   const members: FamilyMember[] = live
     ? (list?.members ?? [])
-    : sampleMembers.map((m) => ({ userId: m.userId, displayName: m.displayName, role: m.role, username: '' }));
+    : sampleMembers.map((m) => ({ userId: m.userId, displayName: m.displayName, role: m.role, email: '' }));
   const isOwner = live && Boolean(list?.isOwner);
 
   return (
@@ -163,6 +165,7 @@ export default function FamilyPage() {
                     </div>
                     <div className="truncate text-caption text-ink-muted">
                       {m.role === 'owner' ? t('admin') : t('member')}
+                      {m.email && <span dir="ltr"> · {m.email}</span>}
                     </div>
                   </div>
                   {isOwner && m.userId !== list?.me && (
@@ -222,8 +225,27 @@ export default function FamilyPage() {
                     placeholder={t('namePlaceholder')}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    dir="ltr"
+                    lang="en"
+                    autoCapitalize="words"
                     className="h-14 bg-surface-2 text-body"
                   />
+                  <p className="text-caption text-ink-muted">{t('nameHint')}</p>
+                  <Input
+                    type="email"
+                    inputMode="email"
+                    dir="ltr"
+                    aria-label={t('email')}
+                    placeholder={t('email')}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value.replace(/\s+/g, ''))}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    autoComplete="off"
+                    className="h-14 bg-surface-2 text-body"
+                  />
+                  <p className="text-caption text-ink-muted">{t('emailHint')}</p>
                 </>
               )}
               {(sheet?.kind === 'add' || sheet?.kind === 'reset') && (

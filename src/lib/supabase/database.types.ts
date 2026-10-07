@@ -19,6 +19,7 @@ export type Database = {
     Tables: {
       accounts: {
         Row: {
+          currency: string
           color: string | null
           created_at: string
           household_id: string
@@ -33,6 +34,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          currency?: string
           color?: string | null
           created_at?: string
           household_id: string
@@ -47,6 +49,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          currency?: string
           color?: string | null
           created_at?: string
           household_id?: string
@@ -172,18 +175,24 @@ export type Database = {
       }
       households: {
         Row: {
+          currencies: string[]
+          status: string
           created_at: string
           currency: string
           id: string
           name: string
         }
         Insert: {
+          currencies?: string[]
+          status?: string
           created_at?: string
           currency?: string
           id?: string
           name: string
         }
         Update: {
+          currencies?: string[]
+          status?: string
           created_at?: string
           currency?: string
           id?: string
@@ -281,6 +290,7 @@ export type Database = {
       }
       transactions: {
         Row: {
+          to_amount: number | null
           account_id: string
           amount: number
           created_at: string
@@ -298,6 +308,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          to_amount?: number | null
           account_id: string
           amount: number
           created_at?: string
@@ -315,6 +326,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          to_amount?: number | null
           account_id?: string
           amount?: number
           created_at?: string
@@ -380,6 +392,7 @@ export type Database = {
     Views: {
       v_account_balances: {
         Row: {
+          currency: string | null
           account_id: string | null
           balance: number | null
           color: string | null
@@ -402,6 +415,7 @@ export type Database = {
       }
       v_monthly_category_totals: {
         Row: {
+          currency: string | null
           category_color: string | null
           category_icon: string | null
           category_id: string | null
@@ -425,6 +439,7 @@ export type Database = {
       }
       v_monthly_summary: {
         Row: {
+          currency: string | null
           expense: number | null
           household_id: string | null
           income: number | null
@@ -443,6 +458,8 @@ export type Database = {
       }
       v_transactions: {
         Row: {
+          currency: string | null
+          to_amount: number | null
           account_id: string | null
           account_name_ar: string | null
           account_name_en: string | null
@@ -516,18 +533,43 @@ export type Database = {
       }
     }
     Functions: {
-      add_member: {
-        Args: { p_display_name: string; p_email: string }
-        Returns: undefined
-      }
       create_household: {
-        Args: { p_display_name: string; p_locale?: string; p_name: string }
+        Args: {
+          p_currencies?: string[]
+          p_display_name: string
+          p_locale?: string
+          p_name: string
+        }
         Returns: string
       }
       is_member: { Args: { hid: string }; Returns: boolean }
       keepalive: { Args: never; Returns: string }
+      operator_families: {
+        Args: never
+        Returns: {
+          admin_user_id: string
+          created_at: string
+          currencies: string[]
+          entries: number
+          household_id: string
+          last_entry_at: string
+          members: number
+          name: string
+          status: string
+          wallets: number
+        }[]
+      }
       seed_corrections: { Args: { hid: string }; Returns: undefined }
       seed_defaults: { Args: { hid: string }; Returns: undefined }
+      set_family_status: {
+        Args: { p_household_id: string; p_status: string }
+        Returns: undefined
+      }
+      set_household_currencies: {
+        Args: { p_currencies: string[] }
+        Returns: undefined
+      }
+      valid_currencies: { Args: { c: string[] }; Returns: boolean }
     }
     Enums: {
       account_type: "cash" | "bank" | "card" | "wallet"

@@ -266,6 +266,8 @@ grant  execute on function public.valid_currencies(text[]),
 revoke execute on function public.operator_families() from public, anon, authenticated;
 revoke execute on function public.set_family_status(uuid, text) from public, anon, authenticated;
 grant  execute on function public.operator_families(), public.set_family_status(uuid, text) to service_role;
+-- family-admin checks that the caller's family isn't suspended
+grant select on public.households to service_role;
 
 -- New columns are readable like the rest of their rows; members may not write currencies or status
 -- directly (households keeps only "update (name)" from 0001).

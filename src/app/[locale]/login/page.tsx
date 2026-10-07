@@ -9,14 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { InstallBanner } from '@/components/install/InstallBanner';
 import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
-import { usernameToEmail } from '@/lib/auth/username';
+import { normalizeEmail } from '@/lib/auth/email';
 import { routeAfterSignIn } from '@/lib/auth/after-sign-in';
 
 export default function LoginPage() {
   const tAuth = useTranslations('auth');
   const router = useRouter();
 
-  const [username, setUsername] = React.useState('');
+  const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false);
 
@@ -36,7 +36,7 @@ export default function LoginPage() {
     try {
       const supabase = getSupabaseBrowserClient();
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: usernameToEmail(username),
+        email: normalizeEmail(email),
         password,
       });
       if (signInError || !data.user) {
@@ -79,13 +79,15 @@ export default function LoginPage() {
       <form onSubmit={handleSubmit} className="w-full space-y-3.5 my-auto max-w-sm mx-auto">
         <div>
           <label className="mb-1.5 block text-caption font-medium text-ink-muted">
-            {tAuth('username')}
+            {tAuth('email')}
           </label>
           <Input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ''))}
-            placeholder={tAuth('username')}
+            type="email"
+            inputMode="email"
+            dir="ltr"
+            value={email}
+            onChange={(e) => setEmail(e.target.value.replace(/\s+/g, ''))}
+            placeholder={tAuth('emailPlaceholder')}
             autoCapitalize="none"
             autoCorrect="off"
             autoComplete="username"

@@ -2,12 +2,12 @@
   "title": "Family",
   "admin": "Admin",
   "member": "Member",
-  "ownerHint": "You are the admin. Add family members here with a name and a password; they sign in with them.",
+  "ownerHint": "You are the admin. Add each family member with their name, their email and a first password. They sign in with the email; everyone sees the name.",
   "memberHint": "Everyone who can use the app. Only the admin can add or remove people.",
   "addMember": "Add family member",
   "name": "Name",
-  "namePlaceholder": "Name (e.g. Mommy)",
-  "tempPasswordHint": "At least 6 letters or digits. They sign in with this name and password.",
+  "namePlaceholder": "Name (e.g. Mama)",
+  "tempPasswordHint": "At least 6 letters or digits. They choose their own password the first time they sign in.",
   "resetPassword": "Reset password",
   "makeAdmin": "Make admin",
   "remove": "Remove",
@@ -22,16 +22,20 @@
   "adminDone": "Admin changed",
   "loadFailed": "Couldn't load the family. Check your connection.",
   "errors": {
-    "username_taken": "{name} already signs in with this name. Choose another name.",
     "bad_name": "Write the name in English letters",
     "short_password": "Use at least 6 characters",
     "owner_only": "Only the admin can do this",
     "cannot_remove_self": "You can't remove yourself",
     "failed": "That didn't work. Check your connection and try again.",
-    "username_taken_removed": "This name belonged to someone who was removed. Choose another name.",
     "weak_password": "That password is too easy to guess. Try another one.",
-    "add_failed": "Couldn't add them. Check your connection and try again."
+    "add_failed": "Couldn't add them. Check your connection and try again.",
+    "email_taken": "This email already has a login. Use another email.",
+    "bad_email": "Check the email address",
+    "suspended": "This family is paused. Contact the person who runs the app."
   },
   "tryAgain": "Try again",
-  "password": "Password"
+  "password": "Password",
+  "email": "Email",
+  "nameHint": "In English letters. This is the name everyone sees in the app.",
+  "emailHint": "They sign in with this email. No email? Use yours with a tag, like you+mama@gmail.com."
 }
