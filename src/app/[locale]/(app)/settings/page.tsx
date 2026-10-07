@@ -7,6 +7,7 @@ import {
   Download,
   FolderTree,
   Globe,
+  KeyRound,
   LogOut,
   Trash2,
   Users,
@@ -199,6 +200,24 @@ export default function SettingsPage() {
           <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
         </Link>
       </div>
+
+      {/* Change password (only with real sign-in) */}
+      {isAuthConfigured() && (
+        <div className="bg-surface rounded-card border border-line/40 shadow-card">
+          <Link
+            href="/choose-password"
+            className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+                <KeyRound className="size-4.5" />
+              </div>
+              <span className="text-body font-semibold text-ink">{t('changePassword')}</span>
+            </div>
+            <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
+          </Link>
+        </div>
+      )}
 
       {/* Sign out section */}
       <div className="bg-surface rounded-card border border-line/40 shadow-card">

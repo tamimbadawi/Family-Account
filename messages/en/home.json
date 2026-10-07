@@ -7,5 +7,7 @@
   "topCategories": "Where most of it went",
   "recent": "Latest entries",
   "emptyTitle": "Log your first expense",
-  "emptyBody": "Add anything you spent today and we'll keep it tidy."
+  "emptyBody": "Add anything you spent today and we'll keep it tidy.",
+  "greetingMorningPlain": "Good morning",
+  "greetingEveningPlain": "Good evening"
 }

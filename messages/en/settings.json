@@ -45,5 +45,6 @@
   "saved": "Saved",
   "cancel": "Cancel",
   "subcategoriesCount": "{count} subcategories",
-  "itemsCount": "{count} items"
+  "itemsCount": "{count} items",
+  "changePassword": "Change password"
 }
