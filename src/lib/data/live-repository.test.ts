@@ -108,6 +108,19 @@ describe('LiveRepository saves', () => {
   });
 });
 
+describe('LiveRepository and sample data', () => {
+  it('never shows the "Sample data" chip and never clears real entries', async () => {
+    const db = new FamilyAccountsDB(`test-live-sample-${Math.random().toString(36).slice(2, 9)}`);
+    await db.meta.put({ key: 'householdId', value: HID });
+    const { client } = fakeClient(echo);
+    const repo = new LiveRepository(db, client);
+    await repo.addEntry({ type: 'transfer', amount: 5, occurredOn: '2026-10-07', accountId: 'a', toAccountId: 'b' });
+    expect(await repo.hasSampleData()).toBe(false);
+    await expect(repo.clearSampleData()).rejects.toThrow();
+    expect(await db.transactions.count()).toBe(1);
+  });
+});
+
 describe('toServerPayload', () => {
   it('drops undefined values and the columns the server sets itself', () => {
     expect(

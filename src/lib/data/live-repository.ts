@@ -233,6 +233,17 @@ export class LiveRepository extends MockRepository {
     return data;
   }
 
+  // ---------- Sample data (sample mode only) ----------
+
+  /** Live data is never sample data: no "Sample data" chip, nothing to clear. */
+  override async hasSampleData(): Promise<boolean> {
+    return false;
+  }
+
+  override async clearSampleData(): Promise<() => Promise<void>> {
+    throw new Error('There is no sample data in live mode');
+  }
+
   // ---------- Status ----------
 
   override async syncStatus(): Promise<SyncStatus> {
