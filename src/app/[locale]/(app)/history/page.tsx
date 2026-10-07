@@ -22,9 +22,10 @@ import { FilterSheet } from '@/components/history/FilterSheet';
 import { ItemHistoryCard } from '@/components/history/ItemHistoryCard';
 import {
   activeFilterCount,
-  byMember,
+  applyFilters,
   EMPTY_FILTERS,
-  focusLevel,
+  pickKey,
+  singlePick,
   toListParams,
   type HistoryFilters,
 } from '@/lib/history/filters';
@@ -39,11 +40,11 @@ function HistoryContent() {
   const walletParam = searchParams.get('wallet') || undefined;
 
   // Filters; a wallet opened from "Our money" (?wallet=) starts the list on that wallet
-  const [filters, setFilters] = React.useState<HistoryFilters>({ ...EMPTY_FILTERS, walletId: walletParam });
+  const [filters, setFilters] = React.useState<HistoryFilters>({ ...EMPTY_FILTERS, walletIds: walletParam ? [walletParam] : [] });
   const [prevWalletParam, setPrevWalletParam] = React.useState(walletParam);
   if (walletParam !== prevWalletParam) {
     setPrevWalletParam(walletParam);
-    setFilters((f) => ({ ...f, walletId: walletParam }));
+    setFilters((f) => ({ ...f, walletIds: walletParam ? [walletParam] : [] }));
   }
   const [filterOpen, setFilterOpen] = React.useState(false);
 
@@ -57,45 +58,43 @@ function HistoryContent() {
   };
 
   const authorOf = useEntryAuthor();
-  const entries = byMember(useEntries(toListParams(filters, range)), filters.memberId, authorOf);
+  const entries = applyFilters(useEntries(toListParams(filters, range)), filters, authorOf);
 
   // Names for the active-filter chips
   const wallets = useWallets(true);
   const members = useFamilyMembers();
   const categories = useCategories();
-  const groups = useSubcategories(filters.categoryId);
-  const items = useItems(filters.subcategoryId);
+  const groups = useSubcategories();
+  const items = useItems();
   const nameOf = (row?: { nameAr: string | null; nameEn: string | null } | null) =>
     row ? pickName({ name_ar: row.nameAr, name_en: row.nameEn }, locale) : '';
-  const focus = focusLevel(filters);
-  const focusName =
-    focus === 'item'
-      ? nameOf(items?.find((i) => i.id === filters.itemId))
-      : focus === 'subcategory'
-        ? nameOf(groups?.find((g) => g.id === filters.subcategoryId))
-        : focus === 'category'
-          ? nameOf(categories?.find((c) => c.id === filters.categoryId))
-          : '';
+  const focus = singlePick(filters);
   const chips: { key: string; label: string; clear: () => void }[] = [];
-  if (focus && focusName) {
+  for (const p of filters.picks) {
+    const key = pickKey(p);
+    const row = p.itemId
+      ? items?.find((i) => i.id === p.itemId)
+      : p.subcategoryId
+        ? groups?.find((g) => g.id === p.subcategoryId)
+        : categories?.find((c) => c.id === p.categoryId);
     chips.push({
-      key: 'category',
-      label: focusName,
-      clear: () => setFilters((f) => ({ ...f, categoryId: undefined, subcategoryId: undefined, itemId: undefined })),
+      key: `pick-${key}`,
+      label: nameOf(row) || '…',
+      clear: () => setFilters((f) => ({ ...f, picks: f.picks.filter((x) => pickKey(x) !== key) })),
     });
   }
-  if (filters.walletId) {
+  for (const id of filters.walletIds) {
     chips.push({
-      key: 'wallet',
-      label: nameOf(wallets?.find((w) => w.id === filters.walletId)) || '…',
-      clear: () => setFilters((f) => ({ ...f, walletId: undefined })),
+      key: `wallet-${id}`,
+      label: nameOf(wallets?.find((w) => w.id === id)) || '…',
+      clear: () => setFilters((f) => ({ ...f, walletIds: f.walletIds.filter((x) => x !== id) })),
     });
   }
-  if (filters.memberId) {
+  for (const id of filters.memberIds) {
     chips.push({
-      key: 'member',
-      label: members.find((m) => m.userId === filters.memberId)?.displayName ?? '…',
-      clear: () => setFilters((f) => ({ ...f, memberId: undefined })),
+      key: `member-${id}`,
+      label: members.find((m) => m.userId === id)?.displayName ?? '…',
+      clear: () => setFilters((f) => ({ ...f, memberIds: f.memberIds.filter((x) => x !== id) })),
     });
   }
   const filterCount = activeFilterCount(filters);
