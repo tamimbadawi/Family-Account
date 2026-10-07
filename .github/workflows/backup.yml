@@ -3,7 +3,7 @@ name: Weekly database backup
 # Dumps schema + data, encrypts them, and keeps the encrypted file as a workflow artifact for 90 days.
 # Needs repo secrets:
 #   SUPABASE_DB_URL   = the "Session pooler" connection string (GitHub runners are IPv4-only).
-#   BACKUP_PASSPHRASE = set by the owner (Injy) only; the maintainer never sees it.
+#   BACKUP_PASSPHRASE = set by the operator; keep it outside GitHub too (lost passphrase = unreadable backups).
 # Skips until SUPABASE_DB_URL is set. Fails (never uploads plain SQL) if the passphrase is missing.
 # Restore: gpg --decrypt db-backup.tar.gz.gpg > db-backup.tar.gz && tar xzf db-backup.tar.gz
 # The repository MUST stay private.

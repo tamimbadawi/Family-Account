@@ -5,6 +5,7 @@
 // =========================================================
 
 import { localISODate } from '../format';
+import type { Table } from 'dexie';
 import { db as defaultDb, FamilyAccountsDB } from '../offline/db';
 import {
   roundMoney,
@@ -73,6 +74,18 @@ import type {
   WalletBalance,
 } from './types';
 
+/** Tables the app writes to, with their Dexie row types. */
+export interface WritableRows {
+  accounts: AccountRow;
+  categories: CategoryRow;
+  subcategories: SubcategoryRow;
+  items: ItemRow;
+  transactions: TransactionRow;
+  budgets: BudgetRow;
+}
+export type WritableTable = keyof WritableRows;
+export type WritableRow<K extends WritableTable> = WritableRows[K];
+
 export function getIsoWeek(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');
   const dayNum = d.getUTCDay() || 7;
@@ -84,7 +97,7 @@ export function getIsoWeek(dateStr: string): string {
 
 export class MockRepository implements Repository {
   private static seedPromises = new WeakMap<FamilyAccountsDB, Promise<void>>();
-  private db: FamilyAccountsDB;
+  protected db: FamilyAccountsDB;
   private seedPromise: Promise<void> | null = null;
   /**
    * Who is "signed in" on this phone in sample mode. New entries and edits are stamped with it,
@@ -95,6 +108,30 @@ export class MockRepository implements Repository {
   constructor(customDb?: FamilyAccountsDB, currentUserId: string = USER_MAMA_ID) {
     this.db = customDb ?? defaultDb;
     this.currentUserId = currentUserId;
+  }
+
+  // ---------- Write hooks (LiveRepository overrides these to save to Supabase first) ----------
+
+  /** Saves one row. Sample mode: straight into Dexie. Returns the row as stored. */
+  protected async persist<K extends WritableTable>(table: K, row: WritableRow<K>): Promise<WritableRow<K>> {
+    await (this.db[table] as unknown as Table<WritableRow<K>, string>).put(row);
+    return row;
+  }
+
+  /** Read-modify-write of one row through persist(). */
+  protected async patch<K extends WritableTable>(
+    table: K,
+    id: string,
+    changes: Partial<WritableRow<K>>
+  ): Promise<WritableRow<K>> {
+    const row = await (this.db[table] as unknown as Table<WritableRow<K>, string>).get(id);
+    if (!row) throw new Error(`Not found in ${table}: ${id}`);
+    return this.persist(table, { ...row, ...changes });
+  }
+
+  /** The household new rows belong to. */
+  protected async householdId(explicit?: string): Promise<string> {
+    return explicit ?? DEMO_HOUSEHOLD_ID;
   }
 
   // Ensures database is seeded on first access (idempotent, StrictMode-safe via shared promise)
@@ -310,7 +347,7 @@ export class MockRepository implements Repository {
   // ---------- Household & Members ----------
 
   async getHousehold(): Promise<Household | null> {
-    const row = await this.db.households.get(DEMO_HOUSEHOLD_ID);
+    const row = await this.db.households.get(await this.householdId());
     return row ? toHousehold(row) : null;
   }
 
@@ -344,7 +381,7 @@ export class MockRepository implements Repository {
 
     const row: AccountRow = {
       id,
-      household_id: input.householdId ?? DEMO_HOUSEHOLD_ID,
+      household_id: await this.householdId(input.householdId),
       name_ar: input.nameAr ?? null,
       name_en: input.nameEn ?? null,
       type: input.type,
@@ -357,8 +394,7 @@ export class MockRepository implements Repository {
       updated_at: now,
     };
 
-    await this.db.accounts.put(row);
-    return toWallet(row);
+    return toWallet(await this.persist('accounts', row));
   }
 
   async updateWallet(id: string, updates: UpdateWalletInput): Promise<Wallet> {
@@ -383,16 +419,12 @@ export class MockRepository implements Repository {
       updated_at: new Date().toISOString(),
     };
 
-    await this.db.accounts.put(updatedRow);
-    return toWallet(updatedRow);
+    return toWallet(await this.persist('accounts', updatedRow));
   }
 
   async archiveWallet(id: string, archive = true): Promise<void> {
     await this.ensureSeeded();
-    await this.db.accounts.update(id, {
-      is_archived: archive,
-      updated_at: new Date().toISOString(),
-    });
+    await this.patch('accounts', id, { is_archived: archive, updated_at: new Date().toISOString() });
   }
 
   async getWalletBalances(): Promise<WalletBalance[]> {
@@ -429,7 +461,7 @@ export class MockRepository implements Repository {
     });
   }
 
-  private async getCorrectionItemId(kind: 'expense' | 'income'): Promise<string> {
+  protected async getCorrectionItemId(kind: 'expense' | 'income'): Promise<string> {
     const defaultId =
       kind === 'expense'
         ? ITEM_EXPENSE_BALANCE_CORRECTION_ID
@@ -449,18 +481,21 @@ export class MockRepository implements Repository {
     throw new Error(`Balance correction item not found for kind: ${kind}`);
   }
 
+  /** The balance a correction is computed from. Live mode reads it from the server (PROGRESS P1). */
+  protected async balanceForCorrection(walletId: string): Promise<number> {
+    const wallet = (await this.walletBalances()).find((w) => w.id === walletId);
+    if (!wallet) {
+      throw new Error(`Wallet not found: ${walletId}`);
+    }
+    return wallet.balance;
+  }
+
   async adjustWalletBalance(
     walletId: string,
     actualBalance: number,
     occurredOn?: string
   ): Promise<Entry | null> {
-    const balances = await this.walletBalances();
-    const wallet = balances.find((w) => w.id === walletId);
-    if (!wallet) {
-      throw new Error(`Wallet not found: ${walletId}`);
-    }
-
-    const currentBalance = wallet.balance;
+    const currentBalance = await this.balanceForCorrection(walletId);
     const diff = roundMoney(actualBalance - currentBalance);
 
     if (diff === 0) {
@@ -510,7 +545,7 @@ export class MockRepository implements Repository {
 
     const row: CategoryRow = {
       id,
-      household_id: input.householdId ?? DEMO_HOUSEHOLD_ID,
+      household_id: await this.householdId(input.householdId),
       kind: input.kind,
       name_ar: input.nameAr ?? null,
       name_en: input.nameEn ?? null,
@@ -522,8 +557,7 @@ export class MockRepository implements Repository {
       updated_at: now,
     };
 
-    await this.db.categories.put(row);
-    return toCategory(row);
+    return toCategory(await this.persist('categories', row));
   }
 
   async updateCategory(id: string, updates: UpdateCategoryInput): Promise<Category> {
@@ -543,16 +577,12 @@ export class MockRepository implements Repository {
       updated_at: new Date().toISOString(),
     };
 
-    await this.db.categories.put(updatedRow);
-    return toCategory(updatedRow);
+    return toCategory(await this.persist('categories', updatedRow));
   }
 
   async archiveCategory(id: string, archive = true): Promise<void> {
     await this.ensureSeeded();
-    await this.db.categories.update(id, {
-      is_archived: archive,
-      updated_at: new Date().toISOString(),
-    });
+    await this.patch('categories', id, { is_archived: archive, updated_at: new Date().toISOString() });
   }
 
   // ---------- Budgets ----------
@@ -583,7 +613,7 @@ export class MockRepository implements Repository {
     const now = new Date().toISOString();
     const row: BudgetRow = {
       id: input.id ?? crypto.randomUUID(),
-      household_id: input.householdId ?? DEMO_HOUSEHOLD_ID,
+      household_id: await this.householdId(input.householdId),
       category_id: input.categoryId,
       subcategory_id: subcategoryId,
       amount,
@@ -592,8 +622,7 @@ export class MockRepository implements Repository {
       created_at: now,
       updated_at: now,
     };
-    await this.db.budgets.put(row);
-    return toBudget(row);
+    return toBudget(await this.persist('budgets', row));
   }
 
   async updateBudget(id: string, updates: UpdateBudgetInput): Promise<Budget> {
@@ -607,15 +636,11 @@ export class MockRepository implements Repository {
     }
     // Once the family changes a starter budget, it is theirs
     const updatedRow: BudgetRow = { ...row, amount, is_starter: false, updated_at: new Date().toISOString() };
-    await this.db.budgets.put(updatedRow);
-    return toBudget(updatedRow);
+    return toBudget(await this.persist('budgets', updatedRow));
   }
 
   async archiveBudget(id: string, archive = true): Promise<void> {
-    await this.db.budgets.update(id, {
-      is_archived: archive,
-      updated_at: new Date().toISOString(),
-    });
+    await this.patch('budgets', id, { is_archived: archive, updated_at: new Date().toISOString() });
   }
 
   // ---------- Subcategories ----------
@@ -646,7 +671,7 @@ export class MockRepository implements Repository {
 
     const row: SubcategoryRow = {
       id,
-      household_id: input.householdId ?? DEMO_HOUSEHOLD_ID,
+      household_id: await this.householdId(input.householdId),
       category_id: input.categoryId,
       name_ar: input.nameAr ?? null,
       name_en: input.nameEn ?? null,
@@ -656,8 +681,7 @@ export class MockRepository implements Repository {
       updated_at: now,
     };
 
-    await this.db.subcategories.put(row);
-    return toSubcategory(row);
+    return toSubcategory(await this.persist('subcategories', row));
   }
 
   async updateSubcategory(id: string, updates: UpdateSubcategoryInput): Promise<Subcategory> {
@@ -675,16 +699,12 @@ export class MockRepository implements Repository {
       updated_at: new Date().toISOString(),
     };
 
-    await this.db.subcategories.put(updatedRow);
-    return toSubcategory(updatedRow);
+    return toSubcategory(await this.persist('subcategories', updatedRow));
   }
 
   async archiveSubcategory(id: string, archive = true): Promise<void> {
     await this.ensureSeeded();
-    await this.db.subcategories.update(id, {
-      is_archived: archive,
-      updated_at: new Date().toISOString(),
-    });
+    await this.patch('subcategories', id, { is_archived: archive, updated_at: new Date().toISOString() });
   }
 
   // ---------- Items ----------
@@ -715,7 +735,7 @@ export class MockRepository implements Repository {
 
     const row: ItemRow = {
       id,
-      household_id: input.householdId ?? DEMO_HOUSEHOLD_ID,
+      household_id: await this.householdId(input.householdId),
       subcategory_id: input.subcategoryId,
       name_ar: input.nameAr ?? null,
       name_en: input.nameEn ?? null,
@@ -725,8 +745,7 @@ export class MockRepository implements Repository {
       updated_at: now,
     };
 
-    await this.db.items.put(row);
-    return toItem(row);
+    return toItem(await this.persist('items', row));
   }
 
   async updateItem(id: string, updates: UpdateItemInput): Promise<Item> {
@@ -744,16 +763,12 @@ export class MockRepository implements Repository {
       updated_at: new Date().toISOString(),
     };
 
-    await this.db.items.put(updatedRow);
-    return toItem(updatedRow);
+    return toItem(await this.persist('items', updatedRow));
   }
 
   async archiveItem(id: string, archive = true): Promise<void> {
     await this.ensureSeeded();
-    await this.db.items.update(id, {
-      is_archived: archive,
-      updated_at: new Date().toISOString(),
-    });
+    await this.patch('items', id, { is_archived: archive, updated_at: new Date().toISOString() });
   }
 
   // ---------- Entries (Transactions) ----------
@@ -919,7 +934,7 @@ export class MockRepository implements Repository {
 
     const row: TransactionRow = {
       id,
-      household_id: input.householdId ?? DEMO_HOUSEHOLD_ID,
+      household_id: await this.householdId(input.householdId),
       type: input.type,
       amount,
       occurred_on: input.occurredOn,
@@ -934,8 +949,7 @@ export class MockRepository implements Repository {
       deleted_at: null,
     };
 
-    await this.db.transactions.put(row);
-    return toEntry(row);
+    return toEntry(await this.persist('transactions', row));
   }
 
   async updateEntry(id: string, updates: UpdateEntryInput): Promise<Entry> {
@@ -983,23 +997,18 @@ export class MockRepository implements Repository {
       updated_at: new Date().toISOString(),
     };
 
-    await this.db.transactions.put(updatedRow);
-    return toEntry(updatedRow);
+    return toEntry(await this.persist('transactions', updatedRow));
   }
 
   async softDeleteEntry(id: string): Promise<void> {
     await this.ensureSeeded();
     const now = new Date().toISOString();
-    await this.db.transactions.update(id, {
-      deleted_at: now,
-      updated_at: now,
-      updated_by: this.currentUserId,
-    });
+    await this.patch('transactions', id, { deleted_at: now, updated_at: now, updated_by: this.currentUserId });
   }
 
   async restoreEntry(id: string): Promise<void> {
     await this.ensureSeeded();
-    await this.db.transactions.update(id, {
+    await this.patch('transactions', id, {
       deleted_at: null,
       updated_at: new Date().toISOString(),
       updated_by: this.currentUserId,
@@ -1051,8 +1060,7 @@ export class MockRepository implements Repository {
       photo_path: null,
       updated_at: new Date().toISOString(),
     };
-    await this.db.transactions.put(updatedRow);
-    return toEntry(updatedRow);
+    return toEntry(await this.persist('transactions', updatedRow));
   }
 
   // ---------- Aggregations & Reports ----------

@@ -10,6 +10,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { mockRepository } from './mock-repository';
+import { LiveRepository } from './live-repository';
 import { getLastNMonths } from '@/lib/reports/months';
 import { budgetProgress, type BudgetProgress } from '@/lib/reports/budgets';
 import type { ListEntriesParams, Repository } from './repository';
@@ -31,18 +32,14 @@ import type {
   WalletBalance,
 } from './types';
 
+let liveRepository: LiveRepository | null = null;
+
 // Resolves repository implementation based on NEXT_PUBLIC_DATA_MODE
 export function getDefaultRepository(): Repository {
-  const mode =
-    typeof process !== 'undefined'
-      ? process.env.NEXT_PUBLIC_DATA_MODE ?? 'mock'
-      : 'mock';
-
-  if (mode === 'live') {
-    // In Phase B, live-repository.ts will be plugged in here
-    return mockRepository;
+  if (process.env.NEXT_PUBLIC_DATA_MODE === 'live') {
+    liveRepository ??= new LiveRepository();
+    return liveRepository;
   }
-
   return mockRepository;
 }
 
@@ -80,6 +77,23 @@ export function RepositoryProvider({ children, repository }: RepositoryProviderP
 
     return () => {
       cancelled = true;
+    };
+  }, [activeRepo]);
+
+  // Live mode: fetch what the rest of the family saved whenever the app comes back to the front
+  // or the connection returns.
+  useEffect(() => {
+    const refresh = activeRepo.refresh?.bind(activeRepo);
+    if (!refresh) return;
+    const run = () => void refresh().catch((err) => console.warn('[sync] pull failed', err));
+    const onVisible = () => document.visibilityState === 'visible' && run();
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('online', run);
+    window.addEventListener('focus', run);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('online', run);
+      window.removeEventListener('focus', run);
     };
   }, [activeRepo]);
 

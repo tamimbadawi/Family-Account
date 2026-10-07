@@ -67,6 +67,8 @@ export default function SettingsPage() {
       return;
     }
     await getSupabaseBrowserClient().auth.signOut();
+    // Nothing of the family stays on the phone after signing out
+    await repo.clearCache?.().catch((err) => console.warn('[sync] clear failed', err));
     router.replace('/login');
   };
 
