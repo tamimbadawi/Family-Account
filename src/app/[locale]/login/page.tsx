@@ -8,6 +8,9 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { InstallBanner } from '@/components/install/InstallBanner';
+import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
+import { usernameToEmail } from '@/lib/auth/username';
+import { routeAfterSignIn } from '@/lib/auth/after-sign-in';
 
 export default function LoginPage() {
   const tAuth = useTranslations('auth');
@@ -17,10 +20,35 @@ export default function LoginPage() {
   const [password, setPassword] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [error, setError] = React.useState<string | null>(null);
+  const [busy, setBusy] = React.useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Phase A mock behaviour: any input logs in directly
-    router.push('/');
+    if (busy) return;
+    // Local sample-data mode (no Supabase configured): any input goes straight in
+    if (!isAuthConfigured()) {
+      router.push('/');
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: usernameToEmail(username),
+        password,
+      });
+      if (signInError || !data.user) {
+        setError(navigator.onLine ? tAuth('wrongPassword') : tAuth('noConnection'));
+        return;
+      }
+      router.replace(await routeAfterSignIn(data.user));
+    } catch {
+      setError(tAuth('noConnection'));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -92,7 +120,13 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <Button type="submit" className="h-14 w-full text-heading font-semibold mt-2 text-accent-ink">
+        {error && (
+          <p role="alert" className="text-body font-medium text-danger">
+            {error}
+          </p>
+        )}
+
+        <Button type="submit" disabled={busy} className="h-14 w-full text-heading font-semibold mt-2 text-accent-ink">
           {tAuth('signIn')}
         </Button>
       </form>
