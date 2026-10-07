@@ -10,11 +10,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
-import { useRepository, useWallets } from '@/lib/data/provider';
+import { useRepository, useWallets, useWalletBalances } from '@/lib/data/provider';
 import type { Wallet, WalletType } from '@/lib/data/types';
 import { money, normalizeDigits, pickName } from '@/lib/format';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { ColorIconPicker } from '@/components/settings/ColorIconPicker';
+import { AmountPad } from '@/components/entry/AmountPad';
 import {
   Drawer,
   DrawerContent,
@@ -27,14 +28,27 @@ import { Switch } from '@/components/ui/switch';
 export default function WalletManagerPage() {
   const locale = useLocale();
   const t = useTranslations('settings');
+  const tWallets = useTranslations('wallets');
   const repo = useRepository();
 
   const [showArchived, setShowArchived] = React.useState(false);
   const wallets = useWallets(showArchived);
+  const balances = useWalletBalances();
+
+  const balanceMap = React.useMemo(() => {
+    const map = new Map<string, number>();
+    balances?.forEach((b) => map.set(b.id, b.balance));
+    return map;
+  }, [balances]);
 
   // Modal state
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
   const [editingWallet, setEditingWallet] = React.useState<Wallet | null>(null);
+
+  // Update Balance modal state
+  const [isUpdateOpen, setIsUpdateOpen] = React.useState(false);
+  const [updatingWallet, setUpdatingWallet] = React.useState<Wallet | null>(null);
+  const [updateAmountStr, setUpdateAmountStr] = React.useState('0');
 
   // Form states
   const [nameAr, setNameAr] = React.useState('');
@@ -64,6 +78,40 @@ export default function WalletManagerPage() {
     setColor(wallet.color || '#15803D');
     setIcon(wallet.icon || 'wallet');
     setIsDrawerOpen(true);
+  };
+
+  const openUpdateBalance = (wallet: Wallet, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setUpdatingWallet(wallet);
+    const curr = balanceMap.get(wallet.id) ?? wallet.openingBalance;
+    setUpdateAmountStr(curr > 0 ? String(curr) : '0');
+    setIsUpdateOpen(true);
+  };
+
+  const handleSaveAdjustment = async () => {
+    if (!updatingWallet) return;
+    const newBal = parseFloat(normalizeDigits(updateAmountStr)) || 0;
+    try {
+      const entry = await repo.adjustWalletBalance(updatingWallet.id, newBal);
+      setIsUpdateOpen(false);
+      if (entry) {
+        toast.success(tWallets('balanceUpdated'), {
+          action: {
+            label: tWallets('undo'),
+            onClick: async () => {
+              await repo.softDeleteEntry(entry.id);
+              toast.info(tWallets('undone'));
+            },
+          },
+          duration: 6000,
+        });
+      } else {
+        toast.info(tWallets('balanceUpdated'));
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to update balance');
+    }
   };
 
   const handleSave = async () => {
@@ -138,8 +186,8 @@ export default function WalletManagerPage() {
       </div>
 
       {/* Toolbar with full-width Switch row */}
-      <div className="px-5 py-3 shrink-0">
-        <div className="flex h-12 items-center justify-between px-4 bg-surface rounded-2xl border border-line/40 select-none">
+      <div className="px-5 py-2 shrink-0">
+        <div className="flex h-11 items-center justify-between px-4 bg-surface rounded-2xl border border-line/40 select-none">
           <span className="text-body font-medium text-ink">{t('showArchived')}</span>
           <Switch checked={showArchived} onCheckedChange={setShowArchived} />
         </div>
@@ -150,9 +198,9 @@ export default function WalletManagerPage() {
         <button
           type="button"
           onClick={openAdd}
-          className="w-full flex items-center gap-3 p-3.5 bg-surface rounded-card border-2 border-dashed border-line/60 hover:border-accent text-accent font-semibold transition-all active:scale-[0.99] cursor-pointer"
+          className="w-full flex items-center gap-3 p-2.5 bg-surface rounded-card border-2 border-dashed border-line/60 hover:border-accent text-accent font-semibold transition-all active:scale-[0.99] cursor-pointer"
         >
-          <div className="flex size-10 items-center justify-center rounded-xl bg-accent/12 text-accent">
+          <div className="flex size-9 items-center justify-center rounded-xl bg-accent/12 text-accent">
             <Plus className="size-5" />
           </div>
           <span className="text-body">{t('addWallet')}</span>
@@ -161,7 +209,7 @@ export default function WalletManagerPage() {
         {!wallets && (
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-card" />
+              <Skeleton key={i} className="h-14 w-full rounded-card" />
             ))}
           </div>
         )}
@@ -173,42 +221,50 @@ export default function WalletManagerPage() {
                 { name_ar: wallet.nameAr, name_en: wallet.nameEn },
                 locale
               );
+              const currentBal = balanceMap.get(wallet.id) ?? wallet.openingBalance;
               return (
                 <div
                   key={wallet.id}
-                  onClick={() => openEdit(wallet)}
-                  className={`flex items-center justify-between p-3.5 hover:bg-surface-2/40 active:bg-surface-2 transition-colors cursor-pointer select-none ${
+                  className={`flex items-center justify-between p-2.5 hover:bg-surface-2/40 transition-colors select-none ${
                     wallet.isArchived ? 'opacity-50' : ''
                   }`}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    onClick={() => openEdit(wallet)}
+                    className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
+                  >
                     <div
                       style={{
                         backgroundColor: `${wallet.color || '#15803D'}18`,
                         color: wallet.color || '#15803D',
                       }}
-                      className="flex size-11 shrink-0 items-center justify-center rounded-full"
+                      className="flex size-10 shrink-0 items-center justify-center rounded-full"
                     >
                       <CategoryIcon name={wallet.icon || 'wallet'} className="size-5" />
                     </div>
-                    <div className="min-w-0">
-                      <div className="truncate text-body font-semibold text-ink">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-body font-semibold text-ink leading-snug">
                         {name}
                       </div>
-                      <div className="text-caption text-ink-muted">
-                        {t('openingBalance')}
+                      <div className="text-caption text-ink-muted tabular-nums">
+                        {money(currentBal, locale)}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2.5 shrink-0 ps-3">
-                    <span className="text-body font-bold tabular-nums text-ink">
-                      {money(wallet.openingBalance, locale)}
-                    </span>
+                  <div className="flex items-center gap-2 shrink-0 ps-2">
                     <button
                       type="button"
-                      className="p-1.5 rounded-full hover:bg-surface-2 text-ink-muted transition-colors"
-                      aria-label={t('edit')}
+                      onClick={(e) => openUpdateBalance(wallet, e)}
+                      className="h-9 px-3 rounded-full bg-accent/12 text-accent text-caption font-semibold hover:bg-accent/20 active:scale-95 transition-all cursor-pointer"
+                    >
+                      {tWallets('updateBalance')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openEdit(wallet)}
+                      className="p-2 rounded-full hover:bg-surface-2 text-ink-muted transition-colors cursor-pointer"
+                      aria-label={t('editWallet')}
                     >
                       <Edit2 className="size-4" />
                     </button>
@@ -344,6 +400,54 @@ export default function WalletManagerPage() {
                 {t('save')}
               </button>
             </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Update Balance Drawer */}
+      <Drawer open={isUpdateOpen} onOpenChange={setIsUpdateOpen}>
+        <DrawerContent className="max-h-[92dvh] px-5 pb-8 overflow-y-auto select-none">
+          <DrawerHeader className="px-0 pt-3 pb-1 text-center">
+            <DrawerTitle className="text-body font-semibold text-ink">
+              {updatingWallet &&
+                tWallets('howMuchNow', {
+                  wallet:
+                    pickName(
+                      { name_ar: updatingWallet.nameAr, name_en: updatingWallet.nameEn },
+                      locale
+                    ) || updatingWallet.id,
+                })}
+            </DrawerTitle>
+          </DrawerHeader>
+
+          <div className="py-2 text-center">
+            <div className="text-display font-bold tabular-nums text-ink">
+              {money(parseFloat(normalizeDigits(updateAmountStr)) || 0, locale)}
+            </div>
+            <span className="text-caption text-ink-muted">
+              {tWallets('actualBalance')}
+            </span>
+          </div>
+
+          <div className="py-2">
+            <AmountPad value={updateAmountStr} onChange={setUpdateAmountStr} />
+          </div>
+
+          <div className="pt-3 flex gap-3">
+            <button
+              type="button"
+              onClick={() => setIsUpdateOpen(false)}
+              className="flex-1 h-13 rounded-2xl bg-surface-2 text-ink font-semibold active:scale-95 transition-all cursor-pointer"
+            >
+              {t('cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveAdjustment}
+              className="flex-1 h-13 rounded-2xl bg-accent text-accent-ink font-semibold shadow-sm active:scale-95 transition-all cursor-pointer"
+            >
+              {t('save')}
+            </button>
           </div>
         </DrawerContent>
       </Drawer>

@@ -7,6 +7,7 @@ import { useWalletBalances } from '@/lib/data/provider';
 import type { WalletType } from '@/lib/data/types';
 import { Card } from '@/components/ui/card';
 import { money, pickName } from '@/lib/format';
+import { OurMoneySheet } from '@/components/wallets/OurMoneySheet';
 
 export interface WalletBalancesCardProps {
   className?: string;
@@ -30,12 +31,22 @@ export function WalletBalancesCard({ className = '' }: WalletBalancesCardProps) 
   const locale = useLocale();
   const t = useTranslations('reports');
   const wallets = useWalletBalances();
+  const [sheetOpen, setSheetOpen] = React.useState(false);
 
   return (
-    <Card className={`rounded-card bg-surface p-3.5 shadow-card select-none gap-0 ${className}`}>
-      <h2 className="text-heading font-semibold text-ink mb-2">
-        {t('walletBalances')}
-      </h2>
+    <>
+      <Card
+        onClick={() => setSheetOpen(true)}
+        className={`rounded-card bg-surface p-3.5 shadow-card select-none gap-0 cursor-pointer hover:bg-surface-2/40 transition-colors ${className}`}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-heading font-semibold text-ink">
+            {t('walletBalances')}
+          </h2>
+          <span className="text-caption font-medium text-accent">
+            {locale.startsWith('ar') ? 'عرض الكل' : 'View all'}
+          </span>
+        </div>
 
       {!wallets ? (
         <div className="space-y-2">
@@ -88,5 +99,8 @@ export function WalletBalancesCard({ className = '' }: WalletBalancesCardProps) 
         </div>
       )}
     </Card>
+
+    <OurMoneySheet open={sheetOpen} onOpenChange={setSheetOpen} />
+  </>
   );
 }

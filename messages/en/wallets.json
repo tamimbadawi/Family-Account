@@ -1,0 +1,21 @@
+{
+  "ourMoney": "Our money",
+  "cash": "Cash",
+  "banks": "Banks",
+  "total": "Total balance",
+  "updateBalance": "Update balance",
+  "howMuchNow": "How much is in {wallet} now?",
+  "currentBalance": "Current balance",
+  "actualBalance": "Actual balance",
+  "balanceUpdated": "Balance updated",
+  "undo": "Undo",
+  "undone": "Adjustment undone",
+  "save": "Save",
+  "cancel": "Cancel",
+  "addWallet": "Add wallet",
+  "editWallet": "Edit wallet",
+  "walletName": "Wallet name",
+  "initialBalance": "Starting balance",
+  "viewHistory": "View entries",
+  "allWallets": "All wallets"
+}
