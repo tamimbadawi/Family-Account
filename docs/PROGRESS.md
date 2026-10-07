@@ -78,7 +78,7 @@ _(write what you observed here: every hesitation, question, or complaint)_
 | P3 | Orphan receipts: the 30-day purge hard-deletes entries but not their Storage files. Add cleanup through the Storage API (scheduled edge function or the backup workflow), since SQL cannot delete Storage objects | B5 | |
 | P4 | `remove_member` RPC (owner only) + smoke test: removed member reads/writes nothing and sees no receipts; their entries stay | `0006` written, **apply in B2** | 🔍 |
 | P5 | Backups encrypted with `BACKUP_PASSPHRASE`; job fails rather than upload plain SQL | `backup.yml` | ✅ |
-| P6 | Money: add a test that client report totals equal the server views (`v_monthly_summary`, `v_account_balances`) to the piaster on the same data | B4 | |
+| P6 | Money: add a test that client report totals equal the server views (`v_monthly_summary`, `v_account_balances`) to the piaster on the same data | `server-parity.test.ts` | ✅ |
 | P7 | Dates: `localISODate()` in `lib/format`; never `toISOString().slice(0,10)` | fixed in balance corrections + export names | ✅ |
 
 ### B3 definition of done · two real phones
