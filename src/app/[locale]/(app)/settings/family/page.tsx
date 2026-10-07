@@ -41,7 +41,6 @@ export default function FamilyPage() {
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [name, setName] = React.useState('');
-  const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');
 
   const load = React.useCallback(async () => {
@@ -73,7 +72,6 @@ export default function FamilyPage() {
   const open = (next: Sheet) => {
     setError(null);
     setName('');
-    setUsername('');
     setPassword('');
     setSheet(next);
   };
@@ -97,9 +95,10 @@ export default function FamilyPage() {
   const submit = () => {
     if (!sheet || busy) return;
     if (sheet.kind === 'add') {
-      if (!isEnglishName(name)) return setError(t('errors.bad_name'));
+      // The name is also what they type to sign in
+      if (!isEnglishName(name) || normalizeUsername(name).length < 2) return setError(t('errors.bad_name'));
       void run(
-        () => familyAdmin({ action: 'add_member', username: normalizeUsername(username), displayName: name.trim(), password }),
+        () => familyAdmin({ action: 'add_member', username: normalizeUsername(name), displayName: name.trim(), password }),
         t('added', { name: name.trim() })
       );
     } else if (sheet.kind === 'reset') {
@@ -163,7 +162,6 @@ export default function FamilyPage() {
                     </div>
                     <div className="truncate text-caption text-ink-muted">
                       {m.role === 'owner' ? t('admin') : t('member')}
-                      {m.username ? ` · ${m.username}` : ''}
                     </div>
                   </div>
                   {isOwner && m.userId !== list?.me && (
@@ -225,23 +223,13 @@ export default function FamilyPage() {
                     onChange={(e) => setName(e.target.value)}
                     className="h-14 bg-surface-2 text-body"
                   />
-                  <Input
-                    aria-label={t('username')}
-                    placeholder={t('username')}
-                    value={username}
-                    onChange={(e) => setUsername(normalizeUsername(e.target.value))}
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    className="h-14 bg-surface-2 text-body"
-                  />
                 </>
               )}
               {(sheet?.kind === 'add' || sheet?.kind === 'reset') && (
                 <>
                   <Input
-                    aria-label={t('tempPassword')}
-                    placeholder={t('tempPassword')}
+                    aria-label={t('password')}
+                    placeholder={t('password')}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="off"
