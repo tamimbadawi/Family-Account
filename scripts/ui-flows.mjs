@@ -122,10 +122,13 @@ const FLOWS = {
       await page.setViewportSize(keyboard);
       await sleep(400);
     }
-    const input = page.getByRole('textbox').first();
-    await assertUsable(page, input, 'new group name field');
+    // Same form as Settings → Categories: Arabic + English names
+    const form = page.getByRole('dialog').last();
+    await assertUsable(page, form.getByRole('textbox', { name: 'Name in Arabic' }), 'new group Arabic name field');
+    const input = form.getByRole('textbox', { name: 'Name in English' });
+    await assertUsable(page, input, 'new group English name field');
     await input.fill('Bakery test');
-    const save = page.getByRole('button', { name: /^(Save|Saved)$/ }).first();
+    const save = form.getByRole('button', { name: /^(Save|Saved)$/ });
     await assertUsable(page, save, 'Save for the new group');
     const label = (await save.innerText()).trim();
     if (label !== 'Save') throw new Error(`new-group button label is "${label}" (should be "Save")`);
@@ -133,6 +136,25 @@ const FLOWS = {
     await save.click();
     await sleep(800);
     await assertUsable(page, page.getByText('Bakery test').first(), 'the new group after saving');
+  },
+  async newcategory(page) {
+    await openSheet(page);
+    // "+ New" is the last chip of the category row
+    await btn(page, '+ New').scrollIntoViewIfNeeded();
+    await tap(page, '+ New');
+    const form = page.getByRole('dialog').last();
+    await form.getByText('+ Add category').waitFor({ timeout: 5000 });
+    await form.getByRole('textbox', { name: 'Name in Arabic' }).fill('تجربة');
+    await form.getByRole('textbox', { name: 'Name in English' }).fill('Pets test');
+    // Colour and icon pickers, as in Settings
+    if (!(await form.getByText('Color', { exact: true }).isVisible())) throw new Error('no colour picker in new-category form');
+    if (!(await form.getByText('Icon', { exact: true }).isVisible())) throw new Error('no icon picker in new-category form');
+    const save = form.getByRole('button', { name: 'Save', exact: true });
+    await save.scrollIntoViewIfNeeded();
+    await save.click();
+    await sleep(800);
+    // Lands on the new category's groups, ready to add one
+    await assertUsable(page, btn(page, 'Pets test'), 'the new category after saving');
   },
   async photo(page) {
     await page.goto(BASE + '/en/history', { waitUntil: 'networkidle', timeout: 45000 });
@@ -409,71 +431,6 @@ const FLOWS = {
     }
   },
 
-  async our_money(page, { locale }) {
-    await page.goto(`${BASE}/${locale}/reports`, { waitUntil: 'networkidle', timeout: 45000 });
-    await sleep(800);
-
-    // Switch to page 2 (Trends and Wallets)
-    const page2Dot = page.getByRole('button', { name: /Page 2/i });
-    if (await page2Dot.isVisible()) {
-      await page2Dot.click();
-      await sleep(400);
-    }
-
-    // Click the wallet balances card to open OurMoneySheet
-    const walletCard = page.locator('h2').filter({ hasText: locale === 'ar' ? 'رصيد المحافظ' : 'Wallet balances' }).first();
-    await assertUsable(page, walletCard, 'wallet balances card');
-    await walletCard.click();
-    await sleep(500);
-
-    const drawer = page.locator('[data-slot="drawer-content"]');
-    await drawer.waitFor({ state: 'visible', timeout: 5000 });
-
-    // Tap first wallet row inside sheet
-    const walletRow = drawer.locator('button').filter({ hasText: locale === 'ar' ? 'كاش' : 'Cash' }).first();
-    await assertUsable(page, walletRow, 'wallet row in OurMoneySheet');
-    await walletRow.click();
-
-    await page.waitForURL(`**\/history?wallet=*`, { timeout: 10000 });
-    await sleep(500);
-
-    if (!page.url().includes('history?wallet=')) {
-      throw new Error('Did not navigate to history filtered by wallet');
-    }
-  },
-
-  async update_balance(page, { locale }) {
-    await page.goto(`${BASE}/${locale}/settings/wallets`, { waitUntil: 'networkidle', timeout: 45000 });
-    await sleep(800);
-
-    // Click Update balance on the first wallet
-    const updateBtn = page.getByRole('button', { name: locale === 'ar' ? 'تحديث الرصيد' : 'Update balance' }).first();
-    await assertUsable(page, updateBtn, 'Update balance button');
-    await updateBtn.click();
-    await sleep(500);
-
-    const drawer = page.locator('[data-slot="drawer-content"]');
-    await drawer.waitFor({ state: 'visible', timeout: 5000 });
-
-    // Use AmountPad: tap key '7'
-    const key7 = drawer.getByRole('button', { name: '7' });
-    await assertUsable(page, key7, 'key 7 on AmountPad');
-    await key7.click();
-    await sleep(200);
-
-    // Click Save
-    const saveBtn = drawer.getByRole('button', { name: locale === 'ar' ? 'حفظ' : 'Save' });
-    await assertUsable(page, saveBtn, 'Save button');
-    await saveBtn.click();
-    await sleep(600);
-
-    // Toast with Undo should appear
-    const undoBtn = page.getByRole('button', { name: locale === 'ar' ? 'تراجع' : 'Undo' });
-    await assertUsable(page, undoBtn, 'Undo toast button');
-    await undoBtn.click();
-    await sleep(500);
-  },
-
   async reports_planning(page, { locale }) {
     await page.goto(`${BASE}/${locale}/reports?tab=all`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(800);
@@ -633,17 +590,73 @@ const FLOWS = {
       await page.evaluate(() => window.scrollTo(0, 0));
     }
   },
+  async our_money(page, { locale }) {
+    await page.goto(`${BASE}/${locale}/reports`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    // Switch to page 2 (Trends and Wallets)
+    const page2Dot = page.getByRole('button', { name: /Page 2/i });
+    if (await page2Dot.isVisible()) {
+      await page2Dot.click();
+      await sleep(400);
+    }
+
+    // Click the wallet balances card to open OurMoneySheet
+    const walletCard = page.locator('h2').filter({ hasText: locale === 'ar' ? 'رصيد المحافظ' : 'Wallet balances' }).first();
+    await assertUsable(page, walletCard, 'wallet balances card');
+    await walletCard.click();
+    await sleep(500);
+
+    const drawer = page.locator('[data-slot="drawer-content"]');
+    await drawer.waitFor({ state: 'visible', timeout: 5000 });
+
+    // Tap first wallet row inside sheet
+    const walletRow = drawer.locator('button').filter({ hasText: locale === 'ar' ? 'كاش' : 'Cash' }).first();
+    await assertUsable(page, walletRow, 'wallet row in OurMoneySheet');
+    await walletRow.click();
+
+    await page.waitForURL(`**\/history?wallet=*`, { timeout: 10000 });
+    await sleep(500);
+
+    if (!page.url().includes('history?wallet=')) {
+      throw new Error('Did not navigate to history filtered by wallet');
+    }
+  },
+
+  async update_balance(page, { locale }) {
+    await page.goto(`${BASE}/${locale}/settings/wallets`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    // Click Update balance on the first wallet
+    const updateBtn = page.getByRole('button', { name: locale === 'ar' ? 'تحديث الرصيد' : 'Update balance' }).first();
+    await assertUsable(page, updateBtn, 'Update balance button');
+    await updateBtn.click();
+    await sleep(500);
+
+    const drawer = page.locator('[data-slot="drawer-content"]');
+    await drawer.waitFor({ state: 'visible', timeout: 5000 });
+
+    // Use AmountPad: tap key '7'
+    const key7 = drawer.getByRole('button', { name: '7' });
+    await assertUsable(page, key7, 'key 7 on AmountPad');
+    await key7.click();
+    await sleep(200);
+
+    // Click Save
+    const saveBtn = drawer.getByRole('button', { name: locale === 'ar' ? 'حفظ' : 'Save' });
+    await assertUsable(page, saveBtn, 'Save button');
+    await saveBtn.click();
+    await sleep(600);
+
+    // Toast with Undo should appear
+    const undoBtn = page.getByRole('button', { name: locale === 'ar' ? 'تراجع' : 'Undo' });
+    await assertUsable(page, undoBtn, 'Undo toast button');
+    await undoBtn.click();
+    await sleep(500);
+  },
 };
 
-const MULTI_LOCALE_FLOW_NAMES = [
-  'reports_tabs',
-  'reports_library',
-  'reports_sheets',
-  'reports_planning',
-  'reports_wallets',
-  'our_money',
-  'update_balance',
-];
+const MULTI_LOCALE_FLOW_NAMES = ['reports_tabs', 'reports_library', 'reports_sheets', 'reports_planning', 'reports_wallets', 'our_money', 'update_balance'];
 const LOCALES = ['en', 'ar'];
 
 const selected = process.argv.slice(2).filter((a) => FLOWS[a]);

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Calendar, Plus } from 'lucide-react';
+import { Calendar, Plus, X } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import type { EnrichedEntry, EntryType } from '@/lib/data/types';
 import { useEntries, useWallets } from '@/lib/data/provider';
@@ -122,20 +122,18 @@ function HistoryContent() {
 
         {activeWallet && (
           <div className="flex items-center gap-2 pt-0.5">
-            <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-accent/12 text-accent text-caption font-semibold">
+            <button
+              type="button"
+              onClick={() => setOverrideWalletId(undefined)}
+              aria-label={t('clearWalletFilter')}
+              className="inline-flex items-center gap-2 min-h-12 px-4 rounded-full bg-accent/12 text-accent text-caption font-semibold cursor-pointer active:scale-95 transition-transform"
+            >
               <span>
                 {pickName({ name_ar: activeWallet.nameAr, name_en: activeWallet.nameEn }, locale) ||
                   activeWallet.id}
               </span>
-              <button
-                type="button"
-                onClick={() => setOverrideWalletId(undefined)}
-                aria-label="Clear wallet filter"
-                className="size-4 flex items-center justify-center rounded-full hover:bg-accent/20 cursor-pointer"
-              >
-                ✕
-              </button>
-            </span>
+              <X className="size-4" aria-hidden />
+            </button>
           </div>
         )}
       </div>

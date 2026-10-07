@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { Check } from 'lucide-react';
 import { CategoryIcon } from '@/components/ui/category-icon';
 
@@ -75,25 +76,13 @@ export function ColorIconPicker({
   onSelectColor,
   onSelectIcon,
 }: ColorIconPickerProps) {
+  const t = useTranslations('settings');
   return (
     <div className="space-y-6">
-      {/* Live Preview */}
-      <div className="flex flex-col items-center justify-center p-4 bg-surface-2/60 rounded-card">
-        <div
-          style={{
-            backgroundColor: `${selectedColor}18`,
-            color: selectedColor,
-          }}
-          className="flex size-16 items-center justify-center rounded-full shadow-sm mb-2 transition-colors"
-        >
-          <CategoryIcon name={selectedIcon} className="size-8" />
-        </div>
-      </div>
-
       {/* Colors Grid */}
       <div className="space-y-2">
         <span className="text-caption font-semibold text-ink-muted">
-          Color
+          {t('color')}
         </span>
         <div className="grid grid-cols-6 gap-3">
           {PRESET_COLORS.map((color) => {
@@ -118,7 +107,7 @@ export function ColorIconPicker({
       {/* Icons Grid */}
       <div className="space-y-2">
         <span className="text-caption font-semibold text-ink-muted">
-          Icon
+          {t('icon')}
         </span>
         <div className="grid grid-cols-5 gap-2.5 max-h-56 overflow-y-auto overscroll-contain p-1 border border-line/30 rounded-card">
           {CURATED_ICONS.map((iconName) => {

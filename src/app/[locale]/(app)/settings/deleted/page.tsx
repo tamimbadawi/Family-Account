@@ -173,9 +173,9 @@ export default function RecentlyDeletedPage() {
                     type="button"
                     disabled={restoringId === entry.id}
                     onClick={() => handleRestore(entry)}
-                    className="flex shrink-0 items-center gap-1.5 h-10 px-3.5 rounded-xl bg-accent/15 text-accent font-semibold text-caption hover:bg-accent/25 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                    className="flex shrink-0 items-center gap-1.5 min-h-12 px-4 rounded-xl bg-accent/15 text-accent font-semibold text-body hover:bg-accent/25 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
                   >
-                    <RotateCcw className="size-4" />
+                    <RotateCcw className="size-4.5" />
                     <span>{t('restore')}</span>
                   </button>
                 </div>

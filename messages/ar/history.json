@@ -8,5 +8,6 @@
   "emptyMonthHint": "اضغط على زر الإضافة لتسجيل مصروف أو دخل جديد.",
   "addEntry": "تسجيل جديد",
   "prevMonth": "الشهر السابق",
-  "nextMonth": "الشهر التالي"
+  "nextMonth": "الشهر التالي",
+  "clearWalletFilter": "عرض كل المحافظ"
 }

@@ -20,7 +20,7 @@ export const DEMO_HOUSEHOLD_ID = '11111111-1111-1111-1111-111111111111';
 export const USER_MAMA_ID = '22222222-2222-2222-2222-222222222222';
 export const USER_BABA_ID = '33333333-3333-3333-3333-333333333333';
 
-export const SEED_VERSION = 3;
+export const SEED_VERSION = 4;
 
 export const WALLET_CASH_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
 export const WALLET_BANK_ID = 'aaaaaaaa-0000-0000-0000-000000000002'; // NBE
@@ -64,7 +64,7 @@ export const DEFAULT_WALLETS: AccountRow[] = [
     name_ar: 'كاش',
     name_en: 'Cash',
     type: 'cash',
-    opening_balance: 6000,
+    opening_balance: 12000,
     icon: 'banknote',
     color: '#0F766E',
     sort_order: 0,
@@ -457,10 +457,11 @@ export function generateRealisticEntries(
     const targetMonth = targetDate.getMonth();
 
     // Determine how many days to simulate in this month:
-    // If it's the current month (mOffset === 0), simulate up to baseDate.getDate() or minimum 6 days
+    // If it's the current month (mOffset === 0), simulate up to today: never future-dated entries
+    // (the filler below tops up past months early in the month)
     let maxDay = new Date(targetYear, targetMonth + 1, 0).getDate();
     if (mOffset === 0) {
-      maxDay = Math.min(maxDay, Math.max(6, baseDate.getDate()));
+      maxDay = Math.min(maxDay, baseDate.getDate());
     }
 
     const dateStr = (day: number) => {

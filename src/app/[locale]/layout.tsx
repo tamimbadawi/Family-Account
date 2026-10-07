@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { SerwistProvider } from '@serwist/turbopack/react';
+import { SwUpdater } from '@/components/layout/SwUpdater';
 import { IBM_Plex_Sans_Arabic } from 'next/font/google';
 import { type Locale, routing } from '@/i18n/routing';
 import { STARTUP_IMAGES } from '../startup-images';
@@ -84,6 +85,7 @@ export default async function LocaleLayout({
             swUrl="/serwist/sw.js"
             disable={process.env.NODE_ENV !== 'production'}
           >
+            <SwUpdater />
             {children}
           </SerwistProvider>
         </NextIntlClientProvider>

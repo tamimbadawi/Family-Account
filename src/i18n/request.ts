@@ -5,7 +5,6 @@ const namespaces = [
   'app',
   'nav',
   'common',
-  'sync',
   'home',
   'entry',
   'history',
