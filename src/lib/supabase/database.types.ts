@@ -276,6 +276,8 @@ export type Database = {
         Row: {
           currencies: string[]
           status: string
+          has_sample_data: boolean
+          sample_cleared_at: string | null
           created_at: string
           currency: string
           id: string
@@ -284,6 +286,8 @@ export type Database = {
         Insert: {
           currencies?: string[]
           status?: string
+          has_sample_data?: boolean
+          sample_cleared_at?: string | null
           created_at?: string
           currency?: string
           id?: string
@@ -292,6 +296,8 @@ export type Database = {
         Update: {
           currencies?: string[]
           status?: string
+          has_sample_data?: boolean
+          sample_cleared_at?: string | null
           created_at?: string
           currency?: string
           id?: string
@@ -401,6 +407,7 @@ export type Database = {
           note: string | null
           occurred_on: string
           photo_path: string | null
+          is_sample: boolean
           to_account_id: string | null
           type: Database["public"]["Enums"]["txn_type"]
           updated_at: string
@@ -419,6 +426,7 @@ export type Database = {
           note?: string | null
           occurred_on?: string
           photo_path?: string | null
+          is_sample?: boolean
           to_account_id?: string | null
           type: Database["public"]["Enums"]["txn_type"]
           updated_at?: string
@@ -437,6 +445,7 @@ export type Database = {
           note?: string | null
           occurred_on?: string
           photo_path?: string | null
+          is_sample?: boolean
           to_account_id?: string | null
           type?: Database["public"]["Enums"]["txn_type"]
           updated_at?: string
@@ -636,6 +645,7 @@ export type Database = {
         Args: { p_display_name: string; p_email: string }
         Returns: undefined
       }
+      clear_sample_data: { Args: never; Returns: undefined }
       create_family: {
         Args: {
           p_currencies?: string[]
@@ -651,6 +661,7 @@ export type Database = {
       }
       is_member: { Args: { hid: string }; Returns: boolean }
       keepalive: { Args: never; Returns: string }
+      restore_sample_data: { Args: never; Returns: undefined }
       operator_families: {
         Args: never
         Returns: {

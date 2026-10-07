@@ -233,6 +233,35 @@ export class LiveRepository extends MockRepository {
     return data;
   }
 
+  // ---------- Sample data (0014: on the server, marked is_sample) ----------
+
+  /** The family still has its starter sample entries (read from the household on this phone). */
+  override async hasSampleData(): Promise<boolean> {
+    const household = (await this.db.households.toArray())[0];
+    return household?.has_sample_data === true;
+  }
+
+  /**
+   * The family admin clears the samples: the server moves them to the bin for every phone.
+   * Resolves to the Undo, which brings exactly those entries back.
+   */
+  override async clearSampleData(): Promise<() => Promise<void>> {
+    await this.callSampleRpc('clear_sample_data');
+    return () => this.callSampleRpc('restore_sample_data');
+  }
+
+  private async callSampleRpc(fn: 'clear_sample_data' | 'restore_sample_data'): Promise<void> {
+    if (offline()) throw new OfflineError();
+    try {
+      const { error } = await this.client().rpc(fn).abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
+      if (error) throw error;
+    } catch (err) {
+      if (isNetworkFailure(err)) throw new OfflineError();
+      throw err instanceof Error ? err : new Error(String((err as { message?: unknown })?.message ?? err));
+    }
+    await this.refresh();
+  }
+
   // ---------- Status ----------
 
   override async syncStatus(): Promise<SyncStatus> {

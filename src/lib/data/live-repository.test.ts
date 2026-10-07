@@ -115,3 +115,64 @@ describe('toServerPayload', () => {
     ).toEqual({ id: 'x', amount: 1, deleted_at: null });
   });
 });
+
+describe('LiveRepository sample data', () => {
+  let db: FamilyAccountsDB;
+
+  beforeEach(async () => {
+    db = new FamilyAccountsDB(`test-live-sample-${Math.random().toString(36).slice(2, 9)}`);
+    await db.meta.put({ key: 'householdId', value: HID });
+    await db.households.put({ id: HID, name: 'Family', currency: 'EGP', created_at: serverNow, has_sample_data: true });
+    await db.transactions.bulkPut([
+      { id: 's1', household_id: HID, type: 'expense', amount: 10, occurred_on: '2026-10-01', account_id: 'a', to_account_id: null, item_id: 'i', note: null, is_sample: true, created_by: null, updated_by: null, created_at: serverNow, updated_at: serverNow, deleted_at: serverNow },
+      { id: 'r1', household_id: HID, type: 'expense', amount: 20, occurred_on: '2026-10-01', account_id: 'a', to_account_id: null, item_id: 'i', note: null, created_by: null, updated_by: null, created_at: serverNow, updated_at: serverNow, deleted_at: serverNow },
+    ]);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function rpcClient(fail?: Error) {
+    const calls: string[] = [];
+    const client = {
+      rpc(fn: string) {
+        calls.push(fn);
+        return { abortSignal: async () => (fail ? Promise.reject(fail) : { error: null }) };
+      },
+    };
+    return { client: () => client as never, calls };
+  }
+
+  it('reads whether the family still has its samples from the household', async () => {
+    const repo = new LiveRepository(db, rpcClient().client);
+    expect(await repo.hasSampleData()).toBe(true);
+    await db.households.update(HID, { has_sample_data: false });
+    expect(await repo.hasSampleData()).toBe(false);
+  });
+
+  it('clears on the server, pulls, and the undo restores on the server', async () => {
+    const { client, calls } = rpcClient();
+    const repo = new LiveRepository(db, client);
+    const refresh = vi.spyOn(repo, 'refresh').mockResolvedValue();
+    const undo = await repo.clearSampleData();
+    expect(calls).toEqual(['clear_sample_data']);
+    expect(refresh).toHaveBeenCalledTimes(1);
+    await undo();
+    expect(calls).toEqual(['clear_sample_data', 'restore_sample_data']);
+  });
+
+  it('without a connection nothing is sent', async () => {
+    vi.stubGlobal('navigator', { onLine: false });
+    const { client, calls } = rpcClient();
+    const err = await new LiveRepository(db, client).clearSampleData().catch((e) => e);
+    expect(isOfflineError(err)).toBe(true);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('cleared samples never show in Recently deleted', async () => {
+    const repo = new LiveRepository(db, rpcClient().client);
+    const deleted = await repo.listEntries({ onlyDeleted: true });
+    expect(deleted.map((e) => e.id)).toEqual(['r1']);
+  });
+});

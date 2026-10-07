@@ -825,7 +825,8 @@ export class MockRepository implements Repository {
 
     // Soft delete filtering
     if (params?.onlyDeleted) {
-      rows = rows.filter((r) => r.deleted_at !== null);
+      // Cleared sample entries are not the family's; they never show in Recently deleted
+      rows = rows.filter((r) => r.deleted_at !== null && !r.is_sample);
     } else if (!params?.includeDeleted) {
       rows = rows.filter((r) => r.deleted_at === null);
     }
