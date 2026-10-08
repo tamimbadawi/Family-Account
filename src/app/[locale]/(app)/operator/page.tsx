@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ChevronLeft, KeyRound, Pause, Play, Plus, X } from 'lucide-react';
+import { Check, ChevronLeft, KeyRound, Pause, Play, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
@@ -13,7 +13,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { isAuthConfigured } from '@/lib/supabase/client';
 import { FamilyAdminError } from '@/lib/auth/family-admin';
 import { isEmail, normalizeEmail } from '@/lib/auth/email';
-import { operator, type FamilyRequest, type OperatorFamily, type WaitingFamily } from '@/lib/auth/operator';
+import {
+  operator,
+  type FamilyRequest,
+  type OperatorFamily,
+  type SupportInboxMessage,
+  type WaitingFamily,
+} from '@/lib/auth/operator';
 import { inviteLink, sendInvite } from '@/lib/auth/invite';
 import { formatDay } from '@/lib/format';
 
@@ -29,6 +35,7 @@ const ACTION =
  * /operator · for the person who runs the app (OPERATOR_EMAILS in the `operator` Edge Function).
  * Start a new family by setting its admin's email and a first password, see every family as counts
  * only, pause a family, or reset a family admin's password. Never shows amounts or entries.
+ * Messages sent from Settings → Contact support wait at the top until marked done.
  */
 export default function OperatorPage() {
   const t = useTranslations('operator');
@@ -39,6 +46,8 @@ export default function OperatorPage() {
   const [families, setFamilies] = React.useState<OperatorFamily[] | null>(null);
   const [waiting, setWaiting] = React.useState<(WaitingFamily & { hoursLeft?: number })[]>([]);
   const [requests, setRequests] = React.useState<FamilyRequest[]>([]);
+  const [support, setSupport] = React.useState<SupportInboxMessage[]>([]);
+  const [closing, setClosing] = React.useState<string | null>(null);
   const [familyName, setFamilyName] = React.useState('');
   const [denied, setDenied] = React.useState(false);
   const [loadFailed, setLoadFailed] = React.useState(false);
@@ -54,7 +63,12 @@ export default function OperatorPage() {
   React.useEffect(() => {
     if (!live) return;
     let cancelled = false;
-    operator<{ families: OperatorFamily[]; waiting: WaitingFamily[]; requests?: FamilyRequest[] }>({ action: 'list' })
+    operator<{
+      families: OperatorFamily[];
+      waiting: WaitingFamily[];
+      requests?: FamilyRequest[];
+      support?: SupportInboxMessage[];
+    }>({ action: 'list' })
       .then((result) => {
         if (cancelled) return;
         setFamilies(result.families);
@@ -69,6 +83,7 @@ export default function OperatorPage() {
           }))
         );
         setRequests(result.requests ?? []);
+        setSupport(result.support ?? []);
         setLoadFailed(false);
       })
       .catch((err) => {
@@ -106,6 +121,20 @@ export default function OperatorPage() {
       setError(t.has(`errors.${code}`) ? t(`errors.${code}`) : t('errors.failed'));
     } finally {
       setBusy(false);
+    }
+  };
+
+  /** Closes a support message straight away; it leaves the list without a reload. */
+  const markDone = async (m: SupportInboxMessage) => {
+    setClosing(m.id);
+    try {
+      await operator({ action: 'support_done', messageId: m.id });
+      setSupport((prev) => prev.filter((x) => x.id !== m.id));
+      toast.success(t('supportDone'));
+    } catch {
+      toast.error(t('errors.failed'));
+    } finally {
+      setClosing(null);
     }
   };
 
@@ -185,10 +214,57 @@ export default function OperatorPage() {
               </div>
             ) : !families ? (
               <Skeleton className="h-24 w-full rounded-card" />
-            ) : families.length === 0 && waiting.length === 0 && requests.length === 0 ? (
+            ) : families.length === 0 && waiting.length === 0 && requests.length === 0 && support.length === 0 ? (
               <p className="text-body text-ink-muted">{t('empty')}</p>
             ) : (
               <>
+              {support.length > 0 && <h2 className="text-heading font-semibold text-ink">{t('supportTitle')}</h2>}
+              {support.map((m) => (
+                <div key={m.id} className="space-y-2 rounded-card border border-accent/40 bg-surface p-4 shadow-card">
+                  <div className="min-w-0">
+                    <p className="truncate text-body font-semibold text-ink">
+                      {m.sender ? t('supportFrom', { name: m.sender, family: m.family }) : m.family}
+                    </p>
+                    <p className="text-caption text-ink-muted">
+                      {m.section && tSettings.has(`supportSection.${m.section}`) && (
+                        <>{tSettings(`supportSection.${m.section}`)} · </>
+                      )}
+                      {formatDay(m.createdAt.slice(0, 10), locale)}
+                    </p>
+                  </div>
+                  {m.message && (
+                    <p dir="auto" className="whitespace-pre-wrap break-words text-body text-ink">
+                      {m.message}
+                    </p>
+                  )}
+                  {m.photoUrls.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {m.photoUrls.map((url, i) => (
+                        <a
+                          key={url}
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label={t('supportPhoto', { n: i + 1 })}
+                          className="size-20 overflow-hidden rounded-2xl bg-surface-2"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element -- signed Storage link */}
+                          <img src={url} alt="" className="size-full object-cover" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                  <Button
+                    variant="outline"
+                    disabled={closing === m.id}
+                    onClick={() => void markDone(m)}
+                    className="h-12 w-full gap-2 text-body font-semibold"
+                  >
+                    <Check className="size-5" />
+                    {t('supportMarkDone')}
+                  </Button>
+                </div>
+              ))}
               {requests.length > 0 && <h2 className="text-heading font-semibold text-ink">{t('requests')}</h2>}
               {requests.map((q) => (
                 <div key={q.inviteId} className="space-y-2 rounded-card border border-accent/40 bg-surface p-4 shadow-card">

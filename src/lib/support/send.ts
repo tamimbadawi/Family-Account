@@ -1,12 +1,12 @@
-// Contacting support: the iPhone share sheet (Mail, WhatsApp, Messages…) with the message and any photos.
-// Where photos can't be shared that way, Mail opens with the message filled in (photos can't ride a mailto link).
-
-export type SupportResult = 'shared' | 'mailed' | 'cancelled' | 'failed';
-
-/** Support address from NEXT_PUBLIC_SUPPORT_EMAIL; empty when not set. */
-export const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() ?? '';
+// Contacting support: the message, the part of the app and up to 3 photos are saved in the database
+// (0016_support_messages.sql); the person who runs the app reads them on /operator.
+// Photos go to the private `support` bucket first, then the message points at them.
+// In sample-data mode there is no server, so the message is only pretended to be sent.
+import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
+import { OfflineError } from '@/lib/data/errors';
 
 export const MAX_SUPPORT_PHOTOS = 3;
+export const SUPPORT_BUCKET = 'support';
 
 /** Parts of the app the problem can be about (labels in messages/<locale>/settings.json → supportSection). */
 export const SUPPORT_SECTIONS = [
@@ -24,35 +24,53 @@ export const SUPPORT_SECTIONS = [
 
 export type SupportSection = (typeof SUPPORT_SECTIONS)[number];
 
-export function supportMailto(email: string, subject: string, body: string): string {
-  return `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+export interface SupportMessage {
+  section: SupportSection | '';
+  message: string;
+  photos: Blob[];
+  locale: string;
 }
 
-export function photoFiles(photos: Blob[]): File[] {
-  return photos.map((blob, i) => {
-    const ext = blob.type === 'image/webp' ? 'webp' : 'jpg';
-    return new File([blob], `photo-${i + 1}.${ext}`, { type: blob.type || 'image/jpeg' });
-  });
+/** Storage path of photo n (1-based) of a message: <user_id>/<message_id>/<n>.<ext>. */
+export function supportPhotoPath(userId: string, messageId: string, n: number, blob: Blob): string {
+  return `${userId}/${messageId}/${n}.${blob.type === 'image/webp' ? 'webp' : 'jpg'}`;
 }
 
-export async function sendSupportMessage(subject: string, body: string, photos: Blob[]): Promise<SupportResult> {
-  if (typeof navigator === 'undefined') return 'failed';
-  const files = photoFiles(photos);
-  const data: ShareData = { title: subject, text: body };
-  if (files.length) data.files = files;
+const NETWORK = /failed to fetch|network|load failed|fetch failed|timed? ?out|aborted/i;
 
-  const canShare =
-    typeof navigator.share === 'function' && (!files.length || navigator.canShare?.({ files }) === true);
-  if (canShare) {
-    try {
-      await navigator.share(data);
-      return 'shared';
-    } catch (err) {
-      // Closing the share sheet is not an error: leave it quietly
-      if (err instanceof DOMException && err.name === 'AbortError') return 'cancelled';
+/** Saves the message. Throws OfflineError with no connection, Error('too_many') or Error('failed'). */
+export async function sendSupportMessage({ section, message, photos, locale }: SupportMessage): Promise<void> {
+  if (!isAuthConfigured()) return;
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new OfflineError();
+
+  const client = getSupabaseBrowserClient();
+  try {
+    const { data } = await client.auth.getUser();
+    const userId = data.user?.id;
+    if (!userId) throw new Error('failed');
+
+    const id = crypto.randomUUID();
+    const paths: string[] = [];
+    for (const [i, blob] of photos.slice(0, MAX_SUPPORT_PHOTOS).entries()) {
+      const path = supportPhotoPath(userId, id, i + 1, blob);
+      const { error } = await client.storage
+        .from(SUPPORT_BUCKET)
+        .upload(path, blob, { contentType: blob.type || 'image/jpeg' });
+      if (error) throw error;
+      paths.push(path);
     }
+
+    const { error } = await client.rpc('send_support_message', {
+      p_id: id,
+      p_section: section,
+      p_message: message.trim(),
+      p_photo_paths: paths,
+      p_locale: locale,
+    });
+    if (error) throw new Error(error.message === 'too_many' ? 'too_many' : 'failed');
+  } catch (err) {
+    const msg = String((err as { message?: unknown })?.message ?? '');
+    if (NETWORK.test(msg)) throw new OfflineError();
+    throw err instanceof Error && msg === 'too_many' ? err : new Error('failed');
   }
-  if (!SUPPORT_EMAIL) return 'failed';
-  window.location.href = supportMailto(SUPPORT_EMAIL, subject, body);
-  return 'mailed';
 }
