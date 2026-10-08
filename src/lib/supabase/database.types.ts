@@ -396,6 +396,53 @@ export type Database = {
           },
         ]
       }
+      support_messages: {
+        Row: {
+          created_at: string
+          handled_at: string | null
+          household_id: string
+          id: string
+          locale: string | null
+          message: string
+          photo_paths: string[]
+          section: string | null
+          sent_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          handled_at?: string | null
+          household_id: string
+          id: string
+          locale?: string | null
+          message?: string
+          photo_paths?: string[]
+          section?: string | null
+          sent_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          handled_at?: string | null
+          household_id?: string
+          id?: string
+          locale?: string | null
+          message?: string
+          photo_paths?: string[]
+          section?: string | null
+          sent_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           to_amount: number | null
@@ -689,6 +736,16 @@ export type Database = {
       }
       invite_family: {
         Args: { p_email: string; p_friend_name: string }
+        Returns: string
+      }
+      send_support_message: {
+        Args: {
+          p_id: string
+          p_locale: string
+          p_message: string
+          p_photo_paths: string[]
+          p_section: string
+        }
         Returns: string
       }
       set_household_currencies: {

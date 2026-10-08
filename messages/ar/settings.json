@@ -56,11 +56,10 @@
   "supportAddPhoto": "إضافة صورة",
   "supportRemovePhoto": "إزالة الصورة",
   "supportPhotoFailed": "تعذّرت إضافة الصورة. جرّب صورة أخرى.",
-  "supportSendTo": "أرسلها إلى:",
   "supportSend": "إرسال",
   "supportSubject": "حساباتنا — طلب مساعدة",
-  "supportSent": "شكرًا — رسالتك جاهزة للإرسال",
-  "supportFailed": "تعذّر فتح الإرسال. حاول مرة أخرى.",
+  "supportSent": "شكرًا، رسالتك وصلتنا.",
+  "supportFailed": "معرفناش نبعت رسالتك. جرّب تاني.",
   "supportArea": "أي جزء من التطبيق؟",
   "supportAreaPlaceholder": "اختر القسم",
   "supportAreaLabel": "القسم:",
@@ -75,5 +74,6 @@
     "family": "العائلة",
     "signIn": "تسجيل الدخول أو كلمة السر",
     "other": "شيء آخر"
-  }
+  },
+  "supportTooMany": "بعت رسايل كتير النهارده. جرّب بكرة."
 }

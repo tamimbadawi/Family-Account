@@ -9,6 +9,9 @@
 // Family invites: anyone in a family can ask for a friend's family (invite_family, 0012). The open
 // requests come back with 'list'; starting a family with an inviteId approves that request.
 // A family admin login nobody signs in to within 24 hours is deleted by pg_cron (0013_invite_expiry).
+//
+// Support messages: what people send from Settings → Contact support (0016_support_messages). The
+// open ones come back with 'list', photos as signed links valid for an hour; 'support_done' closes one.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const normalizeEmail = (e: string) => e.trim().toLowerCase();
@@ -98,7 +101,25 @@ Deno.serve(async (req) => {
         fromFamily: i.from_family,
         fromName: i.from_name ?? '',
       }));
-      return reply(200, { families, waiting, requests });
+      const { data: supportRows } = await admin.rpc('operator_support_messages');
+      const support = await Promise.all(
+        (supportRows ?? []).map(async (s: Record<string, unknown>) => {
+          const paths = (s.photo_paths as string[] | null) ?? [];
+          const signed = paths.length
+            ? ((await admin.storage.from('support').createSignedUrls(paths, 3600)).data ?? [])
+            : [];
+          return {
+            id: s.id,
+            family: s.family,
+            sender: s.sender ?? '',
+            section: s.section,
+            message: s.message,
+            photoUrls: signed.map((u) => u.signedUrl).filter(Boolean),
+            createdAt: s.created_at,
+          };
+        })
+      );
+      return reply(200, { families, waiting, requests, support });
     }
 
     case 'create_family_admin': {
@@ -137,6 +158,12 @@ Deno.serve(async (req) => {
     case 'decline_invite': {
       if (!body.inviteId) return reply(400, { error: 'bad_request' });
       const { error } = await admin.rpc('decide_family_invite', { p_invite_id: body.inviteId, p_status: 'declined' });
+      return error ? reply(500, { error: 'failed' }) : reply(200, { ok: true });
+    }
+
+    case 'support_done': {
+      if (!body.messageId) return reply(400, { error: 'bad_request' });
+      const { error } = await admin.rpc('support_message_done', { p_id: body.messageId });
       return error ? reply(500, { error: 'failed' }) : reply(200, { ok: true });
     }
 

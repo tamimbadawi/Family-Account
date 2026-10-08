@@ -56,11 +56,10 @@
   "supportAddPhoto": "Add a photo",
   "supportRemovePhoto": "Remove photo",
   "supportPhotoFailed": "Couldn't add that photo. Try another one.",
-  "supportSendTo": "Send it to:",
   "supportSend": "Send",
   "supportSubject": "Family Accounts — help request",
-  "supportSent": "Thank you — your message is ready to send",
-  "supportFailed": "Couldn't open sending. Try again.",
+  "supportSent": "Thank you. We got your message.",
+  "supportFailed": "Couldn't send your message. Try again.",
   "supportArea": "Which part of the app?",
   "supportAreaPlaceholder": "Choose a section",
   "supportAreaLabel": "Section:",
@@ -75,5 +74,6 @@
     "family": "Family",
     "signIn": "Signing in or password",
     "other": "Something else"
-  }
+  },
+  "supportTooMany": "You sent a lot of messages today. Try again tomorrow."
 }

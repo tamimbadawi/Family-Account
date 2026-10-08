@@ -1,20 +1,15 @@
 'use client';
 
 import * as React from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { ChevronDown, ImagePlus, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { useObjectUrl } from '@/components/entry/ReceiptPhoto';
 import { useRestoreSheetAfterKeyboard } from '@/components/settings/useRestoreSheetAfterKeyboard';
 import { compressPhoto } from '@/lib/photos/compress';
-import {
-  MAX_SUPPORT_PHOTOS,
-  SUPPORT_EMAIL,
-  SUPPORT_SECTIONS,
-  type SupportSection,
-  sendSupportMessage,
-} from '@/lib/support/send';
+import { isOfflineError } from '@/lib/data/errors';
+import { MAX_SUPPORT_PHOTOS, SUPPORT_SECTIONS, type SupportSection, sendSupportMessage } from '@/lib/support/send';
 
 export interface SupportDrawerProps {
   open: boolean;
@@ -43,10 +38,12 @@ function PhotoThumb({ photo, onRemove, label }: { photo: Blob; onRemove: () => v
 
 /**
  * Settings → Contact support: write what happened, add up to 3 photos (screenshots or pictures),
- * then Send opens the iPhone share sheet (Mail, WhatsApp…) with the message and photos.
+ * then Send saves it for the person who runs the app, who reads it on /operator.
  */
 export function SupportDrawer({ open, onOpenChange }: SupportDrawerProps) {
   const t = useTranslations('settings');
+  const tCommon = useTranslations('common');
+  const locale = useLocale();
 
   const [section, setSection] = React.useState<SupportSection | ''>('');
   const [message, setMessage] = React.useState('');
@@ -90,16 +87,20 @@ export function SupportDrawer({ open, onOpenChange }: SupportDrawerProps) {
   const handleSend = async () => {
     if (!canSend) return;
     setSending(true);
-    const area = section ? t(`supportSection.${section}`) : '';
-    const subject = area ? `${t('supportSubject')} · ${area}` : t('supportSubject');
-    const body = area ? `${t('supportAreaLabel')} ${area}\n\n${message.trim()}` : message.trim();
-    const result = await sendSupportMessage(subject, body, photos);
-    setSending(false);
-    if (result === 'shared' || result === 'mailed') {
+    try {
+      await sendSupportMessage({ section, message, photos, locale });
       toast.success(t('supportSent'));
       onOpenChange(false);
-    } else if (result === 'failed') {
-      toast.error(t('supportFailed'));
+    } catch (err) {
+      toast.error(
+        isOfflineError(err)
+          ? tCommon('noConnection')
+          : err instanceof Error && err.message === 'too_many'
+            ? t('supportTooMany')
+            : t('supportFailed')
+      );
+    } finally {
+      setSending(false);
     }
   };
 
@@ -184,12 +185,6 @@ export function SupportDrawer({ open, onOpenChange }: SupportDrawerProps) {
               </div>
             </div>
 
-            {SUPPORT_EMAIL && (
-              <p className="text-caption text-ink-muted">
-                {t('supportSendTo')} <span dir="ltr" className="font-semibold text-ink">{SUPPORT_EMAIL}</span>
-              </p>
-            )}
-
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
@@ -204,7 +199,7 @@ export function SupportDrawer({ open, onOpenChange }: SupportDrawerProps) {
                 disabled={!canSend}
                 className="h-13 flex-1 rounded-2xl bg-accent font-semibold text-accent-ink shadow-sm transition-all active:scale-95 cursor-pointer disabled:opacity-50"
               >
-                {t('supportSend')}
+                {sending ? <Loader2 className="mx-auto size-5 animate-spin" /> : t('supportSend')}
               </button>
             </div>
           </div>
