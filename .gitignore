@@ -18,6 +18,8 @@ public/swe-worker-*.js
 .env
 .env*.local
 .env.production
+.env.test
+.env.test.local
 
 # misc
 .DS_Store

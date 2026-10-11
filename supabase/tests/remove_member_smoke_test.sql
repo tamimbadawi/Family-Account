@@ -18,7 +18,11 @@ begin
   perform set_config('request.jwt.claim.sub', mom::text, true);
   perform set_config('request.jwt.claims', json_build_object('sub', mom, 'role', 'authenticated')::text, true);
   hid := public.create_household('Smoke', 'Mom', 'en');
-  perform public.add_member('smoke-dad-' || dad || '@test.local', 'Dad');
+  -- Provision Dad as member (simulating service-role admin provisioning)
+  execute 'reset role';
+  insert into public.household_members (household_id, user_id, display_name, role)
+    values (hid, dad, 'Dad', 'member');
+  execute 'set local role authenticated';
   select id into cash from public.accounts where household_id = hid and type = 'cash';
   select id into elec from public.items where household_id = hid and name_en = 'Electricity';
 

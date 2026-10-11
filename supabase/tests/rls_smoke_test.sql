@@ -32,7 +32,11 @@ begin
   select count(*) into n from public.items;
   r := r || format(E'\n%s seed created items (%s)', case when n > 20 then 'PASS' else 'FAIL' end, n);
 
-  perform public.add_member(dad_email, 'Dad');
+  -- Provision Dad as member (simulating service-role admin provisioning)
+  execute 'reset role';
+  insert into public.household_members (household_id, user_id, display_name, role)
+    values (hid, dad, 'Dad', 'member');
+  execute 'set local role authenticated';
 
   select id into cash from public.accounts where household_id = hid and type = 'cash';
   insert into public.accounts (household_id, name_en, type) values (hid, 'Bank', 'bank') returning id into bank;
