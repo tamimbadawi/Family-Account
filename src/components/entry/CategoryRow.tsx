@@ -1,10 +1,12 @@
 'use client';
 
 import * as React from 'react';
+import { createPortal } from 'react-dom';
 import { useLocale, useTranslations } from 'next-intl';
 import { Check, ChevronLeft, X } from 'lucide-react';
 import type { Category, CategoryKind, Item, Subcategory } from '@/lib/data/types';
 import { useCategories, useItems, useRepository, useSubcategories } from '@/lib/data/provider';
+import { useSaveError } from '@/components/ui/use-save-error';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { pickName } from '@/lib/format';
 import {
@@ -17,6 +19,10 @@ export interface CategoryRowProps {
   selected: Item | null;
   onPick: (item: Item) => void;
   onClear: () => void;
+  /** Where to show the "you are in" chip (next to the amount); without it the chip stays first in the row. */
+  breadcrumbSlot?: HTMLElement | null;
+  /** The category and group currently open (an entry can be saved at either level). */
+  onPathChange?: (category: Category | null, subcategory: Subcategory | null) => void;
 }
 
 type Step = 'category' | 'subcategory' | 'item';
@@ -28,11 +34,12 @@ const CHIP =
  * One swipeable row of chips: category → group → item.
  * Compact so the whole entry sheet fits one iPhone screen.
  */
-export function CategoryRow({ kind, selected, onPick, onClear }: CategoryRowProps) {
+export function CategoryRow({ kind, selected, onPick, onClear, onPathChange, breadcrumbSlot }: CategoryRowProps) {
   const t = useTranslations('entry');
   const tSettings = useTranslations('settings');
   const locale = useLocale();
   const repo = useRepository();
+  const saveError = useSaveError();
   const rowRef = React.useRef<HTMLDivElement>(null);
 
   const [step, setStep] = React.useState<Step>('category');
@@ -49,6 +56,10 @@ export function CategoryRow({ kind, selected, onPick, onClear }: CategoryRowProp
     setSubcategory(null);
     setIsCreating(false);
   }
+
+  React.useEffect(() => {
+    onPathChange?.(category, subcategory);
+  }, [category, subcategory, onPathChange]);
 
   const categories = useCategories(kind);
   const subcategories = useSubcategories(category?.id);
@@ -74,19 +85,31 @@ export function CategoryRow({ kind, selected, onPick, onClear }: CategoryRowProp
 
   // Same form as Settings → Categories: both names, plus colour and icon for categories
   const handleCreate = async ({ nameAr, nameEn, color, icon }: CategoryFormValues) => {
-    if (step === 'category') {
-      const created = await repo.addCategory({ kind, nameAr, nameEn, color, icon });
-      setCategory(created);
-      setStep('subcategory');
-    } else if (step === 'subcategory' && category) {
-      const created = await repo.addSubcategory({ categoryId: category.id, nameAr, nameEn });
-      setSubcategory(created);
-      setStep('item');
-    } else if (step === 'item' && subcategory) {
-      const created = await repo.addItem({ subcategoryId: subcategory.id, nameAr, nameEn });
-      onPick(created);
+    // A new category or group comes with a matching group/item of the same name and is chosen at once,
+    // so Save works straight away (an entry needs an item; nobody should have to build three levels first)
+    try {
+      if (step === 'category') {
+        const created = await repo.addCategory({ kind, nameAr, nameEn, color, icon });
+        const group = await repo.addSubcategory({ categoryId: created.id, nameAr, nameEn });
+        const item = await repo.addItem({ subcategoryId: group.id, nameAr, nameEn });
+        setCategory(created);
+        setSubcategory(group);
+        setStep('item');
+        onPick(item);
+      } else if (step === 'subcategory' && category) {
+        const created = await repo.addSubcategory({ categoryId: category.id, nameAr, nameEn });
+        const item = await repo.addItem({ subcategoryId: created.id, nameAr, nameEn });
+        setSubcategory(created);
+        setStep('item');
+        onPick(item);
+      } else if (step === 'item' && subcategory) {
+        const created = await repo.addItem({ subcategoryId: subcategory.id, nameAr, nameEn });
+        onPick(created);
+      }
+      setIsCreating(false);
+    } catch (err) {
+      saveError(err);
     }
-    setIsCreating(false);
   };
 
   // Chosen item: one chip, tap to choose again
@@ -138,17 +161,35 @@ export function CategoryRow({ kind, selected, onPick, onClear }: CategoryRowProp
         ? tSettings('addSubcategory')
         : tSettings('addItem');
 
+  // "You are in": the main category (and group), highlighted; tapping it steps back one level
+  const breadcrumb = (
+    <button
+      type="button"
+      onClick={goBack}
+      aria-label={t('backTo', { name: step === 'item' ? name(subcategory) : name(category) })}
+      data-breadcrumb
+      className={`${CHIP} max-w-full gap-1.5 bg-accent-soft px-3 text-accent shadow-card`}
+    >
+      <ChevronLeft className="size-5 shrink-0 rtl:rotate-180" />
+      <span style={category?.color ? { color: category.color } : undefined} className="shrink-0">
+        <CategoryIcon name={category?.icon} className="size-5" />
+      </span>
+      <span className="flex min-w-0 flex-col items-start text-start leading-tight">
+        <span className="max-w-full truncate">{name(category)}</span>
+        {step === 'item' && subcategory && (
+          <span className="max-w-full truncate text-caption font-medium opacity-80">{name(subcategory)}</span>
+        )}
+      </span>
+    </button>
+  );
+
   return (
     <div
       ref={rowRef}
       className="-mx-5 flex gap-2 overflow-x-auto px-5 select-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
-      {step !== 'category' && (
-        <button type="button" onClick={goBack} className={`${CHIP} bg-accent-soft text-accent`}>
-          <ChevronLeft className="size-5 rtl:rotate-180" />
-          <span>{step === 'subcategory' ? name(category) : name(subcategory)}</span>
-        </button>
-      )}
+      {step !== 'category' && !breadcrumbSlot && breadcrumb}
+      {step !== 'category' && breadcrumbSlot && createPortal(breadcrumb, breadcrumbSlot)}
 
       {options.map((o) => (
         <button key={o.id} type="button" onClick={o.onClick} className={`${CHIP} bg-surface-2 text-ink`}>

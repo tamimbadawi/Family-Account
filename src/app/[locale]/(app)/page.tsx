@@ -9,7 +9,10 @@ import {
   useMonthSummary,
   useCategoryTotals,
   useMembers,
+  useBudgetProgress,
 } from '@/lib/data/provider';
+import { BudgetAlert } from '@/components/budgets/BudgetAlert';
+import { budgetWarnings } from '@/lib/reports/budgets';
 import { EntryRow } from '@/components/entry/EntryRow';
 import { useEntrySheet } from '@/components/entry/EntrySheetContext';
 import { Card } from '@/components/ui/card';
@@ -17,7 +20,9 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { OurMoneyRow } from '@/components/wallets/OurMoneySheet';
+import { SampleDataBadge } from '@/components/layout/SampleDataBadge';
 import { money, pickName } from '@/lib/format';
+import { useSignedInName } from '@/lib/auth/use-signed-in-name';
 
 export default function HomePage() {
   const tHome = useTranslations('home');
@@ -32,10 +37,12 @@ export default function HomePage() {
 
   // Responsive limit: at most 3 entries, 2 on 701-749px, 1 on <=700px (iPhone SE 375x667, 412x700)
   const [maxRows, setMaxRows] = React.useState(1);
+  const [isShort, setIsShort] = React.useState(true);
 
   React.useEffect(() => {
     const update = () => {
       setMaxRows(window.innerHeight <= 700 ? 1 : (window.innerHeight < 780 ? 2 : 3));
+      setIsShort(window.innerHeight <= 700);
     };
     update();
     window.addEventListener('resize', update);
@@ -47,18 +54,25 @@ export default function HomePage() {
   const summary = useMonthSummary(currentMonth);
   const topCategories = useCategoryTotals(currentMonth, 'expense', 'category');
   const entries = useEntries({ limit: 3 });
+  const budgetProgress = useBudgetProgress(currentMonth);
+  const warnings = React.useMemo(() => budgetWarnings(budgetProgress ?? []), [budgetProgress]);
 
   // Loading state
   const isLoading = summary === undefined || entries === undefined;
 
-  // Member name for greeting
-  const memberName = members?.[0]?.displayName || 'Mama';
+  // Greet the signed-in person by their own name; sample data's first member only when sign-in is off
+  const signedInName = useSignedInName();
+  const memberName = signedInName === null ? members?.[0]?.displayName || 'Mama' : signedInName;
 
-  // Greeting based on time of day
+  // Greeting based on time of day (just "Good evening" until the name has loaded)
   const isMorning = new Date().getHours() < 12;
-  const greeting = isMorning
-    ? tHome('greetingMorning', { name: memberName })
-    : tHome('greetingEvening', { name: memberName });
+  const greeting = memberName
+    ? isMorning
+      ? tHome('greetingMorning', { name: memberName })
+      : tHome('greetingEvening', { name: memberName })
+    : isMorning
+      ? tHome('greetingMorningPlain')
+      : tHome('greetingEveningPlain');
 
   if (isLoading) {
     return (
@@ -122,11 +136,13 @@ export default function HomePage() {
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-3 pt-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-2 select-none">
-      {/* 1. Greeting */}
-      <div>
-        <span className="text-body font-medium text-ink-muted">
+      {/* 1. Greeting (and the sample-data chip while the samples are still there) */}
+      <div className="flex items-center justify-between gap-2">
+        <span className="min-w-0 truncate text-body font-medium text-ink-muted">
           {greeting}
         </span>
+        {/* The 48px tap area overlaps the space around the line instead of making it taller */}
+        <SampleDataBadge className="-my-3" />
       </div>
 
       {/* 2. Hero Card */}
@@ -150,8 +166,12 @@ export default function HomePage() {
         </Card>
       </Link>
 
+      {/* Soft budget warning (80% or more), only when there is one */}
+      {warnings.length > 0 && <BudgetAlert warnings={warnings} />}
+
       {/* 3. Top categories this month */}
-      {displayedCategories.length > 0 && (
+      {/* On short screens a budget warning takes the place of the top categories (still in Reports) */}
+      {displayedCategories.length > 0 && !(isShort && warnings.length > 0) && (
         <section className="space-y-1">
           <h2 className="text-body font-semibold text-ink">
             {tHome('topCategories')}
@@ -214,7 +234,7 @@ export default function HomePage() {
         </div>
 
         <div className="divide-y divide-line rounded-card bg-surface px-4 py-0.5 shadow-card">
-          {entries.slice(0, maxRows).map((entry) => (
+          {entries.slice(0, warnings.length > 0 && !isShort ? maxRows - 1 : maxRows).map((entry) => (
             <EntryRow key={entry.id} entry={entry} onClick={() => openEdit(entry)} />
           ))}
         </div>

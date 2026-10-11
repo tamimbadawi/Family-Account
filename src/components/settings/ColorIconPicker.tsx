@@ -109,7 +109,7 @@ export function ColorIconPicker({
         <span className="text-caption font-semibold text-ink-muted">
           {t('icon')}
         </span>
-        <div className="grid grid-cols-5 gap-2.5 max-h-56 overflow-y-auto overscroll-contain p-1 border border-line/30 rounded-card">
+        <div className="grid grid-cols-5 gap-2.5 p-1">
           {CURATED_ICONS.map((iconName) => {
             const isSelected = selectedIcon.toLowerCase() === iconName.toLowerCase();
             return (

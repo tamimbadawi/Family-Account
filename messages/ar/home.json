@@ -7,5 +7,7 @@
   "topCategories": "أكتر حاجات صرفنا عليها",
   "recent": "آخر المصاريف",
   "emptyTitle": "ابدأ بتسجيل أول مصروف",
-  "emptyBody": "سجّل أي مبلغ صرفته النهارده، وهنرتّبه لك."
+  "emptyBody": "سجّل أي مبلغ صرفته النهارده، وهنرتّبه لك.",
+  "greetingMorningPlain": "صباح الخير",
+  "greetingEveningPlain": "مساء الخير"
 }

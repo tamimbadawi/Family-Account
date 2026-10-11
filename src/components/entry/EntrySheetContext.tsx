@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { markBusy } from '@/lib/busy';
 import type { EnrichedEntry, EntryType } from '@/lib/data/types';
 
 interface EntrySheetContextValue {
@@ -17,6 +18,9 @@ const EntrySheetContext = React.createContext<EntrySheetContextValue | null>(nul
 
 export function EntrySheetProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = React.useState(false);
+
+  // While an entry is open (even while the camera app is in front) the app must not reload for an update
+  React.useEffect(() => (isOpen ? markBusy() : undefined), [isOpen]);
   const [mode, setMode] = React.useState<'add' | 'edit'>('add');
   const [editingEntry, setEditingEntry] = React.useState<EnrichedEntry | null>(null);
   const [initialType, setInitialType] = React.useState<EntryType | undefined>(undefined);

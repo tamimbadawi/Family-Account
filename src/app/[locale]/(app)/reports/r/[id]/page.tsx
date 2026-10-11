@@ -23,6 +23,7 @@ import { WhoSpentWhatView } from '@/components/reports/views/WhoSpentWhatView';
 import { SearchExportView } from '@/components/reports/views/SearchExportView';
 import { UnusualSpendingView } from '@/components/reports/views/UnusualSpendingView';
 import { SpendingPaceView } from '@/components/reports/views/SpendingPaceView';
+import { BudgetVsActualView } from '@/components/reports/views/BudgetVsActualView';
 
 export function generateStaticParams() {
   return REPORTS_REGISTRY.map((r) => ({ id: r.id }));
@@ -81,6 +82,7 @@ export default async function ReportDetailPage({ params }: ReportPageProps) {
       {report.id === 'search-export' && <SearchExportView />}
       {report.id === 'unusual-spending' && <UnusualSpendingView />}
       {report.id === 'spending-pace' && <SpendingPaceView />}
+      {report.id === 'budget-vs-actual' && <BudgetVsActualView />}
 
       {!report.isImplemented && (
         <Card className="rounded-card bg-surface p-8 text-center shadow-card border border-line/60 space-y-3 mt-4">

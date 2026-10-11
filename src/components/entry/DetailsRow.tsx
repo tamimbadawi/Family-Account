@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Calendar, ChevronLeft, ChevronRight, PenLine } from 'lucide-react';
 import { useRepository, useWallets } from '@/lib/data/provider';
+import { useSaveError } from '@/components/ui/use-save-error';
 import type { Wallet } from '@/lib/data/types';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { formatMonth, pickName, shiftMonth } from '@/lib/format';
@@ -38,6 +39,7 @@ export function WalletSelect({ value, onChange, exclude, label }: WalletSelectPr
   const locale = useLocale();
   const t = useTranslations('entry');
   const repo = useRepository();
+  const saveError = useSaveError();
   const wallets = (useWallets() ?? []).filter((w) => !exclude || w.id !== exclude);
   const current = wallets.find((w) => w.id === value);
   const banks = wallets.filter((w) => w.type === 'bank');
@@ -60,8 +62,12 @@ export function WalletSelect({ value, onChange, exclude, label }: WalletSelectPr
   const addBank = async () => {
     const name = newBank.trim();
     if (!name) return;
-    const created = await repo.addWallet({ type: 'bank', nameAr: name, nameEn: name, icon: 'building-2' });
-    pick(created.id);
+    try {
+      const created = await repo.addWallet({ type: 'bank', nameAr: name, nameEn: name, icon: 'building-2' });
+      pick(created.id);
+    } catch (err) {
+      saveError(err);
+    }
   };
 
   const option = (w: Wallet) => (

@@ -11,10 +11,12 @@ import {
 import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
 import { useRepository, useWallets, useWalletBalances } from '@/lib/data/provider';
+import { useSaveError } from '@/components/ui/use-save-error';
 import type { Wallet, WalletType } from '@/lib/data/types';
 import { money, normalizeDigits, pickName } from '@/lib/format';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { ColorIconPicker } from '@/components/settings/ColorIconPicker';
+import { useRestoreSheetAfterKeyboard } from '@/components/settings/useRestoreSheetAfterKeyboard';
 import { AmountPad } from '@/components/entry/AmountPad';
 import {
   Drawer,
@@ -38,6 +40,7 @@ export default function WalletManagerPage() {
   const t = useTranslations('settings');
   const tWallets = useTranslations('wallets');
   const repo = useRepository();
+  const saveError = useSaveError();
 
   const [showArchived, setShowArchived] = React.useState(false);
 
@@ -58,6 +61,8 @@ export default function WalletManagerPage() {
 
   // Update Balance modal state
   const [isUpdateOpen, setIsUpdateOpen] = React.useState(false);
+  const walletSheetRef = React.useRef<HTMLDivElement>(null);
+  useRestoreSheetAfterKeyboard(walletSheetRef, isDrawerOpen);
   const [updatingWallet, setUpdatingWallet] = React.useState<Wallet | null>(null);
   const [updateAmountStr, setUpdateAmountStr] = React.useState('0');
 
@@ -120,8 +125,7 @@ export default function WalletManagerPage() {
         toast.info(tWallets('balanceUpdated'));
       }
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to update balance');
+      saveError(err);
     }
   };
 
@@ -154,8 +158,7 @@ export default function WalletManagerPage() {
       toast.success(t('saved'));
       setIsDrawerOpen(false);
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to save wallet');
+      saveError(err);
     }
   };
 
@@ -166,8 +169,7 @@ export default function WalletManagerPage() {
       toast.success(willArchive ? t('archive') : t('unarchive'));
       setIsDrawerOpen(false);
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to change wallet archive state');
+      saveError(err);
     }
   };
 
@@ -288,8 +290,10 @@ export default function WalletManagerPage() {
       </div>
 
       {/* Add / Edit Drawer */}
-      <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-        <DrawerContent className="max-h-[92dvh] px-5 pb-8 overflow-y-auto">
+      <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen} repositionInputs>
+        <DrawerContent ref={walletSheetRef} className="max-h-[92dvh]">
+          {/* Only this inner box may scroll — scrolling the sheet itself is swallowed by vaul on iPhone */}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-8">
           <DrawerHeader className="px-0 pt-4 pb-2">
             <DrawerTitle className="text-title font-bold text-ink text-start">
               {editingWallet ? t('editWallet') : t('addWallet')}
@@ -412,12 +416,14 @@ export default function WalletManagerPage() {
               </button>
             </div>
           </div>
+          </div>
         </DrawerContent>
       </Drawer>
 
       {/* Update Balance Drawer */}
       <Drawer open={isUpdateOpen} onOpenChange={setIsUpdateOpen}>
-        <DrawerContent className="max-h-[92dvh] px-5 pb-8 overflow-y-auto select-none">
+        <DrawerContent className="max-h-[92dvh] select-none">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-8">
           <DrawerHeader className="px-0 pt-3 pb-1 text-center">
             <DrawerTitle className="text-body font-semibold text-ink">
               {updatingWallet &&
@@ -459,6 +465,7 @@ export default function WalletManagerPage() {
             >
               {t('save')}
             </button>
+          </div>
           </div>
         </DrawerContent>
       </Drawer>

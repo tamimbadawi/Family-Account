@@ -12,16 +12,17 @@ begin
   insert into auth.users (id, email) values
     (mom, 'smoke-mom-' || mom || '@test.local'),
     (dad, 'smoke-dad-' || dad || '@test.local');
+  -- Only a family admin invited by the operator can create a family (0009)
+  update auth.users set raw_app_meta_data = '{"family_admin": true}' where id = mom;
 
   execute 'set local role authenticated';
 
   perform set_config('request.jwt.claim.sub', mom::text, true);
   perform set_config('request.jwt.claims', json_build_object('sub', mom, 'role', 'authenticated')::text, true);
-  hid := public.create_household('Smoke', 'Mom', 'en');
-  -- Provision Dad as member (simulating service-role admin provisioning)
+  hid := public.create_family('Smoke', 'Mom', 'en');
+  -- The family-admin Edge Function adds members with the service role (add_member RPC dropped in 0009)
   execute 'reset role';
-  insert into public.household_members (household_id, user_id, display_name, role)
-    values (hid, dad, 'Dad', 'member');
+  insert into public.household_members (household_id, user_id, display_name) values (hid, dad, 'Dad');
   execute 'set local role authenticated';
   select id into cash from public.accounts where household_id = hid and type = 'cash';
   select id into elec from public.items where household_id = hid and name_en = 'Electricity';

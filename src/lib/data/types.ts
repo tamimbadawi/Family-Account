@@ -122,6 +122,23 @@ export interface EnrichedEntry extends Entry {
   updatedByName?: string | null;
 }
 
+/**
+ * A monthly spending limit on one expense category, or on one group (subcategory) inside it.
+ * `subcategoryId` null = the whole category. Removing a budget archives it (nothing is hard-deleted).
+ */
+export interface Budget {
+  id: string;
+  householdId: string;
+  categoryId: string;
+  subcategoryId: string | null;
+  amount: number; // per month, EGP
+  /** A starter budget the app added for a new family; false once the family changes it. */
+  isStarter: boolean;
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ---------- Reports & Aggregations ----------
 
 export interface MonthSummary {
@@ -193,6 +210,9 @@ export interface HouseholdRow {
   name: string;
   currency: string;
   created_at: string;
+  /** Live mode: the family still has its starter sample entries (0014). */
+  has_sample_data?: boolean;
+  sample_cleared_at?: string | null;
 }
 
 export interface HouseholdMemberRow {
@@ -215,6 +235,8 @@ export interface AccountRow {
   color: string | null;
   sort_order: number;
   is_archived: boolean;
+  /** Live mode: one of the starter sample banks (0015); hidden when the samples are cleared. */
+  is_sample?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -268,11 +290,25 @@ export interface TransactionRow {
   item_id: string | null;
   note: string | null;
   photo_path?: string | null;
+  /** Live mode: one of the starter sample entries (0014). */
+  is_sample?: boolean;
   created_by: string | null;
   updated_by: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+}
+
+export interface BudgetRow {
+  id: string;
+  household_id: string;
+  category_id: string;
+  subcategory_id: string | null;
+  amount: number;
+  is_starter?: boolean;
+  is_archived: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 /** Receipt photo kept on the phone (mock mode); Phase B uploads it to the `receipts` bucket. */

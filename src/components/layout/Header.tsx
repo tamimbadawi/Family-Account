@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname } from '@/i18n/navigation';
 import { WalletShortcut } from './WalletShortcut';
+import { SampleDataBadge } from './SampleDataBadge';
 
 export function Header() {
   const tNav = useTranslations('nav');
@@ -27,7 +28,11 @@ export function Header() {
   return (
     <header className="shrink-0 flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-2 select-none">
       <h1 className="text-title font-bold text-ink">{title}</h1>
-      <WalletShortcut />
+      <div className="flex items-center gap-2">
+        {/* Home shows it on the greeting line, where the long app name leaves room */}
+        {pathname !== '/' && <SampleDataBadge />}
+        <WalletShortcut />
+      </div>
     </header>
   );
 }

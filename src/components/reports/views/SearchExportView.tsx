@@ -7,7 +7,7 @@ import { useEntries } from '@/lib/data/provider';
 import { searchEntries, type SearchQuery } from '@/lib/reports/planning';
 import { Card } from '@/components/ui/card';
 import { CategoryIcon } from '@/components/ui/category-icon';
-import { money, pickName } from '@/lib/format';
+import { localISODate, money, pickName } from '@/lib/format';
 
 export function SearchExportView() {
   const locale = useLocale();
@@ -46,7 +46,7 @@ export function SearchExportView() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `search-results-${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `search-results-${localISODate()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

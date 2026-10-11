@@ -7,6 +7,7 @@
 import Dexie, { type Table } from 'dexie';
 import type {
   AccountRow,
+  BudgetRow,
   CategoryRow,
   HouseholdMemberRow,
   HouseholdRow,
@@ -37,6 +38,7 @@ export class FamilyAccountsDB extends Dexie {
   outbox!: Table<OutboxRow, string>;
   meta!: Table<MetaRow, string>;
   photos!: Table<PhotoRow, string>;
+  budgets!: Table<BudgetRow, string>;
 
   constructor(dbName: string = getDbName()) {
     super(dbName);
@@ -57,6 +59,11 @@ export class FamilyAccountsDB extends Dexie {
     // v2 · receipt photos stored on the phone (A3c). v1 stays as-is so existing phones upgrade cleanly.
     this.version(2).stores({
       photos: 'id',
+    });
+
+    // v3 · monthly budgets per category or group.
+    this.version(3).stores({
+      budgets: 'id, household_id, category_id, subcategory_id, is_archived',
     });
   }
 }

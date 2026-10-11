@@ -10,9 +10,12 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { mockRepository } from './mock-repository';
+import { LiveRepository } from './live-repository';
 import { getLastNMonths } from '@/lib/reports/months';
+import { budgetProgress, type BudgetProgress } from '@/lib/reports/budgets';
 import type { ListEntriesParams, Repository } from './repository';
 import type {
+  Budget,
   Category,
   CategoryKind,
   CategoryLevel,
@@ -29,18 +32,14 @@ import type {
   WalletBalance,
 } from './types';
 
+let liveRepository: LiveRepository | null = null;
+
 // Resolves repository implementation based on NEXT_PUBLIC_DATA_MODE
 export function getDefaultRepository(): Repository {
-  const mode =
-    typeof process !== 'undefined'
-      ? process.env.NEXT_PUBLIC_DATA_MODE ?? 'mock'
-      : 'mock';
-
-  if (mode === 'live') {
-    // In Phase B, live-repository.ts will be plugged in here
-    return mockRepository;
+  if (process.env.NEXT_PUBLIC_DATA_MODE === 'live') {
+    liveRepository ??= new LiveRepository();
+    return liveRepository;
   }
-
   return mockRepository;
 }
 
@@ -78,6 +77,23 @@ export function RepositoryProvider({ children, repository }: RepositoryProviderP
 
     return () => {
       cancelled = true;
+    };
+  }, [activeRepo]);
+
+  // Live mode: fetch what the rest of the family saved whenever the app comes back to the front
+  // or the connection returns.
+  useEffect(() => {
+    const refresh = activeRepo.refresh?.bind(activeRepo);
+    if (!refresh) return;
+    const run = () => void refresh().catch((err) => console.warn('[sync] pull failed', err));
+    const onVisible = () => document.visibilityState === 'visible' && run();
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('online', run);
+    window.addEventListener('focus', run);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('online', run);
+      window.removeEventListener('focus', run);
     };
   }, [activeRepo]);
 
@@ -276,6 +292,37 @@ export function useItems(
   );
 }
 
+export function useBudgets(includeArchived = false): Budget[] | undefined {
+  const repo = useRepository();
+
+  return useLiveQuery(
+    async () => {
+      if (typeof window === 'undefined') return [];
+      return repo.getBudgets(includeArchived);
+    },
+    [repo, includeArchived],
+    undefined
+  );
+}
+
+/** Actual vs budget for one month ('YYYY-MM'), fullest budget first. */
+export function useBudgetProgress(month: string): BudgetProgress[] | undefined {
+  const repo = useRepository();
+
+  return useLiveQuery(
+    async () => {
+      if (typeof window === 'undefined') return [];
+      const [budgets, entries] = await Promise.all([
+        repo.getBudgets(),
+        repo.listEntries({ month, type: 'expense' }),
+      ]);
+      return budgetProgress(budgets, entries, month);
+    },
+    [repo, month],
+    undefined
+  );
+}
+
 export function useHousehold(): Household | null | undefined {
   const repo = useRepository();
 
@@ -311,6 +358,20 @@ export function useSyncStatus(): SyncStatus | undefined {
         return { status: 'synced', lastSyncedAt: null, pendingCount: 0 };
       }
       return repo.syncStatus();
+    },
+    [repo],
+    undefined
+  );
+}
+
+/** True while this phone still shows the sample entries (false once the family cleared them). */
+export function useHasSampleData(): boolean | undefined {
+  const repo = useRepository();
+
+  return useLiveQuery(
+    async () => {
+      if (typeof window === 'undefined' || typeof repo.hasSampleData !== 'function') return false;
+      return repo.hasSampleData();
     },
     [repo],
     undefined

@@ -39,7 +39,7 @@ export function MonthSwitcher({ value, onChange, className = '' }: MonthSwitcher
       </button>
 
       <div className="flex-1 text-center px-2">
-        <span className="text-heading font-semibold text-ink tracking-tight">
+        <span data-month-label className="text-heading font-semibold text-ink tracking-tight">
           {formattedMonth}
         </span>
       </div>

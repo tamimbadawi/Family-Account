@@ -3,10 +3,11 @@
 // The single door to data for all screens.
 // Return types are plain objects.
 // Phase A: MockRepository (Dexie on phone with sample data)
-// Phase B: LiveRepository (Dexie + outbox + Supabase sync)
+// Phase B: LiveRepository (saves go to Supabase; Dexie keeps a read copy)
 // =========================================================
 
 import type {
+  Budget,
   Category,
   CategoryKind,
   CategoryLevel,
@@ -139,6 +140,21 @@ export interface UpdateItemInput {
   sortOrder?: number;
 }
 
+export interface CreateBudgetInput {
+  id?: string;
+  householdId?: string;
+  categoryId: string;
+  /** null or omitted = a budget for the whole category */
+  subcategoryId?: string | null;
+  amount: number; // per month
+  /** Set only by the starter budgets a new family gets. */
+  isStarter?: boolean;
+}
+
+export interface UpdateBudgetInput {
+  amount?: number;
+}
+
 export interface Repository {
   // Household & Members
   getHousehold(): Promise<Household | null>;
@@ -179,6 +195,14 @@ export interface Repository {
   updateItem(id: string, updates: UpdateItemInput): Promise<Item>;
   archiveItem(id: string, archive?: boolean): Promise<void>;
 
+  // Budgets (monthly, per expense category or group)
+  getBudgets(includeArchived?: boolean): Promise<Budget[]>;
+  /** Adds a budget, or updates the active one for the same category/group (one budget per target). */
+  addBudget(input: CreateBudgetInput): Promise<Budget>;
+  updateBudget(id: string, updates: UpdateBudgetInput): Promise<Budget>;
+  /** "Remove" a budget = archive it; archive=false brings it back (Undo). */
+  archiveBudget(id: string, archive?: boolean): Promise<void>;
+
   // Entries (Transactions)
   listEntries(params?: ListEntriesParams): Promise<EnrichedEntry[]>;
   getEntry(id: string): Promise<EnrichedEntry | null>;
@@ -207,4 +231,18 @@ export interface Repository {
 
   // Seeding / Initialization
   ensureSeeded?(): Promise<void>;
+  /** Live mode: pull the latest rows from the server (app back in front, back online). */
+  refresh?(): Promise<void>;
+  /** Live mode: forget everything kept on this phone (sign-out). */
+  clearCache?(): Promise<void>;
+
+  // Sample data (Phase A): every phone starts with made-up entries so people can look around.
+  /** True while the phone still shows the sample entries. */
+  hasSampleData?(): Promise<boolean>;
+  /**
+   * Removes the sample entries, photos and budgets, zeroes the sample wallets' opening balances
+   * (Cash stays, the sample banks are hidden) and keeps the categories. The samples never come back.
+   * Resolves to an undo that puts everything back exactly as it was.
+   */
+  clearSampleData?(): Promise<() => Promise<void>>;
 }

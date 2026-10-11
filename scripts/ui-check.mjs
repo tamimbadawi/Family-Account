@@ -15,7 +15,7 @@ const CHROME = process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Ap
 const SIZES = (process.env.UI_SIZES || '390x844,375x667,412x700').split(',').map((s) => s.split('x').map(Number));
 const THEMES = (process.env.UI_THEMES || 'light,dark').split(',');
 // Screens that are lists may scroll inside their content area; every other screen must fit with no scrolling.
-const LIST_ROUTES = ['/history', '/settings/categories', '/settings/deleted'];
+const LIST_ROUTES = ['/history', '/settings/categories', '/settings/deleted', '/settings/budgets'];
 const DEFAULT_ROUTES =['/en', '/en/history', '/en/reports', '/en/settings', '/en/login', '/ar', '/ar/settings'];
 // Git Bash rewrites "/en" into "C:/Program Files/Git/en"; undo that, and accept "en/history" without a slash.
 const toRoute = (a) => '/' + a.replace(/^.*\/Git\//, '').replace(/^\/+/, '');
@@ -100,7 +100,7 @@ function audit() {
     if (offscreen || bigBlocker) cutBottom.push(label(t));
     else covered.push(label(t));
   }
-  const errors = (document.body.innerText.match(/(something went wrong|couldn.t load|NaN|undefined)/gi) || []);
+  const errors = (document.body.innerText.match(/(something went wrong|couldn.t load|\bNaN\b|\bundefined\b)/gi) || []);
   const uniq = (a) => [...new Set(a)].slice(0, 6);
   return {
     pageScrolls: se.scrollHeight > se.clientHeight + 2,

@@ -92,6 +92,8 @@
     "cashWithdrawalsDesc": "Transfers from bank to cash with monthly totals",
     "transfersLog": "Transfers log",
     "transfersLogDesc": "History of transfers between wallets",
+    "budgetVsActual": "Budget vs actual",
+    "budgetVsActualDesc": "What you spent against each monthly budget",
     "billsTracker": "Bills tracker",
     "billsTrackerDesc": "Monthly utilities and recurring household bills",
     "monthlyAverages": "Monthly averages",

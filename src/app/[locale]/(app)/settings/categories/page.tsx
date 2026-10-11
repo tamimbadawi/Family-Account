@@ -20,6 +20,7 @@ import {
   useRepository,
   useSubcategories,
 } from '@/lib/data/provider';
+import { useSaveError } from '@/components/ui/use-save-error';
 import type {
   Category,
   CategoryKind,
@@ -41,6 +42,7 @@ export default function CategoryManagerPage() {
   const t = useTranslations('settings');
   const tEntry = useTranslations('entry');
   const repo = useRepository();
+  const saveError = useSaveError();
 
   const [kind, setKind] = React.useState<CategoryKind>('expense');
   const [showArchived, setShowArchived] = React.useState(false);
@@ -164,8 +166,7 @@ export default function CategoryManagerPage() {
       toast.success(t('saved'));
       setEditLevel(null);
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to save');
+      saveError(err);
     }
   };
 
@@ -185,8 +186,7 @@ export default function CategoryManagerPage() {
       toast.success(willArchive ? t('archive') : t('unarchive'));
       setEditLevel(null);
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to change archive state');
+      saveError(err);
     }
   };
 
@@ -199,8 +199,12 @@ export default function CategoryManagerPage() {
     const current = categories[index];
     const target = categories[targetIndex];
 
-    await repo.updateCategory(current.id, { sortOrder: target.sortOrder });
-    await repo.updateCategory(target.id, { sortOrder: current.sortOrder });
+    try {
+      await repo.updateCategory(current.id, { sortOrder: target.sortOrder });
+      await repo.updateCategory(target.id, { sortOrder: current.sortOrder });
+    } catch (err) {
+      saveError(err);
+    }
   };
 
   const handleMoveSubcategory = async (index: number, direction: 'up' | 'down') => {
@@ -211,8 +215,12 @@ export default function CategoryManagerPage() {
     const current = subcategories[index];
     const target = subcategories[targetIndex];
 
-    await repo.updateSubcategory(current.id, { sortOrder: target.sortOrder });
-    await repo.updateSubcategory(target.id, { sortOrder: current.sortOrder });
+    try {
+      await repo.updateSubcategory(current.id, { sortOrder: target.sortOrder });
+      await repo.updateSubcategory(target.id, { sortOrder: current.sortOrder });
+    } catch (err) {
+      saveError(err);
+    }
   };
 
   const handleMoveItem = async (index: number, direction: 'up' | 'down') => {
@@ -223,8 +231,12 @@ export default function CategoryManagerPage() {
     const current = items[index];
     const target = items[targetIndex];
 
-    await repo.updateItem(current.id, { sortOrder: target.sortOrder });
-    await repo.updateItem(target.id, { sortOrder: current.sortOrder });
+    try {
+      await repo.updateItem(current.id, { sortOrder: target.sortOrder });
+      await repo.updateItem(target.id, { sortOrder: current.sortOrder });
+    } catch (err) {
+      saveError(err);
+    }
   };
 
   // Breadcrumbs text

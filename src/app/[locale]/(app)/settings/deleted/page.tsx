@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
 import { WalletShortcut } from '@/components/layout/WalletShortcut';
 import { useEntries, useRepository } from '@/lib/data/provider';
+import { useSaveError } from '@/components/ui/use-save-error';
 import type { EnrichedEntry } from '@/lib/data/types';
 import { formatDay, money, pickName } from '@/lib/format';
 import { CategoryIcon } from '@/components/ui/category-icon';
@@ -17,6 +18,7 @@ export default function RecentlyDeletedPage() {
   const t = useTranslations('settings');
   const tCommon = useTranslations('common');
   const repo = useRepository();
+  const saveError = useSaveError();
 
   const deletedEntries = useEntries({ onlyDeleted: true });
   const [restoringId, setRestoringId] = React.useState<string | null>(null);
@@ -36,8 +38,7 @@ export default function RecentlyDeletedPage() {
         duration: 6000,
       });
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to restore entry');
+      saveError(err);
     } finally {
       setRestoringId(null);
     }

@@ -5,9 +5,11 @@
 // =========================================================
 
 import { localISODate } from '../format';
+import type { Table } from 'dexie';
 import { db as defaultDb, FamilyAccountsDB } from '../offline/db';
 import {
   roundMoney,
+  toBudget,
   toCategory,
   toEntry,
   toHousehold,
@@ -29,6 +31,7 @@ import {
   USER_MAMA_ID,
 } from './mock-seed';
 import type {
+  CreateBudgetInput,
   CreateCategoryInput,
   CreateEntryInput,
   CreateItemInput,
@@ -36,6 +39,7 @@ import type {
   CreateWalletInput,
   ListEntriesParams,
   Repository,
+  UpdateBudgetInput,
   UpdateCategoryInput,
   UpdateEntryInput,
   UpdateItemInput,
@@ -44,6 +48,8 @@ import type {
 } from './repository';
 import type {
   AccountRow,
+  Budget,
+  BudgetRow,
   Category,
   CategoryKind,
   CategoryLevel,
@@ -68,6 +74,18 @@ import type {
   WalletBalance,
 } from './types';
 
+/** Tables the app writes to, with their Dexie row types. */
+export interface WritableRows {
+  accounts: AccountRow;
+  categories: CategoryRow;
+  subcategories: SubcategoryRow;
+  items: ItemRow;
+  transactions: TransactionRow;
+  budgets: BudgetRow;
+}
+export type WritableTable = keyof WritableRows;
+export type WritableRow<K extends WritableTable> = WritableRows[K];
+
 export function getIsoWeek(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');
   const dayNum = d.getUTCDay() || 7;
@@ -79,7 +97,7 @@ export function getIsoWeek(dateStr: string): string {
 
 export class MockRepository implements Repository {
   private static seedPromises = new WeakMap<FamilyAccountsDB, Promise<void>>();
-  private db: FamilyAccountsDB;
+  protected db: FamilyAccountsDB;
   private seedPromise: Promise<void> | null = null;
   /**
    * Who is "signed in" on this phone in sample mode. New entries and edits are stamped with it,
@@ -90,6 +108,30 @@ export class MockRepository implements Repository {
   constructor(customDb?: FamilyAccountsDB, currentUserId: string = USER_MAMA_ID) {
     this.db = customDb ?? defaultDb;
     this.currentUserId = currentUserId;
+  }
+
+  // ---------- Write hooks (LiveRepository overrides these to save to Supabase first) ----------
+
+  /** Saves one row. Sample mode: straight into Dexie. Returns the row as stored. */
+  protected async persist<K extends WritableTable>(table: K, row: WritableRow<K>): Promise<WritableRow<K>> {
+    await (this.db[table] as unknown as Table<WritableRow<K>, string>).put(row);
+    return row;
+  }
+
+  /** Read-modify-write of one row through persist(). */
+  protected async patch<K extends WritableTable>(
+    table: K,
+    id: string,
+    changes: Partial<WritableRow<K>>
+  ): Promise<WritableRow<K>> {
+    const row = await (this.db[table] as unknown as Table<WritableRow<K>, string>).get(id);
+    if (!row) throw new Error(`Not found in ${table}: ${id}`);
+    return this.persist(table, { ...row, ...changes });
+  }
+
+  /** The household new rows belong to. */
+  protected async householdId(explicit?: string): Promise<string> {
+    return explicit ?? DEMO_HOUSEHOLD_ID;
   }
 
   // Ensures database is seeded on first access (idempotent, StrictMode-safe via shared promise)
@@ -105,16 +147,23 @@ export class MockRepository implements Repository {
 
     promise = (async () => {
       try {
+        // The family cleared the samples to start on their own data: never load them again
+        if ((await this.db.meta.get('sampleCleared'))?.value === true) return;
         const seeded = await this.db.meta.get('seeded');
         const seedVersion = await this.db.meta.get('seedVersion');
+        // A store marked as seeded but holding no entries at all (not even deleted ones) lost its sample
+        // entries somehow; reload the samples instead of showing an empty app forever.
+        const hasEntries = (await this.db.transactions.count()) > 0;
         if (
           seeded &&
           seeded.value === true &&
           seedVersion &&
-          seedVersion.value === SEED_VERSION
+          seedVersion.value === SEED_VERSION &&
+          hasEntries
         ) {
           await this.renameArabicSampleMembers();
           await this.backfillMissingCreators();
+          await this.seedSampleBudgets();
           return;
         }
 
@@ -182,6 +231,38 @@ export class MockRepository implements Repository {
         await this.db.meta.put({ key: 'lastSyncedAt', value: new Date().toISOString() });
       }
     );
+    await this.db.budgets.clear();
+    await this.db.meta.delete('budgetsSeeded');
+    await this.seedSampleBudgets();
+  }
+
+  // Starter budgets (once per phone, so existing practice entries are kept): the three biggest expense
+  // categories, each around its usual month (average of the last 3 full months) times a random
+  // 0.8–1.3, rounded to 100. Every phone gets its own amounts, so some start close to the limit.
+  // They are ordinary budgets: the family can change or remove them in Settings → Budgets.
+  private async seedSampleBudgets(): Promise<void> {
+    if ((await this.db.meta.get('budgetsSeeded'))?.value === true) return;
+    const now = new Date();
+    const thisMonth = localISODate(now).slice(0, 7);
+    const months = new Set<string>();
+    for (let i = 1; i <= 3; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.add(localISODate(d).slice(0, 7));
+    }
+    const rows = await this.listEntries({ type: 'expense' });
+    const byCategory = new Map<string, number>();
+    for (const e of rows) {
+      const m = e.occurredOn.slice(0, 7);
+      if (!months.has(m) || m === thisMonth || !e.categoryId) continue;
+      if (e.itemId === ITEM_EXPENSE_BALANCE_CORRECTION_ID) continue;
+      byCategory.set(e.categoryId, (byCategory.get(e.categoryId) ?? 0) + e.amount);
+    }
+    const starter = (monthly: number) => Math.max(300, Math.round((monthly * (0.8 + Math.random() * 0.5)) / 100) * 100);
+    const top = [...byCategory.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+    for (const [categoryId, total] of top) {
+      await this.addBudget({ categoryId, amount: starter(total / months.size), isStarter: true });
+    }
+    await this.db.meta.put({ key: 'budgetsSeeded', value: true });
   }
 
   // Sample members were first seeded as ماما / بابا. Names are now English: rename them in place
@@ -213,13 +294,60 @@ export class MockRepository implements Repository {
   async reset(): Promise<void> {
     MockRepository.seedPromises.delete(this.db);
     this.seedPromise = null;
+    await this.db.meta.delete('sampleCleared');
     await this.seed();
+  }
+
+  // ---------- Sample data ----------
+
+  async hasSampleData(): Promise<boolean> {
+    return (await this.db.meta.get('sampleCleared'))?.value !== true;
+  }
+
+  async clearSampleData(): Promise<() => Promise<void>> {
+    await this.ensureSeeded();
+    const sampleWalletIds = new Set(DEFAULT_WALLETS.map((w) => w.id));
+    const tables = [this.db.transactions, this.db.photos, this.db.budgets, this.db.accounts, this.db.meta];
+
+    // Kept in memory for the Undo toast
+    const before = {
+      transactions: await this.db.transactions.toArray(),
+      photos: await this.db.photos.toArray(),
+      budgets: await this.db.budgets.toArray(),
+      wallets: await this.db.accounts.bulkGet([...sampleWalletIds]),
+    };
+
+    await this.db.transaction('rw', tables, async () => {
+      await Promise.all([this.db.transactions.clear(), this.db.photos.clear(), this.db.budgets.clear()]);
+      const now = new Date().toISOString();
+      for (const wallet of before.wallets) {
+        if (!wallet) continue;
+        await this.db.accounts.update(wallet.id, {
+          opening_balance: 0,
+          // Cash is in every home; the sample banks are hidden (Settings → Wallets → Show hidden)
+          is_archived: wallet.type === 'cash' ? wallet.is_archived : true,
+          updated_at: now,
+        });
+      }
+      await this.db.meta.put({ key: 'sampleCleared', value: true });
+      await this.db.meta.put({ key: 'budgetsSeeded', value: true });
+    });
+
+    return async () => {
+      await this.db.transaction('rw', tables, async () => {
+        await this.db.transactions.bulkPut(before.transactions);
+        await this.db.photos.bulkPut(before.photos);
+        await this.db.budgets.bulkPut(before.budgets);
+        await this.db.accounts.bulkPut(before.wallets.filter((w) => w !== undefined));
+        await this.db.meta.delete('sampleCleared');
+      });
+    };
   }
 
   // ---------- Household & Members ----------
 
   async getHousehold(): Promise<Household | null> {
-    const row = await this.db.households.get(DEMO_HOUSEHOLD_ID);
+    const row = await this.db.households.get(await this.householdId());
     return row ? toHousehold(row) : null;
   }
 
@@ -253,7 +381,7 @@ export class MockRepository implements Repository {
 
     const row: AccountRow = {
       id,
-      household_id: input.householdId ?? DEMO_HOUSEHOLD_ID,
+      household_id: await this.householdId(input.householdId),
       name_ar: input.nameAr ?? null,
       name_en: input.nameEn ?? null,
       type: input.type,
@@ -266,8 +394,7 @@ export class MockRepository implements Repository {
       updated_at: now,
     };
 
-    await this.db.accounts.put(row);
-    return toWallet(row);
+    return toWallet(await this.persist('accounts', row));
   }
 
   async updateWallet(id: string, updates: UpdateWalletInput): Promise<Wallet> {
@@ -292,16 +419,12 @@ export class MockRepository implements Repository {
       updated_at: new Date().toISOString(),
     };
 
-    await this.db.accounts.put(updatedRow);
-    return toWallet(updatedRow);
+    return toWallet(await this.persist('accounts', updatedRow));
   }
 
   async archiveWallet(id: string, archive = true): Promise<void> {
     await this.ensureSeeded();
-    await this.db.accounts.update(id, {
-      is_archived: archive,
-      updated_at: new Date().toISOString(),
-    });
+    await this.patch('accounts', id, { is_archived: archive, updated_at: new Date().toISOString() });
   }
 
   async getWalletBalances(): Promise<WalletBalance[]> {
@@ -338,7 +461,7 @@ export class MockRepository implements Repository {
     });
   }
 
-  private async getCorrectionItemId(kind: 'expense' | 'income'): Promise<string> {
+  protected async getCorrectionItemId(kind: 'expense' | 'income'): Promise<string> {
     const defaultId =
       kind === 'expense'
         ? ITEM_EXPENSE_BALANCE_CORRECTION_ID
@@ -358,18 +481,21 @@ export class MockRepository implements Repository {
     throw new Error(`Balance correction item not found for kind: ${kind}`);
   }
 
+  /** The balance a correction is computed from. Live mode reads it from the server (PROGRESS P1). */
+  protected async balanceForCorrection(walletId: string): Promise<number> {
+    const wallet = (await this.walletBalances()).find((w) => w.id === walletId);
+    if (!wallet) {
+      throw new Error(`Wallet not found: ${walletId}`);
+    }
+    return wallet.balance;
+  }
+
   async adjustWalletBalance(
     walletId: string,
     actualBalance: number,
     occurredOn?: string
   ): Promise<Entry | null> {
-    const balances = await this.walletBalances();
-    const wallet = balances.find((w) => w.id === walletId);
-    if (!wallet) {
-      throw new Error(`Wallet not found: ${walletId}`);
-    }
-
-    const currentBalance = wallet.balance;
+    const currentBalance = await this.balanceForCorrection(walletId);
     const diff = roundMoney(actualBalance - currentBalance);
 
     if (diff === 0) {
@@ -419,7 +545,7 @@ export class MockRepository implements Repository {
 
     const row: CategoryRow = {
       id,
-      household_id: input.householdId ?? DEMO_HOUSEHOLD_ID,
+      household_id: await this.householdId(input.householdId),
       kind: input.kind,
       name_ar: input.nameAr ?? null,
       name_en: input.nameEn ?? null,
@@ -431,8 +557,7 @@ export class MockRepository implements Repository {
       updated_at: now,
     };
 
-    await this.db.categories.put(row);
-    return toCategory(row);
+    return toCategory(await this.persist('categories', row));
   }
 
   async updateCategory(id: string, updates: UpdateCategoryInput): Promise<Category> {
@@ -452,16 +577,70 @@ export class MockRepository implements Repository {
       updated_at: new Date().toISOString(),
     };
 
-    await this.db.categories.put(updatedRow);
-    return toCategory(updatedRow);
+    return toCategory(await this.persist('categories', updatedRow));
   }
 
   async archiveCategory(id: string, archive = true): Promise<void> {
     await this.ensureSeeded();
-    await this.db.categories.update(id, {
-      is_archived: archive,
-      updated_at: new Date().toISOString(),
-    });
+    await this.patch('categories', id, { is_archived: archive, updated_at: new Date().toISOString() });
+  }
+
+  // ---------- Budgets ----------
+
+  async getBudgets(includeArchived = false): Promise<Budget[]> {
+    let rows = await this.db.budgets.toArray();
+    if (!includeArchived) {
+      rows = rows.filter((b) => !b.is_archived);
+    }
+    rows.sort((a, b) => a.created_at.localeCompare(b.created_at));
+    return rows.map(toBudget);
+  }
+
+  async addBudget(input: CreateBudgetInput): Promise<Budget> {
+    const subcategoryId = input.subcategoryId ?? null;
+    const amount = roundMoney(input.amount);
+    if (!(amount > 0)) {
+      throw new Error('A budget must be more than 0');
+    }
+    // One active budget per category/group: setting it again updates the amount
+    const existing = (await this.db.budgets.where('category_id').equals(input.categoryId).toArray()).find(
+      (b) => !b.is_archived && b.subcategory_id === subcategoryId
+    );
+    if (existing) {
+      return this.updateBudget(existing.id, { amount });
+    }
+
+    const now = new Date().toISOString();
+    const row: BudgetRow = {
+      id: input.id ?? crypto.randomUUID(),
+      household_id: await this.householdId(input.householdId),
+      category_id: input.categoryId,
+      subcategory_id: subcategoryId,
+      amount,
+      is_starter: input.isStarter ?? false,
+      is_archived: false,
+      created_at: now,
+      updated_at: now,
+    };
+    return toBudget(await this.persist('budgets', row));
+  }
+
+  async updateBudget(id: string, updates: UpdateBudgetInput): Promise<Budget> {
+    const row = await this.db.budgets.get(id);
+    if (!row) {
+      throw new Error(`Budget not found: ${id}`);
+    }
+    const amount = updates.amount !== undefined ? roundMoney(updates.amount) : row.amount;
+    if (!(amount > 0)) {
+      throw new Error('A budget must be more than 0');
+    }
+    // Once the family changes a starter budget, it is theirs
+    const updatedRow: BudgetRow = { ...row, amount, is_starter: false, updated_at: new Date().toISOString() };
+    return toBudget(await this.persist('budgets', updatedRow));
+  }
+
+  async archiveBudget(id: string, archive = true): Promise<void> {
+    await this.patch('budgets', id, { is_archived: archive, updated_at: new Date().toISOString() });
   }
 
   // ---------- Subcategories ----------
@@ -492,7 +671,7 @@ export class MockRepository implements Repository {
 
     const row: SubcategoryRow = {
       id,
-      household_id: input.householdId ?? DEMO_HOUSEHOLD_ID,
+      household_id: await this.householdId(input.householdId),
       category_id: input.categoryId,
       name_ar: input.nameAr ?? null,
       name_en: input.nameEn ?? null,
@@ -502,8 +681,7 @@ export class MockRepository implements Repository {
       updated_at: now,
     };
 
-    await this.db.subcategories.put(row);
-    return toSubcategory(row);
+    return toSubcategory(await this.persist('subcategories', row));
   }
 
   async updateSubcategory(id: string, updates: UpdateSubcategoryInput): Promise<Subcategory> {
@@ -521,16 +699,12 @@ export class MockRepository implements Repository {
       updated_at: new Date().toISOString(),
     };
 
-    await this.db.subcategories.put(updatedRow);
-    return toSubcategory(updatedRow);
+    return toSubcategory(await this.persist('subcategories', updatedRow));
   }
 
   async archiveSubcategory(id: string, archive = true): Promise<void> {
     await this.ensureSeeded();
-    await this.db.subcategories.update(id, {
-      is_archived: archive,
-      updated_at: new Date().toISOString(),
-    });
+    await this.patch('subcategories', id, { is_archived: archive, updated_at: new Date().toISOString() });
   }
 
   // ---------- Items ----------
@@ -561,7 +735,7 @@ export class MockRepository implements Repository {
 
     const row: ItemRow = {
       id,
-      household_id: input.householdId ?? DEMO_HOUSEHOLD_ID,
+      household_id: await this.householdId(input.householdId),
       subcategory_id: input.subcategoryId,
       name_ar: input.nameAr ?? null,
       name_en: input.nameEn ?? null,
@@ -571,8 +745,7 @@ export class MockRepository implements Repository {
       updated_at: now,
     };
 
-    await this.db.items.put(row);
-    return toItem(row);
+    return toItem(await this.persist('items', row));
   }
 
   async updateItem(id: string, updates: UpdateItemInput): Promise<Item> {
@@ -590,16 +763,12 @@ export class MockRepository implements Repository {
       updated_at: new Date().toISOString(),
     };
 
-    await this.db.items.put(updatedRow);
-    return toItem(updatedRow);
+    return toItem(await this.persist('items', updatedRow));
   }
 
   async archiveItem(id: string, archive = true): Promise<void> {
     await this.ensureSeeded();
-    await this.db.items.update(id, {
-      is_archived: archive,
-      updated_at: new Date().toISOString(),
-    });
+    await this.patch('items', id, { is_archived: archive, updated_at: new Date().toISOString() });
   }
 
   // ---------- Entries (Transactions) ----------
@@ -656,7 +825,8 @@ export class MockRepository implements Repository {
 
     // Soft delete filtering
     if (params?.onlyDeleted) {
-      rows = rows.filter((r) => r.deleted_at !== null);
+      // Cleared sample entries are not the family's; they never show in Recently deleted
+      rows = rows.filter((r) => r.deleted_at !== null && !r.is_sample);
     } else if (!params?.includeDeleted) {
       rows = rows.filter((r) => r.deleted_at === null);
     }
@@ -765,7 +935,7 @@ export class MockRepository implements Repository {
 
     const row: TransactionRow = {
       id,
-      household_id: input.householdId ?? DEMO_HOUSEHOLD_ID,
+      household_id: await this.householdId(input.householdId),
       type: input.type,
       amount,
       occurred_on: input.occurredOn,
@@ -780,8 +950,7 @@ export class MockRepository implements Repository {
       deleted_at: null,
     };
 
-    await this.db.transactions.put(row);
-    return toEntry(row);
+    return toEntry(await this.persist('transactions', row));
   }
 
   async updateEntry(id: string, updates: UpdateEntryInput): Promise<Entry> {
@@ -829,23 +998,18 @@ export class MockRepository implements Repository {
       updated_at: new Date().toISOString(),
     };
 
-    await this.db.transactions.put(updatedRow);
-    return toEntry(updatedRow);
+    return toEntry(await this.persist('transactions', updatedRow));
   }
 
   async softDeleteEntry(id: string): Promise<void> {
     await this.ensureSeeded();
     const now = new Date().toISOString();
-    await this.db.transactions.update(id, {
-      deleted_at: now,
-      updated_at: now,
-      updated_by: this.currentUserId,
-    });
+    await this.patch('transactions', id, { deleted_at: now, updated_at: now, updated_by: this.currentUserId });
   }
 
   async restoreEntry(id: string): Promise<void> {
     await this.ensureSeeded();
-    await this.db.transactions.update(id, {
+    await this.patch('transactions', id, {
       deleted_at: null,
       updated_at: new Date().toISOString(),
       updated_by: this.currentUserId,
@@ -897,8 +1061,7 @@ export class MockRepository implements Repository {
       photo_path: null,
       updated_at: new Date().toISOString(),
     };
-    await this.db.transactions.put(updatedRow);
-    return toEntry(updatedRow);
+    return toEntry(await this.persist('transactions', updatedRow));
   }
 
   // ---------- Aggregations & Reports ----------

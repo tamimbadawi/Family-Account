@@ -59,10 +59,10 @@ async function assertOnePopup(page, amountText) {
   const shown = (await amount.innerText()).trim();
   if (shown !== amountText) throw new Error(`amount shows "${shown}" (should be "${amountText}")`);
   if (await btn(page, "Next").count()) throw new Error("a Next step is back; everything should be in one popup");
-  await assertUsable(page, page.getByRole("button", { name: /^(Save|Saved)$/ }).last(), "Save button without scrolling");
+  await assertUsable(page, page.getByRole("button", { name: /^(Save|Saved|Choose a category|Choose Sub \/ Save)$/ }).last(), "Save button without scrolling");
 }
 async function saveButton(page) {
-  return page.getByRole('button', { name: /^(Save|Saved)$/ }).last();
+  return page.getByRole('button', { name: /^(Save|Saved|Choose Sub \/ Save)$/ }).last();
 }
 
 const FLOWS = {
@@ -158,8 +158,13 @@ const FLOWS = {
     await save.scrollIntoViewIfNeeded();
     await save.click();
     await sleep(800);
-    // Lands on the new category's groups, ready to add one
-    await assertUsable(page, btn(page, 'Pets test'), 'the new category after saving');
+    // The new category comes with a matching group and item, chosen at once: Save works straight away
+    await assertUsable(page, page.getByRole('button', { name: /Pets test/ }).first(), 'the new category chosen after saving');
+    await tap(page, '4');
+    await tap(page, '0');
+    const entrySave = await saveButton(page);
+    if ((await entrySave.innerText()).trim() !== 'Save') throw new Error(`button says "${(await entrySave.innerText()).trim()}" after creating a category`);
+    if (await entrySave.isDisabled()) throw new Error('Save stays disabled after creating a new category');
   },
   async photo(page) {
     await page.goto(BASE + '/en/history', { waitUntil: 'networkidle', timeout: 45000 });
@@ -695,6 +700,159 @@ const FLOWS = {
       );
     }
   },
+  async history_filter(page) {
+    await page.goto(BASE + '/en/history', { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    // Filter → Food → Groceries → Supermarket, then "Show N entries"
+    await tap(page, 'Filter');
+    const sheet = page.getByRole('dialog').last();
+    await sheet.getByText('Any category').first().waitFor({ timeout: 8000 });
+    await sheet.getByRole('button', { name: /Any category/ }).click();
+    await sleep(350);
+    await sheet.getByRole('button', { name: 'Food', exact: true }).click();
+    await sleep(350);
+    await sheet.getByRole('button', { name: 'Groceries', exact: true }).click();
+    await sleep(350);
+    await sheet.getByRole('button', { name: 'Supermarket', exact: true }).click();
+    await sleep(350);
+    const show = sheet.getByRole('button', { name: /^Show \d+ entr/ });
+    await assertUsable(page, show, 'Show N entries button');
+    const expected = Number((await show.innerText()).match(/\d+/)[0]);
+    await show.click();
+    await sleep(900);
+    // History card + chip, and every row is a Supermarket entry
+    await assertUsable(page, page.locator('[data-item-history]'), 'item history card');
+    await assertUsable(page, page.getByRole('button', { name: 'Remove filter Supermarket' }), 'Supermarket filter chip');
+    const rows = await page.locator('[data-entry-row]').allInnerTexts();
+    if (rows.length !== expected) throw new Error(`list shows ${rows.length} entries, the sheet promised ${expected}`);
+    if (rows.some((r) => !r.includes('Supermarket'))) throw new Error('a non-Supermarket entry is in the filtered list');
+    // Tapping last month's bar opens that month
+    const before = (await page.locator('[data-month-label]').innerText()).trim();
+    const bars = page.locator('[data-item-history] [aria-pressed]');
+    await bars.nth((await bars.count()) - 2).click();
+    await sleep(600);
+    const after = (await page.locator('[data-month-label]').innerText()).trim();
+    if (after === before) throw new Error('tapping a bar did not change the month');
+    // Dropdown → Money in: Supermarket has no income, so the filtered empty state shows
+    await page.getByRole('button', { name: 'Show', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Money in' }).click();
+    await sleep(600);
+    const none = page.getByText('Nothing matches this month');
+    await none.scrollIntoViewIfNeeded();
+    await assertUsable(page, none, 'filtered empty state');
+    // Removing the chip and switching back to All shows the whole month again
+    await tap(page, 'Remove filter Supermarket');
+    await page.getByRole('button', { name: 'Show', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'All' }).click();
+    await sleep(600);
+    if ((await page.locator('[data-item-history]').count()) !== 0) throw new Error('history card stayed after removing the filter');
+    // Day / week / month / year: the label follows, the arrows step one period, Month brings it back
+    const label = page.locator('[data-month-label]');
+    for (const [name, check] of [['Week', /–/], ['Year', /^\d{4}$/], ['Day', /,/], ['Month', /^[A-Z][a-z]+ \d{4}$/]]) {
+      await page.getByRole('button', { name: 'Show by day, week, month or year' }).click();
+      await page.getByRole('menuitem', { name, exact: true }).click();
+      await sleep(500);
+      const text = (await label.innerText()).trim();
+      if (!check.test(text)) throw new Error(`${name} view shows "${text}"`);
+    }
+    const monthNow = (await label.innerText()).trim();
+    await tap(page, 'Previous month');
+    if ((await label.innerText()).trim() === monthNow) throw new Error('Previous month arrow did nothing');
+  },
+  async save_at_level(page) {
+    // Group level: Food → Groceries, no item chosen, Save works and the entry is filed under "Groceries"
+    await openSheet(page);
+    await typeAmount(page, ['6', '5']);
+    await tap(page, 'Food');
+    await tap(page, 'Groceries');
+    let save = await saveButton(page);
+    if ((await save.innerText()).trim() !== 'Choose Sub / Save' || (await save.isDisabled())) throw new Error(`group level shows "${(await save.innerText()).trim()}"`);
+    await save.click();
+    await sleep(1500);
+    await page.goto(BASE + '/en/history', { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    const rowGroceries = page.locator('[data-entry-row]').filter({ hasText: 'Groceries' }).filter({ hasText: '65' }).first();
+    await rowGroceries.scrollIntoViewIfNeeded();
+    await assertUsable(page, rowGroceries, 'the group-level entry in History');
+    // Category level: only Transport, then Save
+    await openSheet(page);
+    await typeAmount(page, ['3', '5']);
+    await tap(page, 'Transport');
+    save = await saveButton(page);
+    if ((await save.innerText()).trim() !== 'Choose Sub / Save' || (await save.isDisabled())) throw new Error(`category level shows "${(await save.innerText()).trim()}"`);
+    await save.click();
+    await sleep(1500);
+    const rowTransport = page.locator('[data-entry-row]').filter({ hasText: 'Transport' }).filter({ hasText: '35' }).first();
+    await rowTransport.scrollIntoViewIfNeeded();
+    await assertUsable(page, rowTransport, 'the category-level entry in History');
+  },
+
+  // Budgets: set one from Settings, see the soft warning on Home, open Budget vs actual, remove it with Undo.
+  async budgets(page, { locale }) {
+    const ar = locale === 'ar';
+    await page.goto(`${BASE}/${locale}/settings`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    const row = page.getByRole('link', { name: ar ? 'الميزانية' : 'Budgets', exact: true });
+    await assertUsable(page, row, 'Budgets row in Settings');
+    await row.click();
+    await page.waitForURL(/\/settings\/budgets/, { timeout: 8000 });
+    await sleep(800);
+
+    const add = page.getByRole('button', { name: ar ? '+ إضافة ميزانية' : '+ Add budget' });
+    await assertUsable(page, add, 'Add budget button');
+    await add.click();
+    await sleep(500);
+    const drawer = page.locator('[data-slot="drawer-content"]');
+    await drawer.waitFor({ state: 'visible', timeout: 5000 });
+    const transport = drawer.getByRole('button', { name: ar ? /^المواصلات/ : /^Transport/ });
+    await assertUsable(page, transport, 'Transport in the category list');
+    await transport.click();
+    await sleep(400);
+    const whole = drawer.getByRole('button', { name: ar ? /المواصلات كله/ : /^All of Transport/ });
+    await assertUsable(page, whole, 'whole-category choice');
+    await whole.click();
+    await sleep(400);
+
+    // A tiny budget so this month is surely over it
+    const backspace = drawer.getByRole('button', { name: ar ? 'امسح آخر رقم' : 'Delete last digit' });
+    await assertUsable(page, backspace, 'backspace key');
+    for (let i = 0; i < 8; i++) await backspace.click();
+    const one = drawer.getByRole('button', { name: '1', exact: true });
+    await assertUsable(page, one, 'key 1 on AmountPad');
+    await one.click();
+    const save = drawer.getByRole('button', { name: ar ? 'حفظ' : 'Save', exact: true });
+    await assertUsable(page, save, 'Save budget button');
+    await save.click();
+    await sleep(800);
+
+    // Home shows the soft warning, which opens Budget vs actual
+    await page.goto(`${BASE}/${locale}`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(1200);
+    const alert = page.locator('a[href$="/reports/r/budget-vs-actual"]').first();
+    await assertUsable(page, alert, 'budget warning on Home');
+    await alert.click();
+    await page.waitForURL(/budget-vs-actual/, { timeout: 8000 });
+    await sleep(1000);
+    const over = page.getByText(ar ? 'عدّينا الميزانية' : 'Over budget').first();
+    await assertUsable(page, over, '"Over budget" in Budget vs actual');
+
+    // Remove it, then Undo
+    await page.goto(`${BASE}/${locale}/settings/budgets`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(1000);
+    const budgetRow = page.getByRole('button', { name: ar ? /^المواصلات/ : /^Transport/ }).first();
+    await assertUsable(page, budgetRow, 'Transport budget in the list');
+    await budgetRow.click();
+    await sleep(500);
+    const remove = page.getByRole('button', { name: ar ? 'إلغاء الميزانية' : 'Remove budget' });
+    await assertUsable(page, remove, 'Remove budget button');
+    await remove.click();
+    await sleep(600);
+    const undo = page.getByRole('button', { name: ar ? 'تراجع' : 'Undo' });
+    await assertUsable(page, undo, 'Undo toast button');
+    await undo.click();
+    await sleep(600);
+    await assertUsable(page, page.getByRole('button', { name: ar ? /^المواصلات/ : /^Transport/ }).first(), 'budget back after Undo');
+  },
 };
 
 const MULTI_LOCALE_FLOW_NAMES = [
@@ -706,6 +864,7 @@ const MULTI_LOCALE_FLOW_NAMES = [
   'our_money',
   'update_balance',
   'download_data',
+  'budgets',
 ];
 const LOCALES = ['en', 'ar'];
 

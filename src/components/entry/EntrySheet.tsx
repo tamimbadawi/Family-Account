@@ -1,19 +1,26 @@
 'use client';
 
 import * as React from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, Check, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import type {
+  Category,
   EnrichedEntry,
   EntryType,
   Item,
+  Subcategory,
 } from '@/lib/data/types';
 import { useRepository, useWallets } from '@/lib/data/provider';
+import { useSaveError } from '@/components/ui/use-save-error';
 import { validateEntry } from '@/lib/validation/entry';
+import { generalItemFor } from '@/lib/data/general-item';
 import { previewValue } from '@/lib/format/expression';
+import { money } from '@/lib/format';
+import { budgetPercent, messageVariant } from '@/lib/reports/budgets';
+import { budgetWarningsForEntry } from '@/components/budgets/budget-warning';
 
 import {
   Drawer,
@@ -48,7 +55,10 @@ interface EntrySheetFormProps {
 function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheetFormProps) {
   const t = useTranslations('entry');
   const tCommon = useTranslations('common');
+  const tBudgets = useTranslations('budgets');
+  const locale = useLocale();
   const repo = useRepository();
+  const saveError = useSaveError();
   const wallets = useWallets();
 
   // Initial values
@@ -160,15 +170,53 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
   const numericAmount = amountResult ?? 0;
   const isInvalidAmount = amountStr !== '' && amountResult === null;
   const isTransfer = type === 'transfer';
-  const hasItem = Boolean(selectedItem);
+  // Saving at a main category or group is fine: the entry goes under that level's general item
+  const [path, setPath] = React.useState<{ category: Category | null; subcategory: Subcategory | null }>({
+    category: null,
+    subcategory: null,
+  });
+  const [breadcrumbSlot, setBreadcrumbSlot] = React.useState<HTMLDivElement | null>(null);
+  const handlePathChange = React.useCallback(
+    (category: Category | null, subcategory: Subcategory | null) => setPath({ category, subcategory }),
+    []
+  );
+  const hasItem = Boolean(selectedItem) || Boolean(path.category);
   const hasWallets = isTransfer
     ? Boolean(selectedWalletId && selectedToWalletId && selectedWalletId !== selectedToWalletId)
     : Boolean(selectedWalletId);
 
   const canSave = numericAmount > 0 && hasWallets && (isTransfer || hasItem) && !isSubmitting;
 
+  // Soft warning once an expense brings its budget to 80% or more this month (the fullest one only)
+  const warnAboutBudget = async (entryId: string) => {
+    try {
+      const [worst] = await budgetWarningsForEntry(repo, entryId, locale);
+      if (!worst) return;
+      const { progress, label } = worst;
+      const message =
+        progress.level === 'over'
+          ? tBudgets(`warnOver.${messageVariant()}`, { name: label, amount: money(-progress.remaining, locale, { fractionDigits: 0 }) })
+          : tBudgets(`warnNear.${messageVariant()}`, { name: label, percent: String(budgetPercent(progress)) });
+      toast.warning(message, { duration: 6000 });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const pendingIdRef = React.useRef<string | null>(null);
   const handleSave = async () => {
     if (!canSave) return;
+
+    // At a category or group level: find (or create once) its general item
+    let itemId = isTransfer ? null : (selectedItem?.id ?? null);
+    if (!isTransfer && !itemId && path.category) {
+      try {
+        itemId = (await generalItemFor(repo, path.category, path.subcategory)).id;
+      } catch (err) {
+        saveError(err);
+        return;
+      }
+    }
 
     const payload = {
       type,
@@ -176,7 +224,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
       occurredOn,
       accountId: selectedWalletId!,
       toAccountId: isTransfer ? selectedToWalletId : null,
-      itemId: isTransfer ? null : selectedItem?.id ?? null,
+      itemId,
       note: note.trim() || null,
     };
 
@@ -190,7 +238,9 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
       setIsSubmitting(true);
 
       if (mode === 'add') {
-        const created = await repo.addEntry(payload);
+        // Same id on every retry of this entry, so a save that reached the server is never duplicated
+        pendingIdRef.current ??= crypto.randomUUID();
+        const created = await repo.addEntry({ ...payload, id: pendingIdRef.current });
         if (photo) await repo.setEntryPhoto(created.id, photo);
 
         setIsSuccess(true);
@@ -206,6 +256,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
             },
             duration: 6000,
           });
+          void warnAboutBudget(created.id);
         }, 300);
       } else if (mode === 'edit' && editingEntry) {
         const originalEntry = { ...editingEntry };
@@ -242,11 +293,11 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
             },
             duration: 6000,
           });
+          void warnAboutBudget(editingEntry.id);
         }, 300);
       }
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to save');
+      saveError(err);
     } finally {
       setIsSubmitting(false);
     }
@@ -270,8 +321,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
         duration: 6000,
       });
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to delete');
+      saveError(err);
     }
   };
 
@@ -280,7 +330,11 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
       {/* One sheet that fits an iPhone screen: type, amount, category, pad, details, save */}
       <TypeToggle value={type} onChange={handleTypeChange} />
 
-      <AmountDisplay value={amountStr} type={type} />
+      {/* Amount, with the chosen main category (and group) beside it */}
+      <div className="flex items-center gap-2">
+        <AmountDisplay value={amountStr} type={type} className="min-w-0 flex-1" />
+        <div ref={setBreadcrumbSlot} className="flex max-w-[56%] shrink-0 empty:hidden" />
+      </div>
 
       {isTransfer ? (
         <div className="flex items-center gap-2">
@@ -303,6 +357,8 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
           selected={selectedItem}
           onPick={handlePickCategoryItem}
           onClear={() => setSelectedItem(null)}
+          onPathChange={handlePathChange}
+          breadcrumbSlot={breadcrumbSlot}
         />
       )}
 
@@ -359,7 +415,13 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               >
-                {isInvalidAmount ? t('invalidAmount') : tCommon('save')}
+                {isInvalidAmount
+                  ? t('invalidAmount')
+                  : numericAmount > 0 && !isTransfer && !hasItem
+                    ? t('chooseCategoryFirst')
+                    : !isTransfer && !selectedItem && path.category
+                      ? t('chooseSubOrSave')
+                      : tCommon('save')}
               </motion.span>
             )}
           </AnimatePresence>

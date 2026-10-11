@@ -113,8 +113,9 @@ self.addEventListener('activate', (event) => {
       const hadOldPages = await caches.delete('pages-cache');
       if (!hadOldPages) return;
       await self.clients.claim();
+      // Ask each open window to reload; it waits while an entry is open so nothing typed or photographed is lost
       const windows = await self.clients.matchAll({ type: 'window' });
-      await Promise.all(windows.map((client) => client.navigate(client.url).catch(() => null)));
+      windows.forEach((client) => client.postMessage({ type: 'new-version' }));
     })(),
   );
 });

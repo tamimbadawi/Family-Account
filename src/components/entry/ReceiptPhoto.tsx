@@ -20,7 +20,7 @@ const FILE_OVERLAY = 'absolute inset-0 h-full w-full cursor-pointer opacity-0';
  * Object URL for a blob, revoked once the blob changes or the component unmounts.
  * The revoke waits a moment so StrictMode's dev-only effect re-run doesn't break a URL still in use.
  */
-function useObjectUrl(blob: Blob | null): string | null {
+export function useObjectUrl(blob: Blob | null): string | null {
   const url = React.useMemo(() => (blob ? URL.createObjectURL(blob) : null), [blob]);
   const pendingRevokes = React.useRef(new Map<string, number>());
 

@@ -19,12 +19,14 @@ export type Database = {
     Tables: {
       accounts: {
         Row: {
+          currency: string
           color: string | null
           created_at: string
           household_id: string
           icon: string | null
           id: string
           is_archived: boolean
+          is_sample: boolean
           name_ar: string | null
           name_en: string | null
           opening_balance: number
@@ -33,12 +35,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          currency?: string
           color?: string | null
           created_at?: string
           household_id: string
           icon?: string | null
           id?: string
           is_archived?: boolean
+          is_sample?: boolean
           name_ar?: string | null
           name_en?: string | null
           opening_balance?: number
@@ -47,12 +51,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          currency?: string
           color?: string | null
           created_at?: string
           household_id?: string
           icon?: string | null
           id?: string
           is_archived?: boolean
+          is_sample?: boolean
           name_ar?: string | null
           name_en?: string | null
           opening_balance?: number
@@ -67,6 +73,64 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "households"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      budgets: {
+        Row: {
+          amount: number
+          category_id: string
+          created_at: string
+          household_id: string
+          id: string
+          is_archived: boolean
+          is_starter: boolean
+          subcategory_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category_id: string
+          created_at?: string
+          household_id: string
+          id?: string
+          is_archived?: boolean
+          is_starter?: boolean
+          subcategory_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category_id?: string
+          created_at?: string
+          household_id?: string
+          id?: string
+          is_archived?: boolean
+          is_starter?: boolean
+          subcategory_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budgets_household_id_category_id_fkey"
+            columns: ["household_id", "category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "budgets_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_household_id_subcategory_id_fkey"
+            columns: ["household_id", "subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "subcategories"
+            referencedColumns: ["household_id", "id"]
           },
         ]
       }
@@ -135,6 +199,47 @@ export type Database = {
         }
         Relationships: []
       }
+      family_invites: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          email: string
+          friend_name: string
+          household_id: string
+          id: string
+          invited_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          email: string
+          friend_name: string
+          household_id: string
+          id?: string
+          invited_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          email?: string
+          friend_name?: string
+          household_id?: string
+          id?: string
+          invited_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_invites_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       household_members: {
         Row: {
           created_at: string
@@ -172,18 +277,30 @@ export type Database = {
       }
       households: {
         Row: {
+          currencies: string[]
+          status: string
+          has_sample_data: boolean
+          sample_cleared_at: string | null
           created_at: string
           currency: string
           id: string
           name: string
         }
         Insert: {
+          currencies?: string[]
+          status?: string
+          has_sample_data?: boolean
+          sample_cleared_at?: string | null
           created_at?: string
           currency?: string
           id?: string
           name: string
         }
         Update: {
+          currencies?: string[]
+          status?: string
+          has_sample_data?: boolean
+          sample_cleared_at?: string | null
           created_at?: string
           currency?: string
           id?: string
@@ -281,6 +398,7 @@ export type Database = {
       }
       transactions: {
         Row: {
+          to_amount: number | null
           account_id: string
           amount: number
           created_at: string
@@ -292,12 +410,14 @@ export type Database = {
           note: string | null
           occurred_on: string
           photo_path: string | null
+          is_sample: boolean
           to_account_id: string | null
           type: Database["public"]["Enums"]["txn_type"]
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          to_amount?: number | null
           account_id: string
           amount: number
           created_at?: string
@@ -309,12 +429,14 @@ export type Database = {
           note?: string | null
           occurred_on?: string
           photo_path?: string | null
+          is_sample?: boolean
           to_account_id?: string | null
           type: Database["public"]["Enums"]["txn_type"]
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          to_amount?: number | null
           account_id?: string
           amount?: number
           created_at?: string
@@ -326,6 +448,7 @@ export type Database = {
           note?: string | null
           occurred_on?: string
           photo_path?: string | null
+          is_sample?: boolean
           to_account_id?: string | null
           type?: Database["public"]["Enums"]["txn_type"]
           updated_at?: string
@@ -380,6 +503,7 @@ export type Database = {
     Views: {
       v_account_balances: {
         Row: {
+          currency: string | null
           account_id: string | null
           balance: number | null
           color: string | null
@@ -402,6 +526,7 @@ export type Database = {
       }
       v_monthly_category_totals: {
         Row: {
+          currency: string | null
           category_color: string | null
           category_icon: string | null
           category_id: string | null
@@ -425,6 +550,7 @@ export type Database = {
       }
       v_monthly_summary: {
         Row: {
+          currency: string | null
           expense: number | null
           household_id: string | null
           income: number | null
@@ -443,6 +569,8 @@ export type Database = {
       }
       v_transactions: {
         Row: {
+          currency: string | null
+          to_amount: number | null
           account_id: string | null
           account_name_ar: string | null
           account_name_en: string | null
@@ -520,14 +648,54 @@ export type Database = {
         Args: { p_display_name: string; p_email: string }
         Returns: undefined
       }
+      clear_sample_data: { Args: never; Returns: undefined }
+      create_family: {
+        Args: {
+          p_currencies?: string[]
+          p_display_name: string
+          p_locale?: string
+          p_name: string
+        }
+        Returns: string
+      }
       create_household: {
         Args: { p_display_name: string; p_locale?: string; p_name: string }
         Returns: string
       }
       is_member: { Args: { hid: string }; Returns: boolean }
       keepalive: { Args: never; Returns: string }
+      restore_sample_data: { Args: never; Returns: undefined }
+      operator_families: {
+        Args: never
+        Returns: {
+          admin_user_id: string
+          created_at: string
+          currencies: string[]
+          entries: number
+          household_id: string
+          last_entry_at: string
+          members: number
+          name: string
+          status: string
+          wallets: number
+        }[]
+      }
+      seed_budgets: { Args: { hid: string }; Returns: undefined }
       seed_corrections: { Args: { hid: string }; Returns: undefined }
       seed_defaults: { Args: { hid: string }; Returns: undefined }
+      set_family_status: {
+        Args: { p_household_id: string; p_status: string }
+        Returns: undefined
+      }
+      invite_family: {
+        Args: { p_email: string; p_friend_name: string }
+        Returns: string
+      }
+      set_household_currencies: {
+        Args: { p_currencies: string[] }
+        Returns: undefined
+      }
+      valid_currencies: { Args: { c: string[] }; Returns: boolean }
     }
     Enums: {
       account_type: "cash" | "bank" | "card" | "wallet"

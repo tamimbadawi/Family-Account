@@ -17,6 +17,7 @@ import {
   useRecentItems,
   useRepository,
 } from '@/lib/data/provider';
+import { useSaveError } from '@/components/ui/use-save-error';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { pickName } from '@/lib/format';
 import {
@@ -37,6 +38,7 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
   const tSettings = useTranslations('settings');
   const locale = useLocale();
   const repo = useRepository();
+  const saveError = useSaveError();
 
   const [step, setStep] = React.useState<Step>('category');
   const [selectedCategory, setSelectedCategory] = React.useState<Category | null>(null);
@@ -96,18 +98,22 @@ export function CategoryPicker({ kind, onPick, className = '' }: CategoryPickerP
   };
 
   const handleCreate = async ({ nameAr, nameEn, color, icon }: CategoryFormValues) => {
-    if (step === 'category') {
-      const created = await repo.addCategory({ kind, nameAr, nameEn, color, icon });
-      setIsCreating(false);
-      handleSelectCategory(created);
-    } else if (step === 'subcategory' && selectedCategory) {
-      const created = await repo.addSubcategory({ categoryId: selectedCategory.id, nameAr, nameEn });
-      setIsCreating(false);
-      handleSelectSubcategory(created);
-    } else if (step === 'item' && selectedSubcategory && selectedCategory) {
-      const created = await repo.addItem({ subcategoryId: selectedSubcategory.id, nameAr, nameEn });
-      setIsCreating(false);
-      onPick(created, selectedSubcategory, selectedCategory);
+    try {
+      if (step === 'category') {
+        const created = await repo.addCategory({ kind, nameAr, nameEn, color, icon });
+        setIsCreating(false);
+        handleSelectCategory(created);
+      } else if (step === 'subcategory' && selectedCategory) {
+        const created = await repo.addSubcategory({ categoryId: selectedCategory.id, nameAr, nameEn });
+        setIsCreating(false);
+        handleSelectSubcategory(created);
+      } else if (step === 'item' && selectedSubcategory && selectedCategory) {
+        const created = await repo.addItem({ subcategoryId: selectedSubcategory.id, nameAr, nameEn });
+        setIsCreating(false);
+        onPick(created, selectedSubcategory, selectedCategory);
+      }
+    } catch (err) {
+      saveError(err);
     }
   };
 

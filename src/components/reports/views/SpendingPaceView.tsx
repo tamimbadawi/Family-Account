@@ -6,13 +6,13 @@ import { CheckCircle2, Gauge, TrendingDown, TrendingUp } from 'lucide-react';
 import { useEntries } from '@/lib/data/provider';
 import { spendingPace, type SpendingPace } from '@/lib/reports/planning';
 import { Card } from '@/components/ui/card';
-import { money } from '@/lib/format';
+import { localISODate, money } from '@/lib/format';
 import type { PivotEntry } from '@/lib/data/types';
 
 export function SpendingPaceView() {
   const locale = useLocale();
   const t = useTranslations('reports');
-  const today = React.useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const today = React.useMemo(() => localISODate(), []);
   const dayOfMonth = React.useMemo(() => new Date().getDate(), []);
 
   const entries = useEntries();

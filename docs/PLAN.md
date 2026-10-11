@@ -25,7 +25,7 @@ The trade-off: with no connection the app still opens and shows the last data it
 
 ## Before you start (manual, about 30 minutes)
 
-Create every account under one dedicated email that the family owns. You are added as a collaborator, so the handover is just you leaving.
+All accounts (GitHub, Supabase, Vercel) stay with you, the operator. Nothing is transferred to the family.
 
 - [ ] Create a dedicated Gmail, for example `family.accounts.app@gmail.com`. Store its password with your in-laws or in a shared family password manager.
 - [ ] Create a **GitHub** account with that email and a **private** repo, `family-accounts`. Add your own GitHub account as a collaborator.
@@ -541,17 +541,16 @@ screenshots (for the family).
 
 ## Handover checklist and known risks
 
-Handover means the family's accounts own everything, the app runs with no one touching it, and you can walk away.
+Launch means the app runs on live data with no one touching it. You stay the operator and keep every account.
 
-**Handover day**
+**Launch day (on the phones)**
 
 - [ ] On each iPhone, open the production URL in Safari → Share → Add to Home Screen, **then** log in inside the installed app.
 - [ ] Log in once on each phone, set the language, and add one real entry together.
 - [ ] Confirm both keep-alive runs are green and `heartbeat.pinged_at` is today.
 - [ ] Confirm the backup workflow has produced at least one artifact.
 - [ ] Print or send the 1-page Arabic guide.
-- [ ] Remove your personal tokens from Antigravity's MCP config. Remove yourself as a GitHub collaborator, or stay on only for emergencies.
-- [ ] Set the dedicated Gmail to forward Supabase, Vercel and GitHub emails to one family member, so a pause warning or failed run is never missed.
+- [ ] Make sure Supabase, Vercel and GitHub alert emails reach an inbox you read, so a pause warning or failed run is never missed.
 
 **Known risks**
 
@@ -567,20 +566,20 @@ Handover means the family's accounts own everything, the app runs with no one to
 
 The one thing that can never be automated away is a forgotten password. Keep the family Gmail login somewhere they can find it.
 
-## Handover to Injy (owner) · Tamim stays as emergency maintainer with no data access
+## Ownership · Tamim runs the app; no transfer
 
-Decided 2026-10-06. Injy (the user's sister-in-law) owns the app and the data; Tamim can fix and update the code but can never read the family's data.
+Decided 2026-10-07 (replaces the 2026-10-06 "Handover to Injy" plan). The code, the Supabase project and the Vercel project stay in Tamim's accounts. Tamim is the operator: he creates each family's admin from `/operator` (see `docs/MULTI-FAMILY.md`), and family admins manage their own members from Settings → Family. Nothing is transferred.
 
-**Before handover:** only sample data exists (Phase A is mock), so Tamim never sees real data. Real data starts on handover day.
+**How family data is protected (standard encryption):**
+- At rest and in transit: Supabase encrypts the database and Storage on disk, and every connection is HTTPS/TLS.
+- Between families: Row Level Security on every table and on the `receipts` bucket; one family can never read another. This is checked by the RLS smoke tests after each schema change.
+- Backups: the weekly dump is gpg-encrypted with `BACKUP_PASSPHRASE` before it is uploaded; the job refuses to upload plain SQL.
+- The operator screen and function logs show counts only, never amounts, notes, categories or photos.
+- Not in scope: end-to-end encryption on the phone. As the project owner, Tamim could technically read data from the Supabase dashboard; he commits not to, and the family is told this plainly. Phone-side encryption can be added later if a family needs it (reports would then have to be added up on the phone).
 
-**Accounts (all with Injy's own Gmail):** Supabase, GitHub, Vercel (Hobby).
-
-**Handover day, in order:**
-1. Injy creates her Supabase account and an organization; Tamim joins it temporarily and transfers the `family-accounts` project (Project Settings → General → Transfer project). Tamim then **leaves Injy's organization** and removes the project's MCP connection from his tools. Result: only Injy can open the database.
-2. Transfer the GitHub repo `Family-Account` to Injy's GitHub account (Settings → Transfer). Injy adds Tamim back as a **collaborator** (code only). It must be **private**. Injy sets the secret `BACKUP_PASSPHRASE` (Tamim never sees it), plus `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_DB_URL`.
-3. Protect database access in CI: create the GitHub environment `production` with **Injy as required reviewer**; any workflow that uses a Supabase access token (migrations, edge-function deploys) runs only in that environment, so Tamim can propose changes but nothing touches the database without Injy's approval click.
-4. Transfer the Vercel project to Injy's Vercel account (Hobby has no team members; pushes to `main` keep deploying automatically, so Tamim's fixes still go live after review). Env vars hold only the publishable key and `CRON_SECRET`.
-5. Tamim creates **only Injy's app login** (username `injy`, temporary password, `must_change_password`). On first sign-in she chooses her own password, names the household, and adds the parents from Settings → Family. She can later reset passwords or remove members herself.
-6. Install on the parents' iPhones (Safari → Share → Add to Home Screen), Injy signs them in.
-
-**What Tamim keeps:** GitHub collaborator (code, pull requests), the ability to propose migrations (applied only after Injy approves). **What Tamim loses:** Supabase dashboard and SQL access, backup contents (encrypted), Vercel settings, any app login.
+**Launch day, in order:**
+1. Apply any pending migrations, deploy the `operator` and `family-admin` Edge Functions, set `OPERATOR_EMAILS`, and run `get_advisors` (no WARN left).
+2. Vercel production env: `NEXT_PUBLIC_DATA_MODE=live`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `CRON_SECRET`.
+3. GitHub secrets: `BACKUP_PASSPHRASE`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_DB_URL`. Run the backup once and restore it into a scratch project.
+4. Tamim creates the family admin from `/en/operator` (temporary password, forced change on first sign-in). The admin names the family and adds members from Settings → Family.
+5. Install on each iPhone from the production URL (Safari → Share → Add to Home Screen), then sign in inside the installed app.

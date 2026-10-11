@@ -1,0 +1,57 @@
+{
+  "title": "Budgets",
+  "intro": "Set how much you want to spend each month. You get a gentle warning at 80%.",
+  "add": "+ Add budget",
+  "emptyTitle": "No budgets yet",
+  "emptyBody": "Pick a category and how much you want to spend on it each month.",
+  "pickCategory": "Budget for which category?",
+  "pickGroup": "All of {name}, or one part of it?",
+  "wholeCategory": "All of {name}",
+  "howMuch": "How much a month for {name}?",
+  "perMonth": "a month",
+  "next": "Next",
+  "save": "Save",
+  "cancel": "Cancel",
+  "back": "Back",
+  "remove": "Remove budget",
+  "removed": "Budget removed",
+  "saved": "Budget saved",
+  "undo": "Undo",
+  "spentOf": "{spent} of {budget}",
+  "left": "{amount} left",
+  "overBy": "{amount} over",
+  "statusNear": "Almost there, go easy",
+  "statusOver": "Over budget",
+  "totalTitle": "All budgets",
+  "reportEmptyBody": "Add a budget in Settings to compare what you spent with what you planned.",
+  "setUp": "Set up budgets",
+  "hasBudget": "Budget {amount}",
+  "saveFailed": "Couldn't save the budget. Try again.",
+  "warnNear": {
+    "1": "Heads up! {name} is at {percent}% of this month's budget 🌼",
+    "2": "Easy does it: {name} has used {percent}% of its budget 😊",
+    "3": "{name} is at {percent}%. A little care and you'll land right on target 👍"
+  },
+  "warnOver": {
+    "1": "{name} went {amount} over this month. No worries, next month is a fresh start 🌱",
+    "2": "Oops! {name} is {amount} over budget. It happens to the best families 😄",
+    "3": "{name} is {amount} past its budget. Maybe a cosy week at home? ☕"
+  },
+  "homeNear": {
+    "1": "{name} is at {percent}%, go gently 🌼",
+    "2": "Almost there: {name} at {percent}%",
+    "3": "{name}: {percent}% used, steady does it"
+  },
+  "homeOver": {
+    "1": "{name} is a little over budget",
+    "2": "{name} went over, no stress 🌱",
+    "3": "{name} is over budget this month"
+  },
+  "homeMore": "{name} and {more} more need a gentle look 🌼",
+  "allGood": {
+    "1": "Every budget is on track. Lovely! 🎉",
+    "2": "All within budget, well done family 💚",
+    "3": "Right on course, keep it up 🌟"
+  },
+  "starterHint": "We added a few budgets to start you off. Tap any one to make it yours ✏️"
+}

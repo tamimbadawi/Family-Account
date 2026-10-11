@@ -451,6 +451,94 @@ describe('MockRepository with fake-indexeddb', () => {
       const v = await reseedDb.meta.get('seedVersion');
       expect(v?.value).toBe(SEED_VERSION);
     });
+
+    it('re-seeds a store that is marked seeded but has no entries left', async () => {
+      const dbName = `test-empty-${Math.random().toString(36).substring(2, 9)}`;
+      const emptyDb = new FamilyAccountsDB(dbName);
+      const emptyRepo = new MockRepository(emptyDb);
+
+      await emptyRepo.seed();
+      await emptyDb.transactions.clear();
+      expect(await emptyDb.transactions.count()).toBe(0);
+
+      await new MockRepository(emptyDb).ensureSeeded();
+      expect(await emptyDb.transactions.count()).toBeGreaterThan(0);
+    });
+  });
+
+  it('seeds sample budgets once and keeps one active budget per category or group', async () => {
+    const seeded = await repo.getBudgets();
+    expect(seeded.length).toBeGreaterThanOrEqual(1);
+    expect(seeded.every((b) => b.amount > 0 && b.isStarter)).toBe(true);
+    // Starter budgets are the family's to change: saving one makes it theirs
+    const changed = await repo.updateBudget(seeded[0].id, { amount: 777 });
+    expect(changed.amount).toBe(777);
+    expect(changed.isStarter).toBe(false);
+
+    const [food] = await repo.getCategories('expense');
+    const before = (await repo.getBudgets()).length;
+    const first = await repo.addBudget({ categoryId: food.id, amount: 1234.567 });
+    const again = await repo.addBudget({ categoryId: food.id, amount: 2000 });
+    expect(again.id).toBe(first.id);
+    expect(again.amount).toBe(2000);
+    expect((await repo.getBudgets()).filter((b) => b.categoryId === food.id && !b.subcategoryId)).toHaveLength(1);
+
+    const [group] = await repo.getSubcategories(food.id);
+    const groupBudget = await repo.addBudget({ categoryId: food.id, subcategoryId: group.id, amount: 300 });
+    expect(groupBudget.id).not.toBe(first.id);
+
+    await repo.archiveBudget(first.id);
+    expect((await repo.getBudgets()).some((b) => b.id === first.id)).toBe(false);
+    expect((await repo.getBudgets(true)).some((b) => b.id === first.id)).toBe(true);
+    await repo.archiveBudget(first.id, false);
+    expect((await repo.getBudgets()).length).toBeGreaterThanOrEqual(before);
+
+    await expect(repo.addBudget({ categoryId: food.id, amount: 0 })).rejects.toThrow();
+  });
+
+  describe('clearing the sample data', () => {
+    it('removes entries and budgets, zeroes sample wallets, keeps categories, and never reseeds', async () => {
+      const categoriesBefore = (await repo.getCategories()).length;
+      expect(await repo.hasSampleData()).toBe(true);
+
+      await repo.clearSampleData();
+
+      expect(await repo.hasSampleData()).toBe(false);
+      expect(await repo.listEntries({ includeDeleted: true })).toHaveLength(0);
+      expect(await repo.getBudgets(true)).toHaveLength(0);
+      expect((await repo.getCategories()).length).toBe(categoriesBefore);
+
+      const visible = await repo.getWallets();
+      expect(visible.map((w) => w.id)).toEqual([WALLET_CASH_ID]);
+      const balances = await repo.walletBalances();
+      expect(balances.every((b) => b.balance === 0)).toBe(true);
+
+      // A fresh start on the same phone (new app session) must not bring the samples back
+      const reopened = new MockRepository(db);
+      await reopened.ensureSeeded();
+      expect(await reopened.listEntries({ includeDeleted: true })).toHaveLength(0);
+    });
+
+    it('keeps entries added after clearing', async () => {
+      await repo.clearSampleData();
+      const item = (await repo.getItems())[0];
+      await repo.addEntry({ type: 'expense', amount: 50, occurredOn: '2026-10-01', accountId: WALLET_CASH_ID, itemId: item.id });
+      const reopened = new MockRepository(db);
+      await reopened.ensureSeeded();
+      expect(await reopened.listEntries()).toHaveLength(1);
+    });
+
+    it('undo puts everything back', async () => {
+      const entriesBefore = (await repo.listEntries({ includeDeleted: true })).length;
+      const walletsBefore = await repo.getWallets();
+
+      const undo = await repo.clearSampleData();
+      await undo();
+
+      expect(await repo.hasSampleData()).toBe(true);
+      expect(await repo.listEntries({ includeDeleted: true })).toHaveLength(entriesBefore);
+      expect(await repo.getWallets()).toEqual(walletsBefore);
+    });
   });
 });
 

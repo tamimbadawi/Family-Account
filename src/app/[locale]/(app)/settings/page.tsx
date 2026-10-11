@@ -7,27 +7,33 @@ import {
   Download,
   FolderTree,
   Globe,
+  KeyRound,
+  LifeBuoy,
   LogOut,
+  PiggyBank,
   Trash2,
   Users,
   Wallet,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
-import { useHouseholdMembers, useRepository } from '@/lib/data/provider';
+import { useRepository } from '@/lib/data/provider';
 import { localISODate } from '@/lib/format';
+import { useFamilyMembers } from '@/lib/auth/use-family-members';
 import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
 import { entriesToCsv } from '@/lib/reports/export';
+import { SupportDrawer } from '@/components/settings/SupportDrawer';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
-  const familyNames = useHouseholdMembers().map((m) => m.displayName).join(' · ');
+  const familyNames = useFamilyMembers().map((m) => m.displayName).join(' · ');
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const repo = useRepository();
 
   const [isExporting, setIsExporting] = React.useState(false);
+  const [isSupportOpen, setIsSupportOpen] = React.useState(false);
 
   const handleLanguageToggle = () => {
     const nextLocale = locale === 'ar' ? 'en' : 'ar';
@@ -64,6 +70,8 @@ export default function SettingsPage() {
       return;
     }
     await getSupabaseBrowserClient().auth.signOut();
+    // Nothing of the family stays on the phone after signing out
+    await repo.clearCache?.().catch((err) => console.warn('[sync] clear failed', err));
     router.replace('/login');
   };
 
@@ -98,6 +106,22 @@ export default function SettingsPage() {
             </div>
             <span className="text-body font-semibold text-ink">
               {t('wallets')}
+            </span>
+          </div>
+          <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
+        </Link>
+
+        {/* Budgets */}
+        <Link
+          href="/settings/budgets"
+          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-member-2-soft text-member-2">
+              <PiggyBank className="size-4.5" />
+            </div>
+            <span className="text-body font-semibold text-ink">
+              {t('budgets')}
             </span>
           </div>
           <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
@@ -175,6 +199,21 @@ export default function SettingsPage() {
             <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
           )}
         </div>
+
+        {/* Contact support */}
+        <button
+          type="button"
+          onClick={() => setIsSupportOpen(true)}
+          className="w-full flex min-h-[48px] items-center justify-between px-3.5 py-2.5 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+              <LifeBuoy className="size-4.5" />
+            </div>
+            <span className="text-body font-semibold text-ink">{t('support')}</span>
+          </div>
+          <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
+        </button>
       </div>
 
       {/* Family Section */}
@@ -200,6 +239,24 @@ export default function SettingsPage() {
         </Link>
       </div>
 
+      {/* Change password (only with real sign-in) */}
+      {isAuthConfigured() && (
+        <div className="bg-surface rounded-card border border-line/40 shadow-card">
+          <Link
+            href="/choose-password"
+            className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+                <KeyRound className="size-4.5" />
+              </div>
+              <span className="text-body font-semibold text-ink">{t('changePassword')}</span>
+            </div>
+            <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
+          </Link>
+        </div>
+      )}
+
       {/* Sign out section */}
       <div className="bg-surface rounded-card border border-line/40 shadow-card">
         <button
@@ -217,6 +274,8 @@ export default function SettingsPage() {
           </div>
         </button>
       </div>
+
+      <SupportDrawer open={isSupportOpen} onOpenChange={setIsSupportOpen} />
     </div>
   );
 }
