@@ -85,6 +85,7 @@ function supabaseSource(client: Client): PullSource {
 export class LiveRepository extends MockRepository {
   private pulling: Promise<string | null> | null = null;
   private opened: Promise<void> | null = null;
+  private watchingAuth = false;
 
   constructor(
     customDb: FamilyAccountsDB = defaultDb,
@@ -101,6 +102,7 @@ export class LiveRepository extends MockRepository {
    */
   override async ensureSeeded(): Promise<void> {
     if (typeof window === 'undefined') return;
+    this.watchAuth();
     this.opened ??= (async () => {
       const { data } = await this.client().auth.getSession();
       this.currentUserId = data.session?.user.id ?? '';
@@ -121,14 +123,43 @@ export class LiveRepository extends MockRepository {
     return row ? toHousehold(row) : null;
   }
 
-  /** Pulls changes from the server (app open, back to the foreground, back online). */
+  /**
+   * Pulls changes from the server (app open, back to the foreground, back online).
+   *
+   * Only with a signed-in session. Without one (seen on 2026-10-12: the installed app came back
+   * from the background, the token refresh failed on the waking connection), supabase-js sends
+   * the public key instead, row-level security answers "no family", and the pull used to empty the
+   * phone's copy: Reports and History stayed blank until the app was reopened. Now the copy is
+   * left alone and the pull runs again as soon as the session is back (see watchAuth).
+   */
   async refresh(): Promise<void> {
     if (offline()) return;
-    this.pulling ??= pull(this.db, supabaseSource(this.client())).finally(() => {
+    this.pulling ??= (async () => {
+      const { data } = await this.client().auth.getSession();
+      const userId = data.session?.user.id;
+      if (!userId) {
+        console.warn('[sync] no session yet; pull skipped, the copy on the phone is kept');
+        return null;
+      }
+      this.currentUserId = userId;
+      return pull(this.db, supabaseSource(this.client()));
+    })().finally(() => {
       this.pulling = null;
     });
     await this.pulling;
     await this.processDueRecurringRules().catch((err) => console.warn('[recurring] process failed', err));
+  }
+
+  /** Pull again whenever the session comes (back): sign-in, or a token refresh that worked late. */
+  private watchAuth(): void {
+    if (this.watchingAuth) return;
+    this.watchingAuth = true;
+    this.client().auth.onAuthStateChange((event, session) => {
+      if (!session || (event !== 'SIGNED_IN' && event !== 'TOKEN_REFRESHED')) return;
+      this.currentUserId = session.user.id;
+      // Supabase asks not to call it from inside this callback (it holds the auth lock)
+      setTimeout(() => void this.refresh().catch((err) => console.warn('[sync] pull failed', err)), 0);
+    });
   }
 
   /** Sign-out: nothing of the family stays on the phone. */
