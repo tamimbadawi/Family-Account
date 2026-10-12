@@ -27,5 +27,13 @@
   "chooseFromFirst": "اختار الفلوس هتيجي منين",
   "moneyAdded": "اتضافت إلى {name}",
   "noOtherWallet": "فلوس الهدف بتتنقل من محفظة عندك، زي الكاش أو حساب البنك. ضيف محفظة الأول.",
-  "addWalletFirst": "إضافة محفظة"
+  "addWalletFirst": "إضافة محفظة",
+  "takeMoney": "سحب",
+  "takeMoneyFrom": "سحب من {name}",
+  "toWallet": "انقل الفلوس إلى",
+  "takeNote": "الفلوس دي متشالة عشان {name}. عادي تستخدمها لو محتاجها، بس الهدف هياخد وقت أطول شوية.",
+  "takeFromGoal": "سحب من الهدف",
+  "chooseToFirst": "اختار الفلوس هتروح فين",
+  "moneyTaken": "اتسحبت من {name}",
+  "notEnoughInGoal": "الهدف فيه {amount} بس"
 }

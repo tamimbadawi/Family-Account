@@ -61,6 +61,8 @@ export default function SavingsGoalsPage() {
   const [fromWalletId, setFromWalletId] = React.useState<string | null>(null);
   const [fundAmountStr, setFundAmountStr] = React.useState('');
   const [isFunding, setIsFunding] = React.useState(false);
+  // 'add' moves money into the goal, 'take' moves it back out to a wallet
+  const [fundMode, setFundMode] = React.useState<'add' | 'take'>('add');
 
   // Money can come from any other wallet in the same currency as the goal's wallet
   const goalWallet = fundingGoal ? wallets.find((w) => w.id === fundingGoal.walletId) : undefined;
@@ -69,7 +71,11 @@ export default function SavingsGoalsPage() {
     : [];
   const fundAmount = previewValue(fundAmountStr) ?? 0;
 
-  const openFund = (goal: EnrichedSavingsGoal) => {
+  const isTake = fundMode === 'take';
+  const overGoal = isTake && fundingGoal !== null && fundAmount > fundingGoal.currentAmount;
+
+  const openFund = (goal: EnrichedSavingsGoal, mode: 'add' | 'take' = 'add') => {
+    setFundMode(mode);
     const sources = wallets.filter((w) => w.id !== goal.walletId);
     setFundingGoal(goal);
     setFromWalletId(sources.length === 1 ? sources[0].id : null);
@@ -78,7 +84,7 @@ export default function SavingsGoalsPage() {
   };
 
   const handleFund = async () => {
-    if (!fundingGoal || !fromWalletId || !(fundAmount > 0) || isFunding) return;
+    if (!fundingGoal || !fromWalletId || !(fundAmount > 0) || overGoal || isFunding) return;
     const goalName = pickName({ name_ar: fundingGoal.nameAr, name_en: fundingGoal.nameEn }, locale);
     try {
       setIsFunding(true);
@@ -87,11 +93,11 @@ export default function SavingsGoalsPage() {
         type: 'transfer',
         amount: fundAmount,
         occurredOn: localISODate(),
-        accountId: fromWalletId,
-        toAccountId: fundingGoal.walletId,
+        accountId: isTake ? fundingGoal.walletId : fromWalletId,
+        toAccountId: isTake ? fromWalletId : fundingGoal.walletId,
       });
       setFundingGoal(null);
-      toast.success(t('moneyAdded', { name: goalName }) + ' ✓', {
+      toast.success(t(isTake ? 'moneyTaken' : 'moneyAdded', { name: goalName }) + ' ✓', {
         action: {
           label: tCommon('undo'),
           onClick: async () => {
@@ -343,7 +349,7 @@ export default function SavingsGoalsPage() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex items-center justify-between pt-1 gap-2 border-t border-line/20">
+                  <div className="flex flex-wrap items-center pt-1 gap-2 border-t border-line/20">
                     <button
                       type="button"
                       onClick={() => openFund(goal)}
@@ -353,12 +359,22 @@ export default function SavingsGoalsPage() {
                       <span>{t('addMoney')}</span>
                     </button>
 
+                    {goal.currentAmount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => openFund(goal, 'take')}
+                        className="flex min-h-[48px] items-center rounded-xl bg-surface-2 hover:bg-line/40 px-3.5 py-2 text-body font-semibold text-ink transition-transform active:scale-95 cursor-pointer"
+                      >
+                        {t('takeMoney')}
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => handleStop(goal)}
                       disabled={isStopping}
                       aria-label={`${t('stop')} ${name}`}
-                      className="flex min-h-[48px] items-center justify-center rounded-xl bg-danger/10 px-3.5 py-2 text-body font-semibold text-danger transition-transform active:scale-95 disabled:opacity-50 cursor-pointer"
+                      className="ms-auto flex min-h-[48px] items-center justify-center rounded-xl bg-danger/10 px-3.5 py-2 text-body font-semibold text-danger transition-transform active:scale-95 disabled:opacity-50 cursor-pointer"
                     >
                       {t('stop')}
                     </button>
@@ -496,7 +512,7 @@ export default function SavingsGoalsPage() {
             <DrawerHeader className="px-0 pt-4 pb-2">
               <DrawerTitle className="text-title font-bold text-ink text-start">
                 {fundingGoal &&
-                  t('addMoneyTo', {
+                  t(isTake ? 'takeMoneyFrom' : 'addMoneyTo', {
                     name: pickName({ name_ar: fundingGoal.nameAr, name_en: fundingGoal.nameEn }, locale),
                   })}
               </DrawerTitle>
@@ -514,8 +530,15 @@ export default function SavingsGoalsPage() {
               </div>
             ) : (
               <div className="space-y-3">
+                {isTake && fundingGoal && (
+                  <p className="rounded-2xl bg-accent-soft px-4 py-3 text-body text-ink leading-relaxed">
+                    {t('takeNote', {
+                      name: pickName({ name_ar: fundingGoal.nameAr, name_en: fundingGoal.nameEn }, locale),
+                    })}
+                  </p>
+                )}
                 <div className="space-y-1.5">
-                  <span className="text-body font-semibold text-ink">{t('fromWallet')}</span>
+                  <span className="text-body font-semibold text-ink">{t(isTake ? 'toWallet' : 'fromWallet')}</span>
                   <div className="grid grid-cols-2 gap-2">
                     {sourceWallets.map((w) => {
                       const isSelected = fromWalletId === w.id;
@@ -550,10 +573,14 @@ export default function SavingsGoalsPage() {
                 <Button
                   type="button"
                   onClick={handleFund}
-                  disabled={isFunding || !fromWalletId || !(fundAmount > 0)}
+                  disabled={isFunding || !fromWalletId || !(fundAmount > 0) || overGoal}
                   className="h-14 w-full rounded-2xl bg-accent text-body font-semibold text-accent-ink transition-transform active:scale-98 cursor-pointer disabled:opacity-40"
                 >
-                  {fromWalletId ? t('addToGoal') : t('chooseFromFirst')}
+                  {overGoal && fundingGoal
+                    ? t('notEnoughInGoal', { amount: money(fundingGoal.currentAmount, locale, { currency: goalWallet?.currency }) })
+                    : !fromWalletId
+                      ? t(isTake ? 'chooseToFirst' : 'chooseFromFirst')
+                      : t(isTake ? 'takeFromGoal' : 'addToGoal')}
                 </Button>
               </div>
             )}

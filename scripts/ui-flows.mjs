@@ -1080,6 +1080,22 @@ const FLOWS = {
     const savedLine = page.getByText(/500/).first();
     await assertUsable(page, savedLine, 'saved amount on the goal card after adding money');
 
+    // 7c. Take some back out: a kind note shows, choose where it goes, key in 200, save
+    const takeBtn = page.getByRole('button', { name: ar ? 'سحب' : 'Take out', exact: true }).first();
+    await assertUsable(page, takeBtn, 'Take out button');
+    await takeBtn.click();
+    await sleep(600);
+    const takeSheet = page.getByRole('dialog');
+    await assertUsable(page, takeSheet.getByText(ar ? /عادي تستخدمها/ : /fine to use it/).first(), 'kind note about taking money out');
+    await takeSheet.locator('button[aria-pressed]').first().click();
+    for (const key of ['2', '0', '0']) await takeSheet.getByRole('button', { name: key, exact: true }).click();
+    const takeFromGoalBtn = takeSheet.getByRole('button', { name: ar ? 'سحب من الهدف' : 'Take from goal' });
+    await takeFromGoalBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await assertUsable(page, takeFromGoalBtn, 'Take from goal button');
+    await takeFromGoalBtn.click();
+    await sleep(1500);
+    await assertUsable(page, page.getByText(/300/).first(), 'saved amount on the goal card after taking money out');
+
     // 8. Stop the goal
     const stopBtn = page.getByRole('button', { name: ar ? /إيقاف/ : /Stop/ }).first();
     await assertUsable(page, stopBtn, 'Stop goal button');
