@@ -31,6 +31,7 @@ import {
   ITEM_INCOME_BALANCE_CORRECTION_ID,
   SEED_VERSION,
   USER_MAMA_ID,
+  WALLET_BANK_ID,
 } from './mock-seed';
 import type {
   CreateBudgetInput,
@@ -180,6 +181,7 @@ export class MockRepository implements Repository {
           await this.renameArabicSampleMembers();
           await this.backfillMissingCreators();
           await this.seedSampleBudgets();
+          await this.seedSampleGoals();
           await this.processDueRecurringRules();
           return;
         }
@@ -212,6 +214,7 @@ export class MockRepository implements Repository {
         this.db.transactions,
         this.db.photos,
         this.db.recurring_rules,
+        this.db.savings_goals,
         this.db.meta,
       ],
       async () => {
@@ -226,6 +229,7 @@ export class MockRepository implements Repository {
           this.db.transactions.clear(),
           this.db.photos.clear(),
           this.db.recurring_rules.clear(),
+          this.db.savings_goals.clear(),
         ]);
 
         // Insert household and members
@@ -254,6 +258,9 @@ export class MockRepository implements Repository {
     await this.db.budgets.clear();
     await this.db.meta.delete('budgetsSeeded');
     await this.seedSampleBudgets();
+    await this.db.savings_goals.clear();
+    await this.db.meta.delete('goalsSeeded');
+    await this.seedSampleGoals();
   }
 
   // Starter budgets (once per phone, so existing practice entries are kept): the three biggest expense
@@ -283,6 +290,122 @@ export class MockRepository implements Repository {
       await this.addBudget({ categoryId, amount: starter(total / months.size), isStarter: true });
     }
     await this.db.meta.put({ key: 'budgetsSeeded', value: true });
+  }
+
+  // Sample savings goals (mirrors 0023_sample_goals.sql): Fayoum trip & New car with dedicated wallets
+  // and sample moves from the main bank wallet.
+  private async seedSampleGoals(): Promise<void> {
+    if ((await this.db.meta.get('goalsSeeded'))?.value === true) return;
+    if ((await this.db.savings_goals.count()) > 0) {
+      await this.db.meta.put({ key: 'goalsSeeded', value: true });
+      return;
+    }
+
+    const household = (await this.db.households.toArray())[0];
+    if (!household) return;
+    const householdId = household.id;
+    const now = new Date();
+
+    const wallets = await this.db.accounts
+      .where('household_id')
+      .equals(householdId)
+      .filter((a) => !a.is_archived && (!a.currency || a.currency === household.currency))
+      .toArray();
+
+    if (wallets.length === 0) return;
+    const srcWallet = wallets.find((w) => w.id === WALLET_BANK_ID) ?? wallets[0];
+
+    const specs = [
+      {
+        id: '99999999-0000-0000-0000-000000000001',
+        walletId: '88888888-0000-0000-0000-000000000001',
+        nameEn: 'Fayoum trip',
+        nameAr: 'رحلة الفيوم',
+        targetAmount: 45000,
+        icon: 'plane',
+        monthsAhead: 2,
+        deposits: 4,
+        step: 3000,
+        sortOrder: 90,
+      },
+      {
+        id: '99999999-0000-0000-0000-000000000002',
+        walletId: '88888888-0000-0000-0000-000000000002',
+        nameEn: 'New car',
+        nameAr: 'عربية جديدة',
+        targetAmount: 250000,
+        icon: 'car',
+        monthsAhead: 14,
+        deposits: 4,
+        step: 6000,
+        sortOrder: 91,
+      },
+    ];
+
+    for (const spec of specs) {
+      await this.db.accounts.put({
+        id: spec.walletId,
+        household_id: householdId,
+        name_en: spec.nameEn,
+        name_ar: spec.nameAr,
+        type: 'wallet',
+        opening_balance: 0,
+        currency: household.currency,
+        icon: spec.icon,
+        color: null,
+        sort_order: spec.sortOrder,
+        is_archived: false,
+        created_at: now.toISOString(),
+        updated_at: now.toISOString(),
+      });
+
+      const targetDate = new Date(now.getFullYear(), now.getMonth() + spec.monthsAhead, now.getDate());
+
+      await this.db.savings_goals.put({
+        id: spec.id,
+        household_id: householdId,
+        name_en: spec.nameEn,
+        name_ar: spec.nameAr,
+        target_amount: spec.targetAmount,
+        target_date: localISODate(targetDate),
+        icon: spec.icon,
+        color: null,
+        wallet_id: spec.walletId,
+        is_archived: false,
+        created_by: USER_MAMA_ID,
+        created_at: now.toISOString(),
+        updated_at: now.toISOString(),
+      });
+
+      for (let i = 1; i <= spec.deposits; i++) {
+        const depositAmount = spec.step + (i % 3) * 500;
+        const daysAgo = (spec.deposits - i) * 12 + 2 + (spec.sortOrder - 90);
+        const txnDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+        const txnId = `77777777-0000-0000-000${spec.sortOrder - 89}-00000000000${i}`;
+
+        await this.db.transactions.put({
+          id: txnId,
+          household_id: householdId,
+          type: 'transfer',
+          amount: depositAmount,
+          occurred_on: localISODate(txnDate),
+          account_id: srcWallet.id,
+          to_account_id: spec.walletId,
+          item_id: null,
+          note: null,
+          recurring_rule_id: null,
+          recurring_month: null,
+          recurring_date: null,
+          deleted_at: null,
+          created_by: USER_MAMA_ID,
+          updated_by: USER_MAMA_ID,
+          created_at: txnDate.toISOString(),
+          updated_at: txnDate.toISOString(),
+        });
+      }
+    }
+
+    await this.db.meta.put({ key: 'goalsSeeded', value: true });
   }
 
   // Sample members were first seeded as ماما / بابا. Names are now English: rename them in place
@@ -327,30 +450,48 @@ export class MockRepository implements Repository {
   async clearSampleData(): Promise<() => Promise<void>> {
     await this.ensureSeeded();
     const sampleWalletIds = new Set(DEFAULT_WALLETS.map((w) => w.id));
-    const tables = [this.db.transactions, this.db.photos, this.db.budgets, this.db.accounts, this.db.meta];
+    const sampleGoals = await this.db.savings_goals.toArray();
+    for (const g of sampleGoals) {
+      sampleWalletIds.add(g.wallet_id);
+    }
+    const tables = [
+      this.db.transactions,
+      this.db.photos,
+      this.db.budgets,
+      this.db.savings_goals,
+      this.db.accounts,
+      this.db.meta,
+    ];
 
     // Kept in memory for the Undo toast
     const before = {
       transactions: await this.db.transactions.toArray(),
       photos: await this.db.photos.toArray(),
       budgets: await this.db.budgets.toArray(),
+      savings_goals: await this.db.savings_goals.toArray(),
       wallets: await this.db.accounts.bulkGet([...sampleWalletIds]),
     };
 
     await this.db.transaction('rw', tables, async () => {
-      await Promise.all([this.db.transactions.clear(), this.db.photos.clear(), this.db.budgets.clear()]);
+      await Promise.all([
+        this.db.transactions.clear(),
+        this.db.photos.clear(),
+        this.db.budgets.clear(),
+        this.db.savings_goals.clear(),
+      ]);
       const now = new Date().toISOString();
       for (const wallet of before.wallets) {
         if (!wallet) continue;
         await this.db.accounts.update(wallet.id, {
           opening_balance: 0,
-          // Cash is in every home; the sample banks are hidden (Settings → Wallets → Show hidden)
+          // Cash is in every home; the sample banks and sample goal wallets are hidden (Settings → Wallets → Show hidden)
           is_archived: wallet.type === 'cash' ? wallet.is_archived : true,
           updated_at: now,
         });
       }
       await this.db.meta.put({ key: 'sampleCleared', value: true });
       await this.db.meta.put({ key: 'budgetsSeeded', value: true });
+      await this.db.meta.put({ key: 'goalsSeeded', value: true });
     });
 
     return async () => {
@@ -358,6 +499,7 @@ export class MockRepository implements Repository {
         await this.db.transactions.bulkPut(before.transactions);
         await this.db.photos.bulkPut(before.photos);
         await this.db.budgets.bulkPut(before.budgets);
+        await this.db.savings_goals.bulkPut(before.savings_goals);
         await this.db.accounts.bulkPut(before.wallets.filter((w) => w !== undefined));
         await this.db.meta.delete('sampleCleared');
       });
