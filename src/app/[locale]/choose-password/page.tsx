@@ -1,20 +1,20 @@
 'use client';
 
 import * as React from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Eye, EyeOff } from 'lucide-react';
-import { useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { routeAfterSignIn } from '@/lib/auth/after-sign-in';
+import { goAfterAuth } from '@/lib/auth/go';
 
 const MIN_LENGTH = 6;
 
 /** First sign-in with a temporary password: the person picks their own, so nobody else ever knows it. */
 export default function ChoosePasswordPage() {
   const tAuth = useTranslations('auth');
-  const router = useRouter();
+  const locale = useLocale();
   const [password, setPassword] = React.useState('');
   const [repeat, setRepeat] = React.useState('');
   const [show, setShow] = React.useState(false);
@@ -38,7 +38,7 @@ export default function ChoosePasswordPage() {
         setError(tAuth('noConnection'));
         return;
       }
-      router.replace(await routeAfterSignIn(data.user));
+      goAfterAuth(locale, await routeAfterSignIn(data.user));
     } catch {
       setError(tAuth('noConnection'));
     } finally {

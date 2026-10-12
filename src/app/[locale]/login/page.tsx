@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Image from 'next/image';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Eye, EyeOff, Smartphone } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
@@ -11,11 +11,13 @@ import { InstallBanner } from '@/components/install/InstallBanner';
 import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
 import { toLoginEmail } from '@/lib/auth/email';
 import { routeAfterSignIn } from '@/lib/auth/after-sign-in';
+import { goAfterAuth } from '@/lib/auth/go';
 import { callFunction } from '@/lib/auth/family-admin';
 import { isSignUpEnabled, signUpErrorKey, validateSignUp } from '@/lib/auth/sign-up';
 
 export default function LoginPage() {
   const tAuth = useTranslations('auth');
+  const locale = useLocale();
   const router = useRouter();
 
   const canSignUp = isSignUpEnabled();
@@ -67,7 +69,7 @@ export default function LoginPage() {
         setError(navigator.onLine ? tAuth('wrongPassword') : tAuth('noConnection'));
         return;
       }
-      router.replace(await routeAfterSignIn(data.user));
+      goAfterAuth(locale, await routeAfterSignIn(data.user));
     } catch {
       setError(tAuth('noConnection'));
     } finally {

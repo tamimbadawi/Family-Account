@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Image from 'next/image';
+import { goAfterAuth } from '@/lib/auth/go';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
@@ -54,7 +55,7 @@ export default function WelcomePage() {
           p_currencies: secondCurrency ? [mainCurrency, secondCurrency] : [mainCurrency],
         });
         if (error) throw error;
-        router.replace('/');
+        goAfterAuth(locale, '/');
       } catch (err) {
         console.error('create_family failed:', err);
         setSaving(false);
