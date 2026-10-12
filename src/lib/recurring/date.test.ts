@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  MAX_DUE_DATES,
+  addDays,
+  dayOfWeek,
   daysInMonth,
+  getDueDates,
   entryDateForMonth,
   getDueMonths,
   monthsBetween,
@@ -133,5 +137,101 @@ describe('nextDueDate', () => {
 
   it('rolls over year in December', () => {
     expect(nextDueDate(10, '2026-12-15')).toBe('2027-01-10');
+  });
+});
+
+describe('getDueDates', () => {
+  it('older monthly rules (start month + day) are due on that day every month', () => {
+    expect(getDueDates({ startMonth: '2026-08', dayOfMonth: 31 }, '2026-10-12')).toEqual(['2026-08-31', '2026-09-30']);
+  });
+
+  it('nothing is due before the start date, for an archived rule, or without a start', () => {
+    expect(getDueDates({ startDate: '2026-11-01', frequency: 'daily' }, '2026-10-12')).toEqual([]);
+    expect(getDueDates({ startDate: '2026-10-01', frequency: 'daily', isArchived: true }, '2026-10-12')).toEqual([]);
+    expect(getDueDates({ frequency: 'weekly' }, '2026-10-12')).toEqual([]);
+  });
+
+  it('daily: every day, or every N days', () => {
+    expect(getDueDates({ startDate: '2026-10-10', frequency: 'daily' }, '2026-10-12')).toEqual([
+      '2026-10-10',
+      '2026-10-11',
+      '2026-10-12',
+    ]);
+    expect(getDueDates({ startDate: '2026-10-01', frequency: 'daily', interval: 5 }, '2026-10-12')).toEqual([
+      '2026-10-01',
+      '2026-10-06',
+      '2026-10-11',
+    ]);
+  });
+
+  it('weekly: defaults to the weekday of the start date', () => {
+    // 2026-10-05 is a Monday
+    expect(dayOfWeek('2026-10-05')).toBe(1);
+    expect(getDueDates({ startDate: '2026-10-05', frequency: 'weekly' }, '2026-10-20')).toEqual([
+      '2026-10-05',
+      '2026-10-12',
+      '2026-10-19',
+    ]);
+  });
+
+  it('weekly: several weekdays, never before the start date', () => {
+    // Starts on a Wednesday; Sunday (0) and Wednesday (3)
+    expect(
+      getDueDates({ startDate: '2026-10-07', frequency: 'weekly', daysOfWeek: [3, 0] }, '2026-10-18')
+    ).toEqual(['2026-10-07', '2026-10-11', '2026-10-14', '2026-10-18']);
+  });
+
+  it('weekly: every 2 weeks skips the week in between', () => {
+    expect(getDueDates({ startDate: '2026-10-05', frequency: 'weekly', interval: 2 }, '2026-11-03')).toEqual([
+      '2026-10-05',
+      '2026-10-19',
+      '2026-11-02',
+    ]);
+  });
+
+  it('monthly: clamps to short months and comes back to the chosen day', () => {
+    expect(getDueDates({ startDate: '2026-01-31', frequency: 'monthly' }, '2026-04-30')).toEqual([
+      '2026-01-31',
+      '2026-02-28',
+      '2026-03-31',
+      '2026-04-30',
+    ]);
+  });
+
+  it('monthly: every 3 months, across a year end', () => {
+    expect(getDueDates({ startDate: '2026-11-15', frequency: 'monthly', interval: 3 }, '2027-06-01')).toEqual([
+      '2026-11-15',
+      '2027-02-15',
+      '2027-05-15',
+    ]);
+  });
+
+  it('yearly: 29 February falls on 28 February in normal years and returns in leap years', () => {
+    expect(getDueDates({ startDate: '2024-02-29', frequency: 'yearly' }, '2028-03-01')).toEqual([
+      '2024-02-29',
+      '2025-02-28',
+      '2026-02-28',
+      '2027-02-28',
+      '2028-02-29',
+    ]);
+  });
+
+  it('stops at the end date (the end date itself still counts)', () => {
+    expect(
+      getDueDates({ startDate: '2026-10-01', frequency: 'daily', endDate: '2026-10-03' }, '2026-10-12')
+    ).toEqual(['2026-10-01', '2026-10-02', '2026-10-03']);
+  });
+
+  it('a rule left alone for years only creates the newest dates', () => {
+    const due = getDueDates({ startDate: '2020-01-01', frequency: 'daily' }, '2026-10-12');
+    expect(due).toHaveLength(MAX_DUE_DATES);
+    expect(due.at(-1)).toBe('2026-10-12');
+  });
+});
+
+describe('addDays', () => {
+  it('crosses month and year ends', () => {
+    expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
+    expect(addDays('2026-03-01', -1)).toBe('2026-02-28');
   });
 });

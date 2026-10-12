@@ -29,7 +29,6 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 
 import { TypeToggle } from './TypeToggle';
 import { AmountDisplay } from './AmountDisplay';
@@ -38,6 +37,8 @@ import { CategoryRow } from './CategoryRow';
 import { DateChip, NoteChip, WalletSelect } from './DetailsRow';
 import { ReceiptPhoto } from './ReceiptPhoto';
 import { useEntrySheet } from './EntrySheetContext';
+import { MONTHLY, RecurrencePicker } from './RecurrencePicker';
+import type { RecurrenceConfig } from './RecurrencePicker';
 
 function getLocalDateString(d: Date): string {
   const year = d.getFullYear();
@@ -50,10 +51,11 @@ interface EntrySheetFormProps {
   mode: 'add' | 'edit';
   editingEntry: EnrichedEntry | null;
   initialType?: EntryType;
+  initialRecurring?: boolean;
   onClose: () => void;
 }
 
-function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheetFormProps) {
+function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, onClose }: EntrySheetFormProps) {
   const t = useTranslations('entry');
   const tCommon = useTranslations('common');
   const tBudgets = useTranslations('budgets');
@@ -152,7 +154,8 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
   const [isNoteOpen, setIsNoteOpen] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [repeatsMonthly, setRepeatsMonthly] = React.useState(false);
+  // null = does not repeat
+  const [recurrence, setRecurrence] = React.useState<RecurrenceConfig | null>(initialRecurring ? MONTHLY : null);
 
   // When type changes, clear incompatible item (expense <-> income or transfer)
   const handleTypeChange = (newType: EntryType) => {
@@ -242,16 +245,17 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
       if (mode === 'add') {
         // Same id on every retry of this entry, so a save that reached the server is never duplicated
         pendingIdRef.current ??= crypto.randomUUID();
-        const startMonth = occurredOn.slice(0, 7);
-        const dayOfMonth = Number(occurredOn.split('-')[2]);
         let ruleId: string | null = null;
 
-        if (repeatsMonthly) {
+        if (recurrence !== null) {
           const rule = await repo.createRecurringRule({
             type,
             amount: numericAmount,
-            dayOfMonth,
-            startMonth,
+            startDate: occurredOn,
+            frequency: recurrence.frequency,
+            interval: recurrence.interval,
+            daysOfWeek: recurrence.daysOfWeek.length > 0 ? recurrence.daysOfWeek : null,
+            endDate: recurrence.endDate,
             accountId: selectedWalletId!,
             toAccountId: isTransfer ? selectedToWalletId : null,
             itemId,
@@ -264,7 +268,8 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
           ...payload,
           id: pendingIdRef.current,
           recurringRuleId: ruleId,
-          recurringMonth: ruleId ? startMonth : null,
+          recurringMonth: ruleId ? occurredOn.slice(0, 7) : null,
+          recurringDate: ruleId ? occurredOn : null,
         });
         if (photo) await repo.setEntryPhoto(created.id, photo);
 
@@ -406,15 +411,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
       </div>
 
       {mode === 'add' && !isNoteOpen && (
-        <label className="flex h-11 items-center justify-between rounded-2xl bg-surface-2 px-3.5 cursor-pointer select-none">
-          <span className="text-body font-semibold text-ink">{t('repeatsMonthly')}</span>
-          <Switch
-            checked={repeatsMonthly}
-            onCheckedChange={setRepeatsMonthly}
-            size="sm"
-            aria-label={t('repeatsMonthly')}
-          />
-        </label>
+        <RecurrencePicker value={recurrence} onChange={setRecurrence} startDate={occurredOn} />
       )}
 
       <div className="flex gap-2">
@@ -515,7 +512,7 @@ function keepOpenForToasts(e: { target: EventTarget | null; preventDefault: () =
 
 export function EntrySheet() {
   const t = useTranslations('entry');
-  const { isOpen, mode, editingEntry, initialType, close } = useEntrySheet();
+  const { isOpen, mode, editingEntry, initialType, initialRecurring, close } = useEntrySheet();
   const sheetRef = React.useRef<HTMLDivElement>(null);
   useRestoreSheetAfterKeyboard(sheetRef, isOpen);
 
@@ -543,6 +540,7 @@ export function EntrySheet() {
               mode={mode}
               editingEntry={editingEntry}
               initialType={initialType}
+              initialRecurring={initialRecurring}
               onClose={close}
             />
           )}

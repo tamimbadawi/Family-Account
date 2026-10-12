@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ArrowRight, ChevronLeft, Repeat } from 'lucide-react';
+import { ArrowRight, ChevronLeft, Plus, Repeat } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
 import { useRecurringRules, useRepository } from '@/lib/data/provider';
@@ -11,6 +11,8 @@ import type { EnrichedRecurringRule } from '@/lib/data/types';
 import { money, pickName } from '@/lib/format';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useEntrySheet } from '@/components/entry/EntrySheetContext';
+import { useRecurrenceSummary } from '@/components/entry/useRecurrenceSummary';
 
 export default function RecurringSettingsPage() {
   const locale = useLocale();
@@ -18,6 +20,8 @@ export default function RecurringSettingsPage() {
   const tCommon = useTranslations('common');
   const repo = useRepository();
   const saveError = useSaveError();
+  const { openAdd } = useEntrySheet();
+  const summarize = useRecurrenceSummary();
 
   const rules = useRecurringRules(false);
   const [stoppingId, setStoppingId] = React.useState<string | null>(null);
@@ -47,12 +51,14 @@ export default function RecurringSettingsPage() {
     }
   };
 
+  const handleAddNew = () => openAdd('expense', { initialRecurring: true });
+
   const isLoading = rules === undefined;
   const isEmpty = rules !== undefined && rules.length === 0;
 
   return (
     <div className="flex flex-col h-full overflow-y-auto overscroll-contain">
-      {/* Top Header: back chevron + title & subtitle */}
+      {/* Top Header: back chevron + title & subtitle + New button */}
       <div className="px-5 pt-[max(env(safe-area-inset-top,0px),1rem)] pb-3 shrink-0 flex items-center justify-between border-b border-line/30 select-none">
         <div className="flex items-center gap-2 min-w-0">
           <Link
@@ -71,6 +77,17 @@ export default function RecurringSettingsPage() {
             </p>
           </div>
         </div>
+
+        {/* + New button */}
+        <button
+          type="button"
+          onClick={handleAddNew}
+          aria-label={t('addNew')}
+          className="flex h-12 min-w-12 items-center justify-center gap-1 rounded-2xl bg-accent px-4 text-body font-semibold text-accent-ink transition-transform active:scale-95 shrink-0 cursor-pointer"
+        >
+          <Plus className="size-5" />
+          <span className="hidden sm:inline">{t('addNew')}</span>
+        </button>
       </div>
 
       {/* Main Content */}
@@ -100,9 +117,17 @@ export default function RecurringSettingsPage() {
             <h2 className="text-heading font-semibold text-ink mb-1">
               {t('emptyTitle')}
             </h2>
-            <p className="text-body text-ink-muted max-w-xs leading-relaxed">
+            <p className="text-body text-ink-muted max-w-xs leading-relaxed mb-5">
               {t('emptyDesc')}
             </p>
+            <button
+              type="button"
+              onClick={handleAddNew}
+              className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-accent px-6 text-body font-semibold text-accent-ink transition-transform active:scale-95 cursor-pointer"
+            >
+              <Plus className="size-5" />
+              {t('addRecurring')}
+            </button>
           </div>
         )}
 
@@ -123,7 +148,7 @@ export default function RecurringSettingsPage() {
                     locale
                   );
 
-              const dayText = t('dayOfMonth', { day: rule.dayOfMonth });
+              const scheduleText = summarize(rule);
               const isStopping = stoppingId === rule.id;
 
               return (
@@ -155,7 +180,7 @@ export default function RecurringSettingsPage() {
                         {name}
                       </div>
                       <div className="text-caption text-ink-muted leading-tight mt-0.5 truncate">
-                        {dayText}
+                        {scheduleText}
                         {rule.note ? ` · ${rule.note}` : ''}
                       </div>
                       <div className="text-body font-bold text-ink tabular-nums mt-1 leading-tight">

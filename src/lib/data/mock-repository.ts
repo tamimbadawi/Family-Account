@@ -73,6 +73,7 @@ import type {
   PivotEntry,
   PivotPeriod,
   RecentItem,
+  RecurrenceFrequency,
   RecurringRule,
   RecurringRuleRow,
   SavingsGoal,
@@ -84,7 +85,7 @@ import type {
   Wallet,
   WalletBalance,
 } from './types';
-import { entryDateForMonth, getDueMonths } from '../recurring/date';
+import { entryDateForMonth, getDueDates } from '../recurring/date';
 import { calculateGoalProgress } from '../goals/progress';
 
 /** Tables the app writes to, with their Dexie row types. */
@@ -728,7 +729,18 @@ export class MockRepository implements Repository {
     if (!(amount > 0)) {
       throw new Error('Amount must be greater than zero');
     }
-    const dayOfMonth = Math.min(31, Math.max(1, Math.round(input.dayOfMonth)));
+
+    const startDate =
+      input.startDate ??
+      (input.startMonth && input.dayOfMonth ? entryDateForMonth(input.startMonth, input.dayOfMonth) : null);
+    if (!startDate) throw new Error('A recurring rule needs a start date');
+    const endDate = input.endDate ?? null;
+    if (endDate && endDate < startDate) throw new Error('A recurring rule cannot end before it starts');
+    const frequency = input.frequency ?? 'monthly';
+    const daysOfWeek =
+      frequency === 'weekly' && input.daysOfWeek?.length
+        ? [...new Set(input.daysOfWeek)].filter((d) => d >= 0 && d <= 6).sort((a, b) => a - b)
+        : null;
     const now = new Date().toISOString();
 
     const row: RecurringRuleRow = {
@@ -736,8 +748,13 @@ export class MockRepository implements Repository {
       household_id: await this.householdId(input.householdId),
       type: input.type,
       amount,
-      day_of_month: dayOfMonth,
-      start_month: input.startMonth,
+      day_of_month: Math.min(31, Math.max(1, Math.round(input.dayOfMonth ?? Number(startDate.slice(8))))),
+      start_month: input.startMonth ?? startDate.slice(0, 7),
+      start_date: startDate,
+      end_date: endDate,
+      frequency,
+      interval: Math.min(99, Math.max(1, Math.round(input.interval ?? 1))),
+      days_of_week: daysOfWeek?.length ? daysOfWeek : null,
       account_id: input.accountId,
       to_account_id: input.type === 'transfer' ? input.toAccountId ?? null : null,
       item_id: input.type === 'transfer' ? null : input.itemId ?? null,
@@ -762,38 +779,45 @@ export class MockRepository implements Repository {
     let createdCount = 0;
 
     for (const rule of rules) {
-      const dueMonths = getDueMonths(
+      const dueDates = getDueDates(
         {
+          startDate: rule.start_date,
           startMonth: rule.start_month,
           dayOfMonth: rule.day_of_month,
-          isArchived: rule.is_archived,
+          endDate: rule.end_date,
+          frequency: rule.frequency as RecurrenceFrequency | null | undefined,
+          interval: rule.interval,
+          daysOfWeek: rule.days_of_week,
         },
         today
       );
+      if (dueDates.length === 0) continue;
 
-      for (const month of dueMonths) {
-        // Enforce unique (household_id, recurring_rule_id, recurring_month): check if an entry exists
-        const existing = await this.db.transactions
-          .filter((t) => t.recurring_rule_id === rule.id && t.recurring_month === month)
-          .first();
+      // One entry per rule and due date, deleted ones included (a deleted entry is never re-created).
+      // Entries made before custom schedules only carry their month: they were due on the rule's day.
+      const existing = await this.db.transactions.where('recurring_rule_id').equals(rule.id).toArray();
+      const taken = new Set(
+        existing.map(
+          (t) => t.recurring_date ?? (t.recurring_month ? entryDateForMonth(t.recurring_month, rule.day_of_month) : null)
+        )
+      );
 
-        if (existing) continue;
-
-        const occurredOn = entryDateForMonth(month, rule.day_of_month);
-        const id = crypto.randomUUID();
+      for (const date of dueDates) {
+        if (taken.has(date)) continue;
         const now = new Date().toISOString();
         const row: TransactionRow = {
-          id,
+          id: crypto.randomUUID(),
           household_id: rule.household_id,
           type: rule.type,
           amount: rule.amount,
-          occurred_on: occurredOn,
+          occurred_on: date,
           account_id: rule.account_id,
           to_account_id: rule.to_account_id,
           item_id: rule.item_id,
           note: rule.note,
           recurring_rule_id: rule.id,
-          recurring_month: month,
+          recurring_month: date.slice(0, 7),
+          recurring_date: date,
           created_by: rule.created_by,
           updated_by: rule.created_by,
           created_at: now,
@@ -1204,6 +1228,7 @@ export class MockRepository implements Repository {
       note: input.note ?? null,
       recurring_rule_id: input.recurringRuleId ?? null,
       recurring_month: input.recurringMonth ?? null,
+      recurring_date: input.recurringDate ?? null,
       created_by: input.createdBy ?? this.currentUserId,
       updated_by: input.createdBy ?? this.currentUserId,
       created_at: now,

@@ -24,6 +24,7 @@ import type {
   PivotEntry,
   PivotPeriod,
   RecentItem,
+  RecurrenceFrequency,
   RecurringRule,
   SavingsGoal,
   Subcategory,
@@ -84,6 +85,7 @@ export interface CreateEntryInput {
   note?: string | null;
   recurringRuleId?: string | null;
   recurringMonth?: string | null;
+  recurringDate?: string | null;
   createdBy?: string | null;
 }
 
@@ -92,8 +94,14 @@ export interface CreateRecurringRuleInput {
   householdId?: string;
   type: EntryType;
   amount: number;
-  dayOfMonth: number;
-  startMonth: string;
+  /** First date the rule is due ('YYYY-MM-DD'). Older callers pass startMonth + dayOfMonth instead. */
+  startDate?: string;
+  startMonth?: string;
+  dayOfMonth?: number;
+  endDate?: string | null;
+  frequency?: RecurrenceFrequency; // default 'monthly'
+  interval?: number; // default 1
+  daysOfWeek?: number[] | null; // weekly only: 0 = Sunday … 6 = Saturday
   accountId: string;
   toAccountId?: string | null;
   itemId?: string | null;

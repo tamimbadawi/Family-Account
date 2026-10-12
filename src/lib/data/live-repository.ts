@@ -146,11 +146,14 @@ export class LiveRepository extends MockRepository {
     let saved: AnyRow;
     try {
       const payload = toServerPayload(row as unknown as AnyRow);
-      const isRecurringTxn = table === 'transactions' && Boolean((row as TransactionRow).recurring_rule_id);
+      // A generated entry is unique per rule and due date: two phones creating it at once end up with one.
+      const isRecurringTxn =
+        table === 'transactions' &&
+        Boolean((row as TransactionRow).recurring_rule_id && (row as TransactionRow).recurring_date);
       const query = this.client().from(table as keyof Database['public']['Tables']);
       const upsertBuilder = isRecurringTxn
         ? query.upsert(payload as never, {
-            onConflict: 'household_id,recurring_rule_id,recurring_month',
+            onConflict: 'household_id,recurring_rule_id,recurring_date',
           })
         : query.upsert(payload as never);
 

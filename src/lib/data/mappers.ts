@@ -16,6 +16,7 @@ import type {
   Item,
   ItemRow,
   Member,
+  RecurrenceFrequency,
   RecurringRule,
   RecurringRuleRow,
   SavingsGoal,
@@ -25,6 +26,7 @@ import type {
   TransactionRow,
   Wallet,
 } from './types';
+import { entryDateForMonth } from '../recurring/date';
 
 // Rounds money to 2 decimal places to avoid floating point drift
 export function roundMoney(amount: number): number {
@@ -231,6 +233,9 @@ export function toEntry(row: TransactionRow): Entry {
   if (row.recurring_month !== undefined) {
     entry.recurringMonth = row.recurring_month;
   }
+  if (row.recurring_date !== undefined) {
+    entry.recurringDate = row.recurring_date;
+  }
   return entry;
 }
 
@@ -258,11 +263,15 @@ export function toTransactionRow(e: Entry): TransactionRow {
   if (e.recurringMonth !== undefined) {
     row.recurring_month = e.recurringMonth;
   }
+  if (e.recurringDate !== undefined) {
+    row.recurring_date = e.recurringDate;
+  }
   return row;
 }
 
 // ---------- Recurring Rule ----------
 
+/** Rules saved before custom schedules (0022) have no start date or frequency: they are monthly. */
 export function toRecurringRule(row: RecurringRuleRow): RecurringRule {
   return {
     id: row.id,
@@ -271,6 +280,11 @@ export function toRecurringRule(row: RecurringRuleRow): RecurringRule {
     amount: roundMoney(Number(row.amount)),
     dayOfMonth: row.day_of_month,
     startMonth: row.start_month,
+    startDate: row.start_date ?? entryDateForMonth(row.start_month, row.day_of_month),
+    endDate: row.end_date ?? null,
+    frequency: (row.frequency as RecurrenceFrequency | null | undefined) ?? 'monthly',
+    interval: row.interval ?? 1,
+    daysOfWeek: row.days_of_week ?? null,
     accountId: row.account_id,
     toAccountId: row.to_account_id,
     itemId: row.item_id,
@@ -290,6 +304,11 @@ export function toRecurringRuleRow(r: RecurringRule): RecurringRuleRow {
     amount: roundMoney(r.amount),
     day_of_month: r.dayOfMonth,
     start_month: r.startMonth,
+    start_date: r.startDate,
+    end_date: r.endDate,
+    frequency: r.frequency,
+    interval: r.interval,
+    days_of_week: r.daysOfWeek,
     account_id: r.accountId,
     to_account_id: r.toAccountId,
     item_id: r.itemId,
