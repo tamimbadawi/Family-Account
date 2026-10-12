@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { TrendingDown, TrendingUp } from 'lucide-react';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { useCategories, useEntries, useItems, useSubcategories } from '@/lib/data/provider';
-import { money, pickName } from '@/lib/format';
+import { joinPath, money, pickName } from '@/lib/format';
 import { barLabel, bucketIndex, lastPeriods, type Period } from '@/lib/history/period';
 import { applyFilters, pickLevel, singlePick, toListParams, type HistoryFilters } from '@/lib/history/filters';
 import { useEntryAuthor } from '@/lib/auth/use-family-members';
@@ -79,10 +79,12 @@ export function ItemHistoryCard({
   const path =
     level === 'category'
       ? null
-      : [category, level === 'item' ? groups?.find((s) => s.id === pick?.subcategoryId) : null]
-          .filter(Boolean)
-          .map((r) => pickName({ name_ar: r!.nameAr, name_en: r!.nameEn }, locale))
-          .join(' › ');
+      : joinPath(
+          [category, level === 'item' ? groups?.find((s) => s.id === pick?.subcategoryId) : null].map(
+            (r) => r && pickName({ name_ar: r.nameAr, name_en: r.nameEn }, locale)
+          ),
+          locale
+        );
 
   return (
     <div className="mx-5 mt-3 rounded-card bg-surface p-4 shadow-card select-none" data-item-history>

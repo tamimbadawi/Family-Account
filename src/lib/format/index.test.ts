@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCenterTotal, formatDay, formatMonth, localISODate, money, normalizeDigits, pickName, shiftMonth } from './index';
+import { formatCenterTotal, formatDay, formatMonth, joinPath, localISODate, money, normalizeDigits, pickName, shiftMonth } from './index';
 
 describe('normalizeDigits', () => {
   it('converts Arabic-Indic digits to ASCII', () => {
@@ -169,5 +169,13 @@ describe('localISODate', () => {
 
   it('pads month and day', () => {
     expect(localISODate(new Date(2026, 0, 5, 12))).toBe('2026-01-05');
+  });
+});
+
+describe('joinPath', () => {
+  it('points the separator the reading way, skipping empty parts', () => {
+    expect(joinPath(['Food', null, 'Groceries'], 'en')).toBe('Food › Groceries');
+    expect(joinPath(['الطعام', 'البقالة'], 'ar')).toBe('الطعام ← البقالة');
+    expect(joinPath([], 'en')).toBe('');
   });
 });

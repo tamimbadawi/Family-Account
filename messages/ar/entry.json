@@ -62,5 +62,6 @@
   "savingsGoal": "هدف ادخار",
   "goal": "هدف",
   "toGoal": "إلى الهدف",
-  "createGoalFirst": "اعمل هدف ادخار الأول"
+  "createGoalFirst": "اعمل هدف ادخار الأول",
+  "fromTo": "{from} ← {to}"
 }

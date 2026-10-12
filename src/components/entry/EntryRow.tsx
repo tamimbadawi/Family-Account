@@ -41,9 +41,11 @@ export function EntryRow({ entry, onClick, showDate = false }: EntryRowProps) {
     locale
   );
 
-  const title = itemName || categoryName || (isTransfer ? `${walletName} → ${toWalletName}` : '');
+  // The arrow points the way the money moves in reading order (← in Arabic)
+  const fromTo = t('fromTo', { from: walletName, to: toWalletName });
+  const title = itemName || categoryName || (isTransfer ? fromTo : '');
   const subtitle = isTransfer
-    ? `${walletName} → ${toWalletName}`
+    ? fromTo
     : categoryName && walletName
     ? `${categoryName} · ${walletName}`
     : categoryName || walletName;

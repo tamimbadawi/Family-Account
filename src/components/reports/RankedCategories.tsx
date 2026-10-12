@@ -12,7 +12,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
-import { money, pickName } from '@/lib/format';
+import { joinPath, money, pickName } from '@/lib/format';
 import { useRouter } from '@/i18n/navigation';
 import { historyHref } from '@/lib/history/link';
 import { searchCategoryTotals, type CategorySearchHit } from '@/lib/reports/category-search';
@@ -358,10 +358,10 @@ export function RankedCategories({
               ) : (
                 hits.map((hit, index) => {
                   const name = pickName({ name_ar: hit.nameAr, name_en: hit.nameEn }, locale) || hit.id;
-                  const path = hit.pathEn
-                    .map((en, i) => pickName({ name_ar: hit.pathAr[i] || null, name_en: en || null }, locale))
-                    .filter(Boolean)
-                    .join(' › ');
+                  const path = joinPath(
+                    hit.pathEn.map((en, i) => pickName({ name_ar: hit.pathAr[i] || null, name_en: en || null }, locale)),
+                    locale
+                  );
                   const color = hit.color || DONUT_PALETTE[index % DONUT_PALETTE.length];
                   return (
                     <div

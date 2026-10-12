@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { useCategories, useEntries, useItems, useSubcategories, useWallets } from '@/lib/data/provider';
 import { useEntryAuthor, useFamilyMembers } from '@/lib/auth/use-family-members';
-import { pickName } from '@/lib/format';
+import { joinPath, pickName } from '@/lib/format';
 import {
   applyFilters,
   EMPTY_FILTERS,
@@ -84,7 +84,7 @@ export function FilterSheet({ open, onOpenChange, value, onApply, range }: Filte
   const categoryCaption = !onlyPick
     ? picks.map((p) => name(pickRowOf(p))).filter(Boolean).join(', ')
     : onlyPick.itemId
-      ? [name(onlyCategory), name(allGroups?.find((g) => g.id === onlyPick.subcategoryId))].filter(Boolean).join(' › ')
+      ? joinPath([name(onlyCategory), name(allGroups?.find((g) => g.id === onlyPick.subcategoryId))], locale)
       : onlyPick.subcategoryId
         ? name(onlyCategory)
         : '';
