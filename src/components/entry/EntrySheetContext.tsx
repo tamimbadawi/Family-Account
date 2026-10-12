@@ -4,12 +4,17 @@ import * as React from 'react';
 import { markBusy } from '@/lib/busy';
 import type { EnrichedEntry, EntryType } from '@/lib/data/types';
 
+export interface OpenAddOptions {
+  initialRecurring?: boolean;
+}
+
 interface EntrySheetContextValue {
   isOpen: boolean;
   mode: 'add' | 'edit';
   editingEntry: EnrichedEntry | null;
   initialType?: EntryType;
-  openAdd: (type?: EntryType) => void;
+  initialRecurring: boolean;
+  openAdd: (type?: EntryType, options?: OpenAddOptions) => void;
   openEdit: (entry: EnrichedEntry) => void;
   close: () => void;
 }
@@ -24,11 +29,13 @@ export function EntrySheetProvider({ children }: { children: React.ReactNode }) 
   const [mode, setMode] = React.useState<'add' | 'edit'>('add');
   const [editingEntry, setEditingEntry] = React.useState<EnrichedEntry | null>(null);
   const [initialType, setInitialType] = React.useState<EntryType | undefined>(undefined);
+  const [initialRecurring, setInitialRecurring] = React.useState(false);
 
-  const openAdd = React.useCallback((type?: EntryType) => {
+  const openAdd = React.useCallback((type?: EntryType, options?: OpenAddOptions) => {
     setMode('add');
     setEditingEntry(null);
     setInitialType(type ?? 'expense');
+    setInitialRecurring(options?.initialRecurring ?? false);
     setIsOpen(true);
   }, []);
 
@@ -36,6 +43,7 @@ export function EntrySheetProvider({ children }: { children: React.ReactNode }) 
     setMode('edit');
     setEditingEntry(entry);
     setInitialType(entry.type);
+    setInitialRecurring(false);
     setIsOpen(true);
   }, []);
 
@@ -49,11 +57,12 @@ export function EntrySheetProvider({ children }: { children: React.ReactNode }) 
       mode,
       editingEntry,
       initialType,
+      initialRecurring,
       openAdd,
       openEdit,
       close,
     }),
-    [isOpen, mode, editingEntry, initialType, openAdd, openEdit, close]
+    [isOpen, mode, editingEntry, initialType, initialRecurring, openAdd, openEdit, close]
   );
 
   return (

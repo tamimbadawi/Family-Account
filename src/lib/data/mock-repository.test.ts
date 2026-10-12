@@ -682,6 +682,120 @@ describe('MockRepository with fake-indexeddb', () => {
       expect(rerun).toBe(0);
     });
 
+    it('weekly rule: one entry per due day, the first saved entry is never repeated', async () => {
+      const db = new FamilyAccountsDB('test-recurring-5');
+      const repo = new MockRepository(db);
+      await repo.ensureSeeded();
+
+      const item = (await repo.getItems())[0];
+      const wallet = (await repo.getWallets())[0];
+
+      // 2026-10-05 is a Monday; Mondays and Thursdays
+      const rule = await repo.createRecurringRule({
+        type: 'expense',
+        amount: 200,
+        startDate: '2026-10-05',
+        frequency: 'weekly',
+        daysOfWeek: [4, 1, 1],
+        accountId: wallet.id,
+        itemId: item.id,
+      });
+      expect(rule.frequency).toBe('weekly');
+      expect(rule.daysOfWeek).toEqual([1, 4]);
+      expect(rule.startDate).toBe('2026-10-05');
+      expect(rule.startMonth).toBe('2026-10');
+
+      // The entry sheet saves the first entry itself
+      await repo.addEntry({
+        type: 'expense',
+        amount: 200,
+        occurredOn: '2026-10-05',
+        accountId: wallet.id,
+        itemId: item.id,
+        recurringRuleId: rule.id,
+        recurringMonth: '2026-10',
+        recurringDate: '2026-10-05',
+      });
+
+      expect(await repo.processDueRecurringRules('2026-10-12')).toBe(2);
+      const dates = (await repo.listEntries())
+        .filter((e) => e.recurringRuleId === rule.id)
+        .map((e) => e.recurringDate)
+        .sort();
+      expect(dates).toEqual(['2026-10-05', '2026-10-08', '2026-10-12']);
+      expect(await repo.processDueRecurringRules('2026-10-12')).toBe(0);
+    });
+
+    it('a rule stops creating entries after its end date', async () => {
+      const db = new FamilyAccountsDB('test-recurring-6');
+      const repo = new MockRepository(db);
+      await repo.ensureSeeded();
+
+      const item = (await repo.getItems())[0];
+      const wallet = (await repo.getWallets())[0];
+
+      const rule = await repo.createRecurringRule({
+        type: 'expense',
+        amount: 50,
+        startDate: '2026-10-01',
+        frequency: 'daily',
+        interval: 2,
+        endDate: '2026-10-05',
+        accountId: wallet.id,
+        itemId: item.id,
+      });
+
+      expect(await repo.processDueRecurringRules('2026-10-12')).toBe(3);
+      const dates = (await repo.listEntries())
+        .filter((e) => e.recurringRuleId === rule.id)
+        .map((e) => e.occurredOn)
+        .sort();
+      expect(dates).toEqual(['2026-10-01', '2026-10-03', '2026-10-05']);
+
+      await expect(
+        repo.createRecurringRule({
+          type: 'expense',
+          amount: 50,
+          startDate: '2026-10-10',
+          endDate: '2026-10-01',
+          accountId: wallet.id,
+          itemId: item.id,
+        })
+      ).rejects.toThrow();
+    });
+
+    it('entries made before custom schedules (month only) are not created a second time', async () => {
+      const db = new FamilyAccountsDB('test-recurring-7');
+      const repo = new MockRepository(db);
+      await repo.ensureSeeded();
+
+      const item = (await repo.getItems())[0];
+      const wallet = (await repo.getWallets())[0];
+
+      const rule = await repo.createRecurringRule({
+        type: 'expense',
+        amount: 900,
+        dayOfMonth: 10,
+        startMonth: '2026-09',
+        accountId: wallet.id,
+        itemId: item.id,
+      });
+      // As the previous version saved it: a month, no due date
+      await repo.addEntry({
+        type: 'expense',
+        amount: 900,
+        occurredOn: '2026-09-10',
+        accountId: wallet.id,
+        itemId: item.id,
+        recurringRuleId: rule.id,
+        recurringMonth: '2026-09',
+      });
+
+      expect(await repo.processDueRecurringRules('2026-10-12')).toBe(1);
+      const months = (await repo.listEntries()).filter((e) => e.recurringRuleId === rule.id).map((e) => e.occurredOn).sort();
+      expect(months).toEqual(['2026-09-10', '2026-10-10']);
+    });
+
     it('creates, enriches, archives, and tracks savings goals funded via wallet transfers', async () => {
       const db = new FamilyAccountsDB('test-savings-goals-1');
       const repo = new MockRepository(db);

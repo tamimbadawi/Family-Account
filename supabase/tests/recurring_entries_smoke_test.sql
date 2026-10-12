@@ -1,4 +1,4 @@
--- Smoke test for 0018_recurring_entries.sql. Same pattern as budgets_smoke_test.sql:
+-- Smoke test for 0020_recurring_entries.sql + 0022_custom_recurrence.sql. Same pattern as budgets_smoke_test.sql:
 -- one DO block that always ends with an exception, so everything rolls back.
 -- EXPECTED OUTPUT: an ERROR starting with "SMOKE TEST RESULTS"; every line must say PASS.
 
@@ -23,10 +23,10 @@ begin
   select id into cash from public.accounts where household_id = hid and type = 'cash' limit 1;
   select id into bank from public.accounts where household_id = hid and type = 'bank' limit 1;
   select id into food from public.categories where household_id = hid and kind = 'expense' limit 1;
-  select id into groceries from public.items i join public.subcategories s on s.id = i.subcategory_id
+  select i.id into groceries from public.items i join public.subcategories s on s.id = i.subcategory_id
     where s.household_id = hid and s.category_id = food limit 1;
   select id into income_cat from public.categories where household_id = hid and kind = 'income' limit 1;
-  select id into salary_item from public.items i join public.subcategories s on s.id = i.subcategory_id
+  select i.id into salary_item from public.items i join public.subcategories s on s.id = i.subcategory_id
     where s.household_id = hid and s.category_id = income_cat limit 1;
 
   -- 1. Insert expense recurring rule
@@ -58,22 +58,77 @@ begin
 
   -- 4. Insert transaction linked to recurring rule
   insert into public.transactions (
-    household_id, type, amount, occurred_on, account_id, item_id, recurring_rule_id, recurring_month
+    household_id, type, amount, occurred_on, account_id, item_id, recurring_rule_id, recurring_month, recurring_date
   ) values (
-    hid, 'expense', 1500, '2026-08-10', cash, groceries, rid, '2026-08'
+    hid, 'expense', 1500, '2026-08-10', cash, groceries, rid, '2026-08', '2026-08-10'
   ) returning id into tid;
   r := r || E'\nPASS transaction linked to recurring rule inserted';
 
-  -- 5. Duplicate transaction for same rule and month is rejected by unique constraint
+  -- 5. A second entry for the same rule and due date is rejected, another date in the same month is fine
   ok := false;
   begin
     insert into public.transactions (
-      household_id, type, amount, occurred_on, account_id, item_id, recurring_rule_id, recurring_month
+      household_id, type, amount, occurred_on, account_id, item_id, recurring_rule_id, recurring_month, recurring_date
     ) values (
-      hid, 'expense', 1500, '2026-08-10', cash, groceries, rid, '2026-08'
+      hid, 'expense', 1500, '2026-08-11', cash, groceries, rid, '2026-08', '2026-08-10'
     );
   exception when unique_violation then ok := true; end;
-  r := r || format(E'\n%s duplicate entry for same rule and month rejected', case when ok then 'PASS' else 'FAIL' end);
+  r := r || format(E'\n%s duplicate entry for same rule and due date rejected', case when ok then 'PASS' else 'FAIL' end);
+
+  insert into public.transactions (
+    household_id, type, amount, occurred_on, account_id, item_id, recurring_rule_id, recurring_month, recurring_date
+  ) values (
+    hid, 'expense', 1500, '2026-08-17', cash, groceries, rid, '2026-08', '2026-08-17'
+  );
+  r := r || E'\nPASS second due date in the same month accepted (weekly rules)';
+
+  -- 5b. Custom schedules: defaults, weekly rule, and the checks
+  select count(*) into n from public.recurring_rules
+    where id = rid and frequency = 'monthly' and "interval" = 1 and days_of_week is null;
+  r := r || format(E'\n%s rule without a schedule defaults to monthly, every 1', case when n = 1 then 'PASS' else 'FAIL' end);
+
+  insert into public.recurring_rules (
+    household_id, type, amount, day_of_month, start_month, start_date, end_date, frequency, "interval", days_of_week,
+    account_id, item_id
+  ) values (
+    hid, 'expense', 200, 5, '2026-10', '2026-10-05', '2026-12-31', 'weekly', 2, '{1,4}', cash, groceries
+  );
+  r := r || E'\nPASS weekly rule every 2 weeks on two days, with an end date, inserted';
+
+  ok := false;
+  begin
+    insert into public.recurring_rules (household_id, type, amount, day_of_month, start_month, frequency, account_id, item_id)
+    values (hid, 'expense', 200, 5, '2026-10', 'hourly', cash, groceries);
+  exception when check_violation then ok := true; end;
+  r := r || format(E'\n%s unknown frequency rejected', case when ok then 'PASS' else 'FAIL' end);
+
+  ok := false;
+  begin
+    insert into public.recurring_rules (household_id, type, amount, day_of_month, start_month, days_of_week, account_id, item_id)
+    values (hid, 'expense', 200, 5, '2026-10', '{7}', cash, groceries);
+  exception when check_violation then ok := true; end;
+  r := r || format(E'\n%s weekday outside 0-6 rejected', case when ok then 'PASS' else 'FAIL' end);
+
+  ok := false;
+  begin
+    insert into public.recurring_rules (household_id, type, amount, day_of_month, start_month, "interval", account_id, item_id)
+    values (hid, 'expense', 200, 5, '2026-10', 0, cash, groceries);
+  exception when check_violation then ok := true; end;
+  r := r || format(E'\n%s interval 0 rejected', case when ok then 'PASS' else 'FAIL' end);
+
+  ok := false;
+  begin
+    insert into public.recurring_rules (household_id, type, amount, day_of_month, start_month, start_date, end_date, account_id, item_id)
+    values (hid, 'expense', 200, 5, '2026-10', '2026-10-05', '2026-10-01', cash, groceries);
+  exception when check_violation then ok := true; end;
+  r := r || format(E'\n%s end date before start date rejected', case when ok then 'PASS' else 'FAIL' end);
+
+  ok := false;
+  begin
+    insert into public.transactions (household_id, type, amount, occurred_on, account_id, item_id, recurring_date)
+    values (hid, 'expense', 10, '2026-08-10', cash, groceries, '2026-08-10');
+  exception when check_violation then ok := true; end;
+  r := r || format(E'\n%s due date without a rule rejected', case when ok then 'PASS' else 'FAIL' end);
 
   -- 6. Stranger cannot see recurring rules
   perform set_config('request.jwt.claim.sub', stranger::text, true);

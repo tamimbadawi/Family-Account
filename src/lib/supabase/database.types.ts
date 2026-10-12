@@ -450,11 +450,16 @@ export type Database = {
           created_at: string
           created_by: string | null
           day_of_month: number
+          days_of_week: number[] | null
+          end_date: string | null
+          frequency: string
           household_id: string
           id: string
+          interval: number
           is_archived: boolean
           item_id: string | null
           note: string | null
+          start_date: string | null
           start_month: string
           to_account_id: string | null
           type: Database["public"]["Enums"]["txn_type"]
@@ -466,11 +471,16 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           day_of_month: number
+          days_of_week?: number[] | null
+          end_date?: string | null
+          frequency?: string
           household_id: string
           id?: string
+          interval?: number
           is_archived?: boolean
           item_id?: string | null
           note?: string | null
+          start_date?: string | null
           start_month: string
           to_account_id?: string | null
           type: Database["public"]["Enums"]["txn_type"]
@@ -482,11 +492,16 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           day_of_month?: number
+          days_of_week?: number[] | null
+          end_date?: string | null
+          frequency?: string
           household_id?: string
           id?: string
+          interval?: number
           is_archived?: boolean
           item_id?: string | null
           note?: string | null
+          start_date?: string | null
           start_month?: string
           to_account_id?: string | null
           type?: Database["public"]["Enums"]["txn_type"]
@@ -602,6 +617,7 @@ export type Database = {
           photo_path: string | null
           is_sample: boolean
           recurring_rule_id: string | null
+          recurring_date: string | null
           recurring_month: string | null
           to_account_id: string | null
           type: Database["public"]["Enums"]["txn_type"]
@@ -623,6 +639,7 @@ export type Database = {
           photo_path?: string | null
           is_sample?: boolean
           recurring_rule_id?: string | null
+          recurring_date?: string | null
           recurring_month?: string | null
           to_account_id?: string | null
           type: Database["public"]["Enums"]["txn_type"]
@@ -644,6 +661,7 @@ export type Database = {
           photo_path?: string | null
           is_sample?: boolean
           recurring_rule_id?: string | null
+          recurring_date?: string | null
           recurring_month?: string | null
           to_account_id?: string | null
           type?: Database["public"]["Enums"]["txn_type"]

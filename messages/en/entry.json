@@ -58,6 +58,5 @@
   "swapWallets": "Swap direction",
   "chooseCategoryFirst": "Choose a category",
   "chooseSubOrSave": "Choose Sub / Save",
-  "backTo": "Back to {name}",
-  "repeatsMonthly": "Repeats every month"
+  "backTo": "Back to {name}"
 }

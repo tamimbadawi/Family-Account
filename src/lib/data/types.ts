@@ -98,6 +98,7 @@ export interface Entry {
   photoPath?: string | null; // receipt photo: '<household_id>/<entry_id>.jpg' (or .webp)
   recurringRuleId?: string | null;
   recurringMonth?: string | null;
+  recurringDate?: string | null; // 'YYYY-MM-DD' the rule was due; one entry per rule and date
   createdBy: string | null;
   updatedBy: string | null;
   createdAt: string;
@@ -124,8 +125,11 @@ export interface EnrichedEntry extends Entry {
   updatedByName?: string | null;
 }
 
+import type { RecurrenceFrequency } from '../recurring/date';
+export type { RecurrenceFrequency };
+
 /**
- * A monthly recurring rule for rent, salaries, school fees and instalments.
+ * A recurring rule for rent, salaries, school fees, weekly lessons or subscriptions.
  */
 export interface RecurringRule {
   id: string;
@@ -134,6 +138,11 @@ export interface RecurringRule {
   amount: number;
   dayOfMonth: number; // 1-31
   startMonth: string; // 'YYYY-MM'
+  startDate: string; // 'YYYY-MM-DD', the first date the rule is due
+  endDate: string | null; // 'YYYY-MM-DD', the last date an entry may be created; null = never ends
+  frequency: RecurrenceFrequency;
+  interval: number; // every N days/weeks/months/years
+  daysOfWeek: number[] | null; // weekly only: 0 = Sunday … 6 = Saturday
   accountId: string;
   toAccountId: string | null;
   itemId: string | null;
@@ -363,6 +372,7 @@ export interface TransactionRow {
   is_sample?: boolean;
   recurring_rule_id?: string | null;
   recurring_month?: string | null;
+  recurring_date?: string | null;
   created_by: string | null;
   updated_by: string | null;
   created_at: string;
@@ -377,6 +387,11 @@ export interface RecurringRuleRow {
   amount: number;
   day_of_month: number;
   start_month: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  frequency?: string | null;
+  interval?: number | null;
+  days_of_week?: number[] | null;
   account_id: string;
   to_account_id: string | null;
   item_id: string | null;

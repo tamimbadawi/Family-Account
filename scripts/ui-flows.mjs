@@ -964,11 +964,35 @@ const FLOWS = {
     await tap(page, ar ? 'البقالة' : 'Groceries');
     await tap(page, ar ? 'سوبرماركت' : 'Supermarket');
 
-    // 4. Toggle "Repeats every month"
-    const repeatSwitch = page.getByRole('switch', { name: ar ? 'يتكرر كل شهر' : 'Repeats every month' }).first();
-    await assertUsable(page, repeatSwitch, 'Repeats every month switch');
-    await repeatSwitch.click();
+    // 4. Repeat row → "Every week", then "Something else" → every 2 weeks
+    const repeatRow = page.getByRole('button', { name: ar ? /^التكرار/ : /^Repeat/ }).first();
+    await assertUsable(page, repeatRow, 'Repeat row');
+    await repeatRow.click();
     await sleep(300);
+    const weekly = page.getByRole('radio', { name: ar ? /كل أسبوع/ : /Every week/ }).first();
+    await assertUsable(page, weekly, 'Every week option');
+    await weekly.click();
+    await sleep(300);
+    if (!/Every week|كل أسبوع/.test((await repeatRow.textContent()) ?? '')) {
+      throw new Error('Repeat row does not show the chosen schedule');
+    }
+
+    await repeatRow.click();
+    await sleep(300);
+    const custom = page.getByRole('radio', { name: ar ? /اختيار آخر/ : /Something else/ }).first();
+    await assertUsable(page, custom, 'Something else option');
+    await custom.click();
+    await sleep(300);
+    const more = page.getByRole('button', { name: ar ? 'أكثر' : 'More often', exact: true }).first();
+    await assertUsable(page, more, 'Interval + button');
+    await more.click();
+    const done = page.getByRole('button', { name: ar ? 'تم' : 'Done', exact: true }).first();
+    await assertUsable(page, done, 'Done button of the custom schedule');
+    await done.click();
+    await sleep(300);
+    if (!/Every 2 weeks|كل أسبوعين/.test((await repeatRow.textContent()) ?? '')) {
+      throw new Error('Repeat row does not show "every 2 weeks" after the custom schedule');
+    }
 
     // 5. Save entry
     const save = await saveButton(page);
@@ -981,6 +1005,11 @@ const FLOWS = {
     await sleep(1000);
     const heading = page.getByRole('heading', { name: ar ? 'المعاملات المتكررة' : 'Recurring entries' }).first();
     await assertUsable(page, heading, 'Recurring entries page heading');
+
+    const schedule = page.getByText(ar ? /كل أسبوعين/ : /Every 2 weeks/).first();
+    await assertUsable(page, schedule, 'Schedule of the new rule');
+    const addNew = page.getByRole('button', { name: ar ? 'جديد' : 'New', exact: true }).first();
+    await assertUsable(page, addNew, 'New recurring entry button');
 
     const stopBtn = page.getByRole('button', { name: ar ? 'إيقاف' : 'Stop' }).first();
     await assertUsable(page, stopBtn, 'Stop recurring rule button');
