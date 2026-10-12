@@ -681,6 +681,79 @@ describe('MockRepository with fake-indexeddb', () => {
       const rerun = await repo.processDueRecurringRules('2026-10-12');
       expect(rerun).toBe(0);
     });
+
+    it('creates, enriches, archives, and tracks savings goals funded via wallet transfers', async () => {
+      const db = new FamilyAccountsDB('test-savings-goals-1');
+      const repo = new MockRepository(db);
+      await repo.ensureSeeded();
+
+      // Create a dedicated wallet for the goal
+      const wallet = await repo.addWallet({
+        nameEn: 'Hajj Fund',
+        nameAr: 'صندوق الحج',
+        type: 'bank',
+        openingBalance: 5000,
+      });
+
+      // Create savings goal
+      const goal = await repo.createSavingsGoal({
+        nameEn: 'Hajj 2027',
+        nameAr: 'حج 2027',
+        targetAmount: 50000,
+        targetDate: '2027-05-01',
+        icon: 'sparkles',
+        walletId: wallet.id,
+      });
+
+      expect(goal.nameEn).toBe('Hajj 2027');
+      expect(goal.targetAmount).toBe(50000);
+      expect(goal.walletId).toBe(wallet.id);
+      expect(goal.isArchived).toBe(false);
+
+      // Verify enriched savings goal
+      let goals = await repo.getSavingsGoals();
+      let enriched = goals.find((g) => g.id === goal.id);
+      expect(enriched).toBeDefined();
+      expect(enriched?.currentAmount).toBe(5000);
+      expect(enriched?.percent).toBe(10);
+      expect(enriched?.barPercent).toBe(10);
+      expect(enriched?.remaining).toBe(45000);
+      expect(enriched?.isReached).toBe(false);
+      expect(enriched?.walletNameEn).toBe('Hajj Fund');
+
+      // Add a transfer of 45,000 from cash into this wallet
+      const cashWallet = (await repo.getWallets()).find((w) => w.type === 'cash')!;
+      await repo.addEntry({
+        type: 'transfer',
+        amount: 45000,
+        occurredOn: '2026-10-12',
+        accountId: cashWallet.id,
+        toAccountId: wallet.id,
+        note: 'Saved for Hajj',
+      });
+
+      // Check updated goal progress - now 50,000 / 50,000 (100% reached)
+      goals = await repo.getSavingsGoals();
+      enriched = goals.find((g) => g.id === goal.id);
+      expect(enriched?.currentAmount).toBe(50000);
+      expect(enriched?.percent).toBe(100);
+      expect(enriched?.remaining).toBe(0);
+      expect(enriched?.isReached).toBe(true);
+
+      // Archive goal
+      await repo.archiveSavingsGoal(goal.id, true);
+      const afterArchive = await repo.getSavingsGoals();
+      expect(afterArchive.some((g) => g.id === goal.id)).toBe(false);
+
+      const allGoals = await repo.getSavingsGoals(true);
+      expect(allGoals.some((g) => g.id === goal.id && g.isArchived)).toBe(true);
+
+      // Restore goal
+      await repo.archiveSavingsGoal(goal.id, false);
+      const afterRestore = await repo.getSavingsGoals();
+      expect(afterRestore.some((g) => g.id === goal.id && !g.isArchived)).toBe(true);
+    });
   });
 });
+
 

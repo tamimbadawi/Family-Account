@@ -16,6 +16,7 @@ import type {
   OutboxRow,
   PhotoRow,
   RecurringRuleRow,
+  SavingsGoalRow,
   SubcategoryRow,
   TransactionRow,
 } from '../data/types';
@@ -41,6 +42,7 @@ export class FamilyAccountsDB extends Dexie {
   photos!: Table<PhotoRow, string>;
   budgets!: Table<BudgetRow, string>;
   recurring_rules!: Table<RecurringRuleRow, string>;
+  savings_goals!: Table<SavingsGoalRow, string>;
 
   constructor(dbName: string = getDbName()) {
     super(dbName);
@@ -73,6 +75,11 @@ export class FamilyAccountsDB extends Dexie {
       recurring_rules: 'id, household_id, is_archived, updated_at',
       transactions:
         'id, household_id, occurred_on, account_id, to_account_id, item_id, type, deleted_at, updated_at, recurring_rule_id, recurring_month, [household_id+occurred_on], [household_id+recurring_rule_id+recurring_month]',
+    });
+
+    // v5 · savings goals linked to wallets (R4).
+    this.version(5).stores({
+      savings_goals: 'id, household_id, wallet_id, is_archived, updated_at',
     });
   }
 }

@@ -22,6 +22,7 @@ import type {
   CategoryTotal,
   EnrichedEntry,
   EnrichedRecurringRule,
+  EnrichedSavingsGoal,
   Household,
   Item,
   Member,
@@ -313,6 +314,19 @@ export function useRecurringRules(includeArchived = false): EnrichedRecurringRul
     async () => {
       if (typeof window === 'undefined') return [];
       return repo.getRecurringRules(includeArchived);
+    },
+    [repo, includeArchived],
+    undefined
+  );
+}
+
+export function useSavingsGoals(includeArchived = false): EnrichedSavingsGoal[] | undefined {
+  const repo = useRepository();
+
+  return useLiveQuery(
+    async () => {
+      if (typeof window === 'undefined') return [];
+      return repo.getSavingsGoals(includeArchived);
     },
     [repo, includeArchived],
     undefined

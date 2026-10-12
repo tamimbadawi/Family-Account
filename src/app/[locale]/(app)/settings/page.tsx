@@ -12,6 +12,7 @@ import {
   LogOut,
   PiggyBank,
   Repeat,
+  Target,
   Trash2,
   Users,
   Wallet,
@@ -77,7 +78,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-6 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-2.5 [@media(max-height:700px)]:space-y-1.5 [@media(max-height:700px)]:pb-2 select-none">
+    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-6 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-2.5 [@media(max-height:700px)]:space-y-1.5 [@media(max-height:700px)]:pb-1 [@media(max-height:700px)]:pt-0 select-none">
       {/* Primary Inset Group */}
       <div className="bg-surface rounded-card border border-line/40 shadow-card divide-y divide-line/30">
         {/* Categories */}
@@ -144,6 +145,22 @@ export default function SettingsPage() {
           <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
         </Link>
 
+        {/* Savings Goals */}
+        <Link
+          href="/settings/goals"
+          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-income-soft text-income">
+              <Target className="size-4.5" />
+            </div>
+            <span className="text-body font-semibold text-ink">
+              {t('goals')}
+            </span>
+          </div>
+          <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
+        </Link>
+
         {/* Recently Deleted */}
         <Link
           href="/settings/deleted"
@@ -161,7 +178,7 @@ export default function SettingsPage() {
         </Link>
       </div>
 
-      {/* Preferences & Tools Group */}
+      {/* Preferences & Family Group */}
       <div className="bg-surface rounded-card border border-line/40 shadow-card divide-y divide-line/30">
         {/* Language switch */}
         <div
@@ -169,7 +186,7 @@ export default function SettingsPage() {
           tabIndex={0}
           onClick={handleLanguageToggle}
           onKeyDown={(e) => e.key === 'Enter' && handleLanguageToggle()}
-          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
+          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-0.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
         >
           <div className="flex items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-warning/12 text-warning">
@@ -195,7 +212,7 @@ export default function SettingsPage() {
           tabIndex={0}
           onClick={handleDownloadCsv}
           onKeyDown={(e) => e.key === 'Enter' && handleDownloadCsv()}
-          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
+          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-0.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
         >
           <div className="flex items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-member-3-soft text-member-3">
@@ -231,13 +248,11 @@ export default function SettingsPage() {
           </div>
           <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
         </button>
-      </div>
 
-      {/* Family and account group */}
-      <div className="bg-surface rounded-card border border-line/40 shadow-card divide-y divide-line/30">
+        {/* Family */}
         <Link
           href="/settings/family"
-          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-0.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
         >
           <div className="flex items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-member-1-soft text-member-1">
@@ -270,10 +285,7 @@ export default function SettingsPage() {
             <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
           </Link>
         )}
-      </div>
-
-      {/* Sign out section */}
-      <div className="bg-surface rounded-card border border-line/40 shadow-card">
+        {/* Sign out */}
         <button
           type="button"
           onClick={handleSignOut}

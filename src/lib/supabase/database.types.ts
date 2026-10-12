@@ -523,6 +523,69 @@ export type Database = {
           },
         ]
       }
+      savings_goals: {
+        Row: {
+          color: string | null
+          created_at: string
+          created_by: string | null
+          household_id: string
+          icon: string | null
+          id: string
+          is_archived: boolean
+          name_ar: string | null
+          name_en: string
+          target_amount: number
+          target_date: string | null
+          updated_at: string
+          wallet_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          household_id: string
+          icon?: string | null
+          id?: string
+          is_archived?: boolean
+          name_ar?: string | null
+          name_en: string
+          target_amount: number
+          target_date?: string | null
+          updated_at?: string
+          wallet_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          household_id?: string
+          icon?: string | null
+          id?: string
+          is_archived?: boolean
+          name_ar?: string | null
+          name_en?: string
+          target_amount?: number
+          target_date?: string | null
+          updated_at?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "savings_goals_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "savings_goals_household_id_wallet_id_fkey"
+            columns: ["household_id", "wallet_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           to_amount: number | null
