@@ -80,7 +80,10 @@ export function SavingsGoalsView() {
                 <h2 className="text-body font-bold text-ink leading-tight break-words">
                   {pickName({ name_ar: goal.nameAr, name_en: goal.nameEn }, locale)}
                 </h2>
-                {date && <p className="text-caption text-ink-muted leading-tight mt-0.5">{date}</p>}
+                <p className="text-caption text-ink-muted tabular-nums leading-tight mt-0.5">
+                  {tGoals('target', { amount: money(goal.targetAmount, locale, { currency }) })}
+                  {date ? ` · ${date}` : ''}
+                </p>
               </div>
               {goal.isReached ? (
                 <Trophy className="size-5 shrink-0 text-income" aria-label={tGoals('reached')} />
@@ -104,11 +107,11 @@ export function SavingsGoalsView() {
 
             <div className="flex flex-wrap items-center justify-between gap-x-3 text-caption font-semibold tabular-nums leading-tight">
               <span className="text-ink">{tGoals('saved', { amount: money(goal.currentAmount, locale, { currency }) })}</span>
-              <span className="text-ink-muted">
-                {goal.isReached
-                  ? money(goal.targetAmount, locale, { currency })
-                  : tGoals('left', { amount: money(goal.remaining, locale, { currency }) })}
-              </span>
+              {!goal.isReached && (
+                <span className="text-expense">
+                  {tGoals('left', { amount: money(goal.remaining, locale, { currency }) })}
+                </span>
+              )}
             </div>
           </Card>
         );
