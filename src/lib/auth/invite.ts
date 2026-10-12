@@ -8,14 +8,20 @@ export function inviteLink(origin: string, locale: string): string {
   return `${origin.replace(/\/+$/, '')}/${locale}/login`;
 }
 
-/** One person's own link: the one-time token rides after the #, so it never reaches a server or a link preview. */
-export function joinLink(origin: string, locale: string, token: string): string {
-  return `${origin.replace(/\/+$/, '')}/${locale}/join#t=${encodeURIComponent(token)}`;
+/** The family member invite link: the code rides after the # so it never reaches a server in link previews. */
+export function joinLink(origin: string, locale: string, code: string): string {
+  return `${origin.replace(/\/+$/, '')}/${locale}/join#code=${encodeURIComponent(code)}`;
 }
 
-/** The token from a personal link's "#t=..." part, or null when there is none. */
+/** The 24-hour new family invite link: the code rides after the # so it never reaches a server in link previews. */
+export function familyInviteLink(origin: string, locale: string, code: string): string {
+  return `${origin.replace(/\/+$/, '')}/${locale}/join#invite=${encodeURIComponent(code)}`;
+}
+
+/** The token/code from an invite link's "#invite=...", "#code=...", or legacy "#t=..." part, or null when there is none. */
 export function joinToken(hash: string): string | null {
-  return new URLSearchParams(hash.replace(/^#/, '')).get('t') || null;
+  const params = new URLSearchParams(hash.replace(/^#/, ''));
+  return params.get('invite') || params.get('code') || params.get('t') || null;
 }
 
 export async function sendInvite(title: string, text: string, url: string): Promise<InviteResult> {
