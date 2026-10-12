@@ -13,6 +13,7 @@ import { getInviteInfo, joinByLink, startFamilyByInvite, FamilyAdminError } from
 import { isEmail, normalizeEmail } from '@/lib/auth/email';
 import { isEnglishName } from '@/lib/members';
 import { DEFAULT_CURRENCY } from '@/lib/format';
+import { goAfterAuth } from '@/lib/auth/go';
 
 /** Read the hash to determine which mode we are in */
 function parseHash(hash: string): { mode: 'new_family' | 'member' | 'none'; code: string | null } {
@@ -147,7 +148,7 @@ export default function JoinPage() {
       });
       if (rpcError) throw new Error(rpcError.message);
 
-      router.replace('/');
+      goAfterAuth(locale, '/');
     } catch (err) {
       if (err instanceof FamilyAdminError) {
         if (err.message === 'invite_expired') {
@@ -203,7 +204,7 @@ export default function JoinPage() {
         return;
       }
 
-      router.replace('/');
+      goAfterAuth(locale, '/');
     } catch (err) {
       if (err instanceof FamilyAdminError) {
         if (err.message === 'email_taken') {
