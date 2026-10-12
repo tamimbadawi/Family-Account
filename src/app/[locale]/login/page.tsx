@@ -11,6 +11,7 @@ import { InstallBanner } from '@/components/install/InstallBanner';
 import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
 import { toLoginEmail } from '@/lib/auth/email';
 import { routeAfterSignIn } from '@/lib/auth/after-sign-in';
+import { callFunction } from '@/lib/auth/family-admin';
 import { isSignUpEnabled, signUpErrorKey, validateSignUp } from '@/lib/auth/sign-up';
 
 export default function LoginPage() {
@@ -27,7 +28,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = React.useState(false);
 
   const [error, setError] = React.useState<string | null>(null);
-  const [notice, setNotice] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,7 +39,6 @@ export default function LoginPage() {
       return;
     }
     setError(null);
-    setNotice(null);
     if (signingUp) {
       const invalid = validateSignUp(email, password, repeat);
       if (invalid) {
@@ -51,21 +50,17 @@ export default function LoginPage() {
     try {
       const supabase = getSupabaseBrowserClient();
       if (signingUp) {
-        const { data, error: signUpError } = await supabase.auth.signUp({ email: email.trim(), password });
-        if (signUpError || !data.user) {
-          setError(navigator.onLine ? tAuth(signUpError ? signUpErrorKey(signUpError) : 'signUpFailed') : tAuth('noConnection'));
+        // Only an invited email gets an account; it is ready at once, so we sign in right after
+        try {
+          await callFunction('sign-up', { email: email.trim(), password });
+        } catch (err) {
+          const code = err instanceof Error ? err.message : '';
+          setError(navigator.onLine ? tAuth(signUpErrorKey({ code })) : tAuth('noConnection'));
           return;
         }
-        // No session yet means Supabase wants the email confirmed first
-        if (!data.session) {
-          setNotice(tAuth('checkEmail'));
-          return;
-        }
-        router.replace(await routeAfterSignIn(data.user));
-        return;
       }
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: toLoginEmail(email),
+        email: signingUp ? email.trim().toLowerCase() : toLoginEmail(email),
         password,
       });
       if (signInError || !data.user) {
@@ -175,12 +170,6 @@ export default function LoginPage() {
             {error}
           </p>
         )}
-        {notice && (
-          <p role="status" className="text-body font-medium text-ink">
-            {notice}
-          </p>
-        )}
-
         <Button type="submit" disabled={busy} className="h-14 w-full text-heading font-semibold mt-2 text-accent-ink">
           {signingUp ? tAuth('signUp') : tAuth('signIn')}
         </Button>
@@ -191,7 +180,6 @@ export default function LoginPage() {
             onClick={() => {
               setMode(signingUp ? 'signin' : 'signup');
               setError(null);
-              setNotice(null);
             }}
             className="flex min-h-12 w-full items-center justify-center text-body font-semibold text-accent"
           >
