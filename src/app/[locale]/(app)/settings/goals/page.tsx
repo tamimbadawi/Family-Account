@@ -101,7 +101,7 @@ export default function SavingsGoalsPage() {
         toAccountId: isTake ? fromWalletId : fundingGoal.walletId,
       });
       setFundingGoal(null);
-      toast.success(t(isTake ? 'moneyTaken' : 'moneyAdded', { name: goalName }) + ' ✓', {
+      toast.success(isTake ? t('nudge', { name: goalName }) : t('moneyAdded', { name: goalName }) + ' ✓', {
         action: {
           label: tCommon('undo'),
           onClick: async () => {

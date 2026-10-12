@@ -166,6 +166,8 @@
     "savingsGoals": "Savings goals",
     "savingsGoalsDesc": "How close you are to each goal",
     "savedInGoals": "Saved in goals",
-    "manageGoals": "Open savings goals"
+    "manageGoals": "Open savings goals",
+    "savedInGoalsLine": "{amount} saved · {count, plural, one {# goal} other {# goals}}",
+    "noGoalsYet": "Start saving for something"
   }
 }

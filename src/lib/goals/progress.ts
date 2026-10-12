@@ -56,3 +56,19 @@ export function formatGoalTargetDate(dateStr: string | null | undefined, locale:
   void locale;
   return match[3] ? `${match[3]}/${match[2]}/${match[1]}` : `${match[2]}/${match[1]}`;
 }
+
+export type GoalCheer = 'cheerReached' | 'cheerHalf' | 'cheer1' | 'cheer2' | 'cheer3';
+
+/**
+ * Which kind word to show after money is added to a goal: reaching it, passing halfway,
+ * or one of three everyday ones (they take turns, so it does not read the same every time).
+ * `percent` is how far the goal is after the addition (never above 100).
+ */
+export function goalCheer(savedBefore: number, added: number, target: number): { key: GoalCheer; percent: number } {
+  const after = savedBefore + added;
+  const percent = target > 0 ? Math.min(100, Math.floor((after / target) * 100)) : 0;
+  if (target > 0 && after >= target) return { key: 'cheerReached', percent: 100 };
+  if (target > 0 && savedBefore < target / 2 && after >= target / 2) return { key: 'cheerHalf', percent };
+  const turn = Math.abs(Math.round(after)) % 3;
+  return { key: turn === 0 ? 'cheer1' : turn === 1 ? 'cheer2' : 'cheer3', percent };
+}

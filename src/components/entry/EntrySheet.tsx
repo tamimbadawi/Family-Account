@@ -19,7 +19,8 @@ import { useSaveError } from '@/components/ui/use-save-error';
 import { validateEntry } from '@/lib/validation/entry';
 import { generalItemFor } from '@/lib/data/general-item';
 import { previewValue } from '@/lib/format/expression';
-import { money } from '@/lib/format';
+import { goalCheer } from '@/lib/goals/progress';
+import { money, pickName } from '@/lib/format';
 import { budgetPercent, messageVariant } from '@/lib/reports/budgets';
 import { budgetWarningsForEntry } from '@/components/budgets/budget-warning';
 
@@ -62,6 +63,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
   const t = useTranslations('entry');
   const tCommon = useTranslations('common');
   const tBudgets = useTranslations('budgets');
+  const tGoals = useTranslations('goals');
   const locale = useLocale();
   const repo = useRepository();
   const saveError = useSaveError();
@@ -113,6 +115,25 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
       ? (wallets?.find((w) => w.id !== selectedGoal.walletId)?.id ?? null)
       : selectedWalletId;
   const toWalletId = isGoal ? (selectedGoal?.walletId ?? null) : selectedToWalletId;
+  // Moving money out of a goal's wallet gets a kind note (never a blocking question)
+  const drainedGoal =
+    !isGoal && type === 'transfer' ? goals?.find((g) => g.walletId === selectedWalletId) : undefined;
+  // Money going into a goal's wallet (from "Goal" or a plain move) earns a kind word once saved
+  const filledGoal = type === 'transfer' && !drainedGoal ? goals?.find((g) => g.walletId === toWalletId) : undefined;
+  const goalName = (g: { nameAr: string | null; nameEn: string | null }) =>
+    pickName({ name_ar: g.nameAr, name_en: g.nameEn }, locale);
+  const savedMessage = () => {
+    if (filledGoal) {
+      const cheer = goalCheer(filledGoal.currentAmount, numericAmount, filledGoal.targetAmount);
+      return tGoals(cheer.key, {
+        name: goalName(filledGoal),
+        percent: cheer.percent,
+        amount: money(numericAmount, locale, { currency: selectedWallet?.currency }),
+      });
+    }
+    if (drainedGoal) return tGoals('nudge', { name: goalName(drainedGoal) });
+    return t('saved') + ' ✓';
+  };
 
   // Move: picking the wallet that is already on the other side swaps the two
   const pickFromWallet = (id: string) => {
@@ -294,7 +315,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
         setIsSuccess(true);
         setTimeout(() => {
           onClose();
-          toast(t('saved') + ' ✓', {
+          toast(savedMessage(), {
             action: {
               label: tCommon('undo'),
               onClick: async () => {
@@ -452,8 +473,13 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
         )}
       </div>
 
-      {mode === 'add' && !isNoteOpen && (
-        <RecurrencePicker value={recurrence} onChange={setRecurrence} startDate={occurredOn} />
+      {drainedGoal && !isNoteOpen ? (
+        <p role="note" className="rounded-2xl bg-accent-soft px-3 py-2 text-caption text-ink leading-snug">
+          {tGoals('takeNote', { name: goalName(drainedGoal) })}
+        </p>
+      ) : (
+        mode === 'add' &&
+        !isNoteOpen && <RecurrencePicker value={recurrence} onChange={setRecurrence} startDate={occurredOn} />
       )}
 
       <div className="flex gap-2">

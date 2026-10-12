@@ -166,6 +166,8 @@
     "savingsGoals": "أهداف الادخار",
     "savingsGoalsDesc": "قربت قد إيه من كل هدف",
     "savedInGoals": "المتحوّش في الأهداف",
-    "manageGoals": "افتح أهداف الادخار"
+    "manageGoals": "افتح أهداف الادخار",
+    "savedInGoalsLine": "متحوّش {amount} · {count, plural, one {هدف واحد} two {هدفين} few {# أهداف} other {# هدف}}",
+    "noGoalsYet": "ابدأ حوّش لحاجة"
   }
 }
