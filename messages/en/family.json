@@ -71,5 +71,15 @@
   },
   "inviteWithLink": "Join {family} on our family accounts app. Open this link on your phone to join:",
   "newFamilyInviteText": "We use a simple app to track our family's money — I think you'll love it! I'm sharing a link so you can set up your own family space. Open it on your phone within 24 hours:",
-  "newFamilyInviteHint": "The link expires in 24 hours. They open it to set up their own family."
+  "newFamilyInviteHint": "The link expires in 24 hours. They open it to set up their own family.",
+  "currencies": "Currencies",
+  "currenciesHint": "All wallets use these. Amounts in different currencies are never added together.",
+  "mainCurrency": "Main currency",
+  "secondCurrency": "Second currency (optional)",
+  "noSecondCurrency": "None (one currency only)",
+  "saveCurrencies": "Save currencies",
+  "saving": "Saving...",
+  "currenciesSaved": "Currencies updated",
+  "currencyInUse": "A wallet still uses a currency you removed",
+  "chooseCurrencies": "Choose one or two currencies"
 }

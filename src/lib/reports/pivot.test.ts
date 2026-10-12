@@ -91,6 +91,7 @@ describe('pivot engine', () => {
     nameEn: 'Cash',
     type: 'cash',
     openingBalance: 1000,
+    currency: 'EGP',
     icon: 'banknote',
     color: '#0F766E',
     sortOrder: 0,

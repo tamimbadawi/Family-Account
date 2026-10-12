@@ -18,6 +18,7 @@ import { MockRepository, type WritableRow, type WritableTable } from './mock-rep
 import { OfflineError } from './errors';
 import { toEntry, toHousehold } from './mappers';
 import type { SyncStatus, TransactionRow } from './types';
+import { setDefaultCurrency } from '../format';
 
 const REQUEST_TIMEOUT_MS = 15_000;
 const RECEIPTS_BUCKET = 'receipts';
@@ -275,6 +276,26 @@ export class LiveRepository extends MockRepository {
       throw err instanceof Error ? err : new Error(String((err as { message?: unknown })?.message ?? err));
     }
     await this.refresh();
+  }
+
+  override async setHouseholdCurrencies(currencies: string[]): Promise<void> {
+    if (offline()) throw new OfflineError();
+    const hid = await this.householdId();
+    try {
+      const { error } = await this.client()
+        .rpc('set_household_currencies', { p_currencies: currencies })
+        .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
+      if (error) throw error;
+    } catch (err) {
+      if (isNetworkFailure(err)) throw new OfflineError();
+      throw err instanceof Error ? err : new Error(String((err as { message?: unknown })?.message ?? err));
+    }
+    const clean = currencies.map((c) => c.trim().toUpperCase());
+    await this.db.households.update(hid, {
+      currencies: clean,
+      currency: clean[0],
+    });
+    setDefaultCurrency(clean[0]);
   }
 
   // ---------- Status ----------

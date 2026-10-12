@@ -13,6 +13,7 @@ import { mockRepository } from './mock-repository';
 import { LiveRepository } from './live-repository';
 import { getLastNMonths } from '@/lib/reports/months';
 import { budgetProgress, type BudgetProgress } from '@/lib/reports/budgets';
+import { setDefaultCurrency } from '@/lib/format';
 import type { ListEntriesParams, Repository } from './repository';
 import type {
   Budget,
@@ -118,9 +119,24 @@ export function RepositoryProvider({ children, repository }: RepositoryProviderP
 // without opening its own database subscription.
 const MembersContext = createContext<Member[]>([]);
 
+function HouseholdCurrencySync() {
+  const household = useHousehold();
+  useEffect(() => {
+    if (household?.currency) {
+      setDefaultCurrency(household.currency);
+    }
+  }, [household?.currency]);
+  return null;
+}
+
 function MembersProvider({ children }: { children: React.ReactNode }) {
   const members = useMembers();
-  return <MembersContext.Provider value={members ?? []}>{children}</MembersContext.Provider>;
+  return (
+    <MembersContext.Provider value={members ?? []}>
+      <HouseholdCurrencySync />
+      {children}
+    </MembersContext.Provider>
+  );
 }
 
 /** Household members from the shared list (empty until loaded). */

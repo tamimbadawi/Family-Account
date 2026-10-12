@@ -36,10 +36,15 @@ export function roundMoney(amount: number): number {
 // ---------- Household ----------
 
 export function toHousehold(row: HouseholdRow): Household {
+  const currencies =
+    row.currencies && row.currencies.length > 0
+      ? row.currencies
+      : [row.currency || 'EGP'];
   return {
     id: row.id,
     name: row.name,
-    currency: row.currency,
+    currency: row.currency || currencies[0] || 'EGP',
+    currencies,
     createdAt: row.created_at,
   };
 }
@@ -49,6 +54,7 @@ export function toHouseholdRow(h: Household): HouseholdRow {
     id: h.id,
     name: h.name,
     currency: h.currency,
+    currencies: h.currencies,
     created_at: h.createdAt,
   };
 }
@@ -87,6 +93,7 @@ export function toWallet(row: AccountRow): Wallet {
     nameEn: row.name_en,
     type: row.type,
     openingBalance: roundMoney(Number(row.opening_balance)),
+    currency: row.currency || 'EGP',
     icon: row.icon,
     color: row.color,
     sortOrder: row.sort_order,
@@ -104,6 +111,7 @@ export function toAccountRow(w: Wallet): AccountRow {
     name_en: w.nameEn,
     type: w.type,
     opening_balance: roundMoney(w.openingBalance),
+    currency: w.currency || 'EGP',
     icon: w.icon,
     color: w.color,
     sort_order: w.sortOrder,
@@ -227,6 +235,9 @@ export function toEntry(row: TransactionRow): Entry {
     updatedAt: row.updated_at,
     deletedAt: row.deleted_at,
   };
+  if (row.to_amount !== undefined) {
+    entry.toAmount = row.to_amount != null ? roundMoney(Number(row.to_amount)) : null;
+  }
   if (row.recurring_rule_id !== undefined) {
     entry.recurringRuleId = row.recurring_rule_id;
   }
@@ -257,6 +268,9 @@ export function toTransactionRow(e: Entry): TransactionRow {
     updated_at: e.updatedAt,
     deleted_at: e.deletedAt,
   };
+  if (e.toAmount !== undefined) {
+    row.to_amount = e.toAmount != null ? roundMoney(e.toAmount) : null;
+  }
   if (e.recurringRuleId !== undefined) {
     row.recurring_rule_id = e.recurringRuleId;
   }

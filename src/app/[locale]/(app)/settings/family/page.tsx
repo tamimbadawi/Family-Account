@@ -11,7 +11,10 @@ import { useRestoreSheetAfterKeyboard } from '@/components/settings/useRestoreSh
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useHouseholdMembers } from '@/lib/data/provider';
+import { useHousehold, useHouseholdMembers, useRepository } from '@/lib/data/provider';
+import { CurrencySelect } from '@/components/family/CurrencySelect';
+import { currencyName, currencySymbol } from '@/lib/format';
+import { isOfflineError } from '@/lib/data/errors';
 import { isAuthConfigured } from '@/lib/supabase/client';
 import { familyAdmin, createFamilyInviteLink, type FamilyList, type FamilyMember } from '@/lib/auth/family-admin';
 import { joinLink, familyInviteLink, sendInvite } from '@/lib/auth/invite';
@@ -31,11 +34,56 @@ const ACTION =
 /** Settings → Family: everyone sees who is in the household; only the admin (owner) can change it. */
 export default function FamilyPage() {
   const t = useTranslations('family');
+  const tCommon = useTranslations('common');
   const tSettings = useTranslations('settings');
   const locale = useLocale();
   const live = isAuthConfigured();
+  const repo = useRepository();
+  const household = useHousehold();
   const sampleMembers = useHouseholdMembers();
   const family = useFamilyName();
+
+  const currentCurrencies = React.useMemo(() => {
+    return household?.currencies ?? (household?.currency ? [household.currency] : ['EGP']);
+  }, [household]);
+  const defaultMain = currentCurrencies[0] || 'EGP';
+  const defaultSecond = currentCurrencies[1] || '';
+
+  const [overrideMain, setOverrideMain] = React.useState<string | null>(null);
+  const [overrideSecond, setOverrideSecond] = React.useState<string | null>(null);
+  const [savingCurrencies, setSavingCurrencies] = React.useState(false);
+
+  const mainCurrency = overrideMain ?? defaultMain;
+  const secondCurrency = overrideSecond !== null ? overrideSecond : defaultSecond;
+
+  const hasCurrencyChanges = mainCurrency !== defaultMain || secondCurrency !== defaultSecond;
+
+  const handleSaveCurrencies = async () => {
+    if (savingCurrencies) return;
+    setSavingCurrencies(true);
+    try {
+      const next = secondCurrency ? [mainCurrency, secondCurrency] : [mainCurrency];
+      await repo.setHouseholdCurrencies(next);
+      setOverrideMain(null);
+      setOverrideSecond(null);
+      toast.success(t('currenciesSaved'));
+    } catch (err) {
+      if (isOfflineError(err) || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+        toast.error(tCommon('noConnection'));
+      } else {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes('wallet still uses')) {
+          toast.error(t('currencyInUse'));
+        } else if (msg.includes('one or two') || msg.includes('Choose')) {
+          toast.error(t('chooseCurrencies'));
+        } else {
+          toast.error(t('errors.failed'));
+        }
+      }
+    } finally {
+      setSavingCurrencies(false);
+    }
+  };
 
   const [list, setList] = React.useState<FamilyList | null>(null);
   const [loadFailed, setLoadFailed] = React.useState(false);
@@ -169,6 +217,7 @@ export default function FamilyPage() {
   const isOwner = live && Boolean(list?.isOwner);
   // The family admin can change the family's name (sample-data mode: anyone, as there is no admin)
   const canRename = isOwner || !live;
+  const canEditCurrencies = isOwner || !live;
 
   return (
     <div className="flex h-full flex-col overflow-y-auto overscroll-contain">
@@ -212,7 +261,7 @@ export default function FamilyPage() {
         <WalletShortcut />
       </div>
 
-      <div className="flex-1 space-y-4 px-5 py-4 pb-24">
+      <div className="flex-1 space-y-3 px-5 py-3 pb-20">
         <p className="text-body text-ink-muted">{isOwner ? t('ownerHint') : t('memberHint')}</p>
 
         {live && !list && loadFailed ? (
@@ -277,6 +326,73 @@ export default function FamilyPage() {
             <p className="text-center text-caption text-ink-muted">{t('inviteMemberHint')}</p>
           </div>
         )}
+
+        {/* Currencies card */}
+        <section className="space-y-2.5 rounded-card border border-line/40 bg-surface p-3.5 shadow-card">
+          <div className="space-y-0.5">
+            <h2 className="text-body font-semibold text-ink">{t('currencies')}</h2>
+            <p className="text-caption text-ink-muted">{t('currenciesHint')}</p>
+          </div>
+
+          {canEditCurrencies ? (
+            <div className="space-y-2.5">
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <label htmlFor="main-currency" className="text-caption font-medium text-ink-muted">
+                    {t('mainCurrency')}
+                  </label>
+                  <CurrencySelect
+                    id="main-currency"
+                    value={mainCurrency}
+                    exclude={secondCurrency}
+                    onChange={setOverrideMain}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label htmlFor="second-currency" className="text-caption font-medium text-ink-muted">
+                    {t('secondCurrency')}
+                  </label>
+                  <CurrencySelect
+                    id="second-currency"
+                    value={secondCurrency}
+                    exclude={mainCurrency}
+                    noneLabel={t('noSecondCurrency')}
+                    onChange={setOverrideSecond}
+                  />
+                </div>
+              </div>
+
+              {hasCurrencyChanges && (
+                <Button
+                  type="button"
+                  onClick={handleSaveCurrencies}
+                  disabled={savingCurrencies}
+                  className="h-12 w-full text-body font-semibold text-accent-ink"
+                >
+                  {savingCurrencies ? t('saving') : t('saveCurrencies')}
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2.5 pt-0.5">
+              <div>
+                <span className="block text-caption text-ink-muted">{t('mainCurrency')}</span>
+                <span className="truncate text-body font-semibold text-ink">
+                  {currencyName(mainCurrency, locale)} ({currencySymbol(mainCurrency, locale)})
+                </span>
+              </div>
+              {secondCurrency && (
+                <div>
+                  <span className="block text-caption text-ink-muted">{t('secondCurrency')}</span>
+                  <span className="truncate text-body font-semibold text-ink">
+                    {currencyName(secondCurrency, locale)} ({currencySymbol(secondCurrency, locale)})
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
 
         <section className="space-y-3">
           <div className="space-y-3 rounded-card bg-accent-soft p-4">

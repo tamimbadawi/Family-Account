@@ -81,6 +81,7 @@ export interface CreateEntryInput {
   occurredOn: string; // YYYY-MM-DD
   accountId: string;
   toAccountId?: string | null;
+  toAmount?: number | null;
   itemId?: string | null;
   note?: string | null;
   recurringRuleId?: string | null;
@@ -115,6 +116,7 @@ export interface UpdateEntryInput {
   occurredOn?: string;
   accountId?: string;
   toAccountId?: string | null;
+  toAmount?: number | null;
   itemId?: string | null;
   note?: string | null;
   updatedBy?: string | null;
@@ -127,6 +129,7 @@ export interface CreateWalletInput {
   nameEn?: string | null;
   type: WalletType;
   openingBalance?: number;
+  currency?: string;
   icon?: string | null;
   color?: string | null;
   sortOrder?: number;
@@ -137,6 +140,7 @@ export interface UpdateWalletInput {
   nameEn?: string | null;
   type?: WalletType;
   openingBalance?: number;
+  currency?: string;
   icon?: string | null;
   color?: string | null;
   sortOrder?: number;
@@ -209,6 +213,7 @@ export interface UpdateBudgetInput {
 export interface Repository {
   // Household & Members
   getHousehold(): Promise<Household | null>;
+  setHouseholdCurrencies(currencies: string[]): Promise<void>;
   getMembers(): Promise<Member[]>;
 
   // Wallets (Accounts)

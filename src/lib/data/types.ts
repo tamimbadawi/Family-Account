@@ -16,6 +16,7 @@ export interface Household {
   id: string;
   name: string;
   currency: string; // 'EGP'
+  currencies: string[];
   createdAt: string;
 }
 
@@ -35,6 +36,7 @@ export interface Wallet {
   nameEn: string | null;
   type: WalletType;
   openingBalance: number;
+  currency: string;
   icon: string | null;
   color: string | null;
   sortOrder: number;
@@ -93,6 +95,7 @@ export interface Entry {
   occurredOn: string; // 'YYYY-MM-DD'
   accountId: string;
   toAccountId: string | null;
+  toAmount?: number | null;
   itemId: string | null;
   note: string | null;
   photoPath?: string | null; // receipt photo: '<household_id>/<entry_id>.jpg' (or .webp)
@@ -107,6 +110,7 @@ export interface Entry {
 }
 
 export interface EnrichedEntry extends Entry {
+  accountCurrency?: string | null;
   accountNameAr?: string | null;
   accountNameEn?: string | null;
   toAccountNameAr?: string | null;
@@ -287,6 +291,7 @@ export interface HouseholdRow {
   id: string;
   name: string;
   currency: string;
+  currencies?: string[] | null;
   created_at: string;
   /** Live mode: the family still has its starter sample entries (0014). */
   has_sample_data?: boolean;
@@ -309,6 +314,7 @@ export interface AccountRow {
   name_en: string | null;
   type: WalletType;
   opening_balance: number;
+  currency?: string | null;
   icon: string | null;
   color: string | null;
   sort_order: number;
@@ -365,6 +371,7 @@ export interface TransactionRow {
   occurred_on: string;
   account_id: string;
   to_account_id: string | null;
+  to_amount?: number | null;
   item_id: string | null;
   note: string | null;
   photo_path?: string | null;

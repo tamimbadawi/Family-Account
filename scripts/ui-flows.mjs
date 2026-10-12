@@ -1072,6 +1072,33 @@ const FLOWS = {
     const toastElem = page.locator('[data-sonner-toast]').first();
     await assertUsable(page, toastElem, 'Undo toast on stopping goal');
   },
+
+  currencies: async (page, { locale = 'en' }) => {
+    const ar = locale === 'ar';
+    // 1. Navigate to Settings -> Family
+    await page.goto(BASE + `/${locale}/settings/family`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(1000);
+
+    // 2. Locate second currency select
+    const secondSelect = page.locator('#second-currency');
+    await secondSelect.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await assertUsable(page, secondSelect, 'Second currency select');
+
+    // 3. Select USD
+    await secondSelect.selectOption('USD');
+    await sleep(600);
+
+    // 4. Save button appears
+    const saveBtn = page.getByRole('button', { name: ar ? 'حفظ العملات' : 'Save currencies' }).first();
+    await saveBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await assertUsable(page, saveBtn, 'Save currencies button');
+    await saveBtn.click();
+    await sleep(1000);
+
+    // 5. Verify success toast
+    const toastElem = page.locator('[data-sonner-toast]').first();
+    await assertUsable(page, toastElem, 'Currencies saved toast');
+  },
 };
 
 const MULTI_LOCALE_FLOW_NAMES = [
@@ -1088,6 +1115,7 @@ const MULTI_LOCALE_FLOW_NAMES = [
   'budget_alerts',
   'recurring_entries',
   'savings_goals',
+  'currencies',
 ];
 const LOCALES = ['en', 'ar'];
 
