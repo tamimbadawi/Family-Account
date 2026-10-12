@@ -30,10 +30,21 @@ export function ThisVsLastMonthView() {
     );
   }, [entries, categories, month, locale]);
 
+  const [maxRows, setMaxRows] = React.useState(3);
+
+  React.useEffect(() => {
+    const update = () => {
+      setMaxRows(window.innerHeight < 650 ? 2 : 3);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
   if (!result) return null;
 
-  const top3 = result.categories.slice(0, 3);
-  const hasMore = result.categories.length > 3;
+  const visibleCategories = result.categories.slice(0, maxRows);
+  const hasMore = result.categories.length > maxRows;
 
   const renderCategoryRow = (cat: CategoryComparison) => (
     <div key={cat.id} className="flex items-center justify-between gap-3 py-2">
@@ -135,7 +146,7 @@ export function ThisVsLastMonthView() {
             <p className="text-body font-medium">{t('emptyEntries')}</p>
           </div>
         ) : (
-          top3.map(renderCategoryRow)
+          visibleCategories.map(renderCategoryRow)
         )}
 
         {hasMore && (

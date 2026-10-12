@@ -443,13 +443,20 @@ function useRestoreSheetAfterKeyboard(sheetRef: React.RefObject<HTMLDivElement |
     if (!isOpen || !viewport) return;
 
     let frame = 0;
+    const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
+    let maxSeenHeight = viewport.height;
+
     const onResize = () => {
       cancelAnimationFrame(frame);
       // Run after the library's own resize handler has written its styles
       frame = requestAnimationFrame(() => {
         const sheet = sheetRef.current;
-        const keyboardClosed = window.innerHeight - viewport.height < 60;
-        if (sheet && keyboardClosed) {
+        if (!sheet) return;
+        maxSeenHeight = Math.max(maxSeenHeight, viewport.height);
+        const keyboardClosed = isAndroid
+          ? maxSeenHeight - viewport.height < 100
+          : window.innerHeight - viewport.height < 60;
+        if (keyboardClosed) {
           sheet.style.removeProperty('height');
           sheet.style.removeProperty('bottom');
         }

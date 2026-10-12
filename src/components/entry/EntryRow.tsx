@@ -80,7 +80,7 @@ export function EntryRow({ entry, onClick }: EntryRowProps) {
       onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
       className="flex min-h-[48px] items-center justify-between gap-3 py-2 transition-colors active:bg-surface-2/40 select-none cursor-pointer"
     >
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-3 min-w-0 flex-1">
         <div
           style={circleStyle}
           className={`relative flex size-10 shrink-0 items-center justify-center rounded-full ${circleClass}`}
@@ -99,7 +99,7 @@ export function EntryRow({ entry, onClick }: EntryRowProps) {
             updatedByName={entry.updatedByName}
           />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1 text-body font-medium text-ink leading-snug">
             <span className="truncate">{title}</span>
             {entry.photoPath && (

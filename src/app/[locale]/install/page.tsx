@@ -2,36 +2,102 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { ArrowLeft, Check, PlusSquare, Share, Sparkles } from 'lucide-react';
+import { ArrowLeft, Check, Download, Menu, MoreVertical, PlusSquare, Share, Sparkles } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+
+const subscribeNever = () => () => {};
+
+function getPlatformSnapshot(): 'ios' | 'android-chrome' | 'android-other' {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return 'ios';
+  const ua = navigator.userAgent || '';
+  if (/android/i.test(ua)) {
+    const isChrome = /chrome|crios/i.test(ua) && !/samsungbrowser|firefox|fxios/i.test(ua);
+    return isChrome ? 'android-chrome' : 'android-other';
+  }
+  return 'ios';
+}
+
+function getServerPlatformSnapshot(): 'ios' | 'android-chrome' | 'android-other' {
+  return 'ios';
+}
 
 export default function InstallPage() {
   const tInstall = useTranslations('install');
   const tCommon = useTranslations('common');
   const router = useRouter();
 
-  const steps = [
-    {
-      number: '1',
-      text: tInstall('step1'),
-      icon: <Share className="size-7" />,
-      color: 'bg-accent-soft text-accent',
-    },
-    {
-      number: '2',
-      text: tInstall('step2'),
-      icon: <PlusSquare className="size-7" />,
-      color: 'bg-accent-soft text-accent',
-    },
-    {
-      number: '3',
-      text: tInstall('step3'),
-      icon: <Sparkles className="size-7" />,
-      color: 'bg-income/15 text-income',
-    },
-  ];
+  const platform = React.useSyncExternalStore(subscribeNever, getPlatformSnapshot, getServerPlatformSnapshot);
+
+  const steps = React.useMemo(() => {
+    if (platform === 'android-chrome') {
+      return [
+        {
+          number: '1',
+          text: tInstall('androidChromeStep1'),
+          icon: <MoreVertical className="size-7" />,
+          color: 'bg-accent-soft text-accent',
+        },
+        {
+          number: '2',
+          text: tInstall('androidChromeStep2'),
+          icon: <Download className="size-7" />,
+          color: 'bg-accent-soft text-accent',
+        },
+        {
+          number: '3',
+          text: tInstall('androidChromeStep3'),
+          icon: <Sparkles className="size-7" />,
+          color: 'bg-income/15 text-income',
+        },
+      ];
+    }
+    if (platform === 'android-other') {
+      return [
+        {
+          number: '1',
+          text: tInstall('androidOtherStep1'),
+          icon: <Menu className="size-7" />,
+          color: 'bg-accent-soft text-accent',
+        },
+        {
+          number: '2',
+          text: tInstall('androidOtherStep2'),
+          icon: <Download className="size-7" />,
+          color: 'bg-accent-soft text-accent',
+        },
+        {
+          number: '3',
+          text: tInstall('androidOtherStep3'),
+          icon: <Sparkles className="size-7" />,
+          color: 'bg-income/15 text-income',
+        },
+      ];
+    }
+    return [
+      {
+        number: '1',
+        text: tInstall('step1'),
+        icon: <Share className="size-7" />,
+        color: 'bg-accent-soft text-accent',
+      },
+      {
+        number: '2',
+        text: tInstall('step2'),
+        icon: <PlusSquare className="size-7" />,
+        color: 'bg-accent-soft text-accent',
+      },
+      {
+        number: '3',
+        text: tInstall('step3'),
+        icon: <Sparkles className="size-7" />,
+        color: 'bg-income/15 text-income',
+      },
+    ];
+  }, [platform, tInstall]);
+
+  const note = platform === 'ios' ? tInstall('note') : tInstall('androidNote');
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-[520px] flex-col justify-between bg-canvas px-5 py-6 text-ink select-none">
@@ -41,7 +107,7 @@ export default function InstallPage() {
           <button
             type="button"
             onClick={() => router.back()}
-            className="flex size-11 items-center justify-center rounded-2xl bg-surface shadow-card text-ink hover:bg-surface-2 transition-colors rtl:rotate-180"
+            className="flex size-11 items-center justify-center rounded-2xl bg-surface shadow-card text-ink hover:bg-surface-2 transition-colors rtl:rotate-180 cursor-pointer"
             aria-label={tCommon('back')}
           >
             <ArrowLeft className="size-5" />
@@ -79,7 +145,7 @@ export default function InstallPage() {
         {/* Friendly explanation note */}
         <div className="mt-5 rounded-2xl bg-surface-2 p-4 text-center">
           <p className="text-caption text-ink-muted leading-relaxed">
-            {tInstall('note')}
+            {note}
           </p>
         </div>
       </div>

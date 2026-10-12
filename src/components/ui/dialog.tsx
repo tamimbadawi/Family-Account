@@ -8,9 +8,34 @@ import { Dialog as DialogPrimitive } from "radix-ui"
 import { Button } from "@/components/ui/button"
 
 function Dialog({
+  open,
+  onOpenChange,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+  React.useEffect(() => {
+    if (!open) return;
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+    if (!/android/i.test(navigator.userAgent)) return;
+
+    let popped = false;
+    window.history.pushState({ dialog: true }, '');
+
+    const handlePopState = () => {
+      popped = true;
+      onOpenChange?.(false);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      if (!popped && window.history.state?.dialog) {
+        window.history.back();
+      }
+    };
+  }, [open, onOpenChange]);
+
+  return <DialogPrimitive.Root data-slot="dialog" open={open} onOpenChange={onOpenChange} {...props} />
 }
 
 function DialogTrigger({

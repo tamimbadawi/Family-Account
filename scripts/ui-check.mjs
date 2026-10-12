@@ -12,14 +12,61 @@ import path from 'node:path';
 
 const BASE = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
 const CHROME = process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const SIZES = (process.env.UI_SIZES || '390x844,375x667,412x700').split(',').map((s) => s.split('x').map(Number));
-const THEMES = (process.env.UI_THEMES || 'light,dark').split(',');
+
+const IPHONE_UA =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
+const ANDROID_UA =
+  'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36';
+
+const ALL_PROFILES = [
+  // iPhone profiles
+  { name: 'iphone', os: 'ios', w: 390, h: 844, ua: IPHONE_UA },
+  { name: 'iphone-se', os: 'ios', w: 375, h: 667, ua: IPHONE_UA },
+  // Android Chrome profiles: common mid-range (412x915), small budget (360x640), tall narrow (360x800), browser viewport (412x700)
+  { name: 'android-mid', os: 'android', w: 412, h: 915, ua: ANDROID_UA },
+  { name: 'android-budget', os: 'android', w: 360, h: 640, ua: ANDROID_UA },
+  { name: 'android-tall', os: 'android', w: 360, h: 800, ua: ANDROID_UA },
+  { name: 'android-browser', os: 'android', w: 412, h: 700, ua: ANDROID_UA },
+];
+
+const rawArgs = process.argv.slice(2);
+const isQuick = rawArgs.includes('--quick');
+const routesIdx = rawArgs.indexOf('--routes');
+let routesArg = [];
+if (routesIdx !== -1) {
+  for (let i = routesIdx + 1; i < rawArgs.length && !rawArgs[i].startsWith('--'); i++) {
+    routesArg.push(rawArgs[i]);
+  }
+} else {
+  routesArg = rawArgs.filter((a) => !a.startsWith('--'));
+}
+
+let profiles = ALL_PROFILES;
+if (process.env.UI_SIZES) {
+  const sizes = process.env.UI_SIZES.split(',').map((s) => s.split('x').map(Number));
+  profiles = sizes.map(([w, h]) => {
+    const existing = ALL_PROFILES.find((p) => p.w === w && p.h === h);
+    if (existing) return existing;
+    const isIos = w === 390 || (w === 375 && h === 667);
+    return {
+      name: `${isIos ? 'iphone' : 'android'}-${w}x${h}`,
+      os: isIos ? 'ios' : 'android',
+      w,
+      h,
+      ua: isIos ? IPHONE_UA : ANDROID_UA,
+    };
+  });
+} else if (isQuick) {
+  profiles = [ALL_PROFILES[0]];
+}
+
+const THEMES = isQuick ? ['light'] : (process.env.UI_THEMES || 'light,dark').split(',');
 // Screens that are lists may scroll inside their content area; every other screen must fit with no scrolling.
 const LIST_ROUTES = ['/history', '/settings/categories', '/settings/deleted', '/settings/budgets'];
 const DEFAULT_ROUTES =['/en', '/en/history', '/en/reports', '/en/settings', '/en/login', '/ar', '/ar/settings'];
 // Git Bash rewrites "/en" into "C:/Program Files/Git/en"; undo that, and accept "en/history" without a slash.
 const toRoute = (a) => '/' + a.replace(/^.*\/Git\//, '').replace(/^\/+/, '');
-const routes = process.argv.slice(2).length ? process.argv.slice(2).map(toRoute) : DEFAULT_ROUTES;
+const routes = routesArg.length ? routesArg.map(toRoute) : DEFAULT_ROUTES;
 const OUT = path.resolve('.ui-check');
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -120,12 +167,20 @@ function audit() {
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
 let failures = 0;
 const started = Date.now();
-// Checks run 4 at a time (UI_PARALLEL to change); output lines are printed as each finishes.
-const jobs = routes.flatMap((route) => SIZES.flatMap(([w, h]) => THEMES.map((theme) => ({ route, w, h, theme }))));
+const jobs = routes.flatMap((route) => profiles.flatMap((profile) => THEMES.map((theme) => ({ route, profile, theme }))));
 const PARALLEL = Number(process.env.UI_PARALLEL || 4);
-async function runJob({ route, w, h, theme }) {
-      const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, colorScheme: theme, isMobile: true, hasTouch: true });
+async function runJob({ route, profile, theme }) {
+      const { w, h, ua } = profile;
+      const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, colorScheme: theme, isMobile: true, hasTouch: true, userAgent: ua });
       const page = await ctx.newPage();
+      await page.addInitScript(() => {
+        const style = document.createElement('style');
+        style.textContent = 'nextjs-portal { display: none !important; }';
+        document.head?.appendChild(style);
+        document.addEventListener('DOMContentLoaded', () => {
+          document.head?.appendChild(style);
+        });
+      });
       const consoleErrors = [];
       page.on('pageerror', (e) => consoleErrors.push(e.message.slice(0, 120)));
       await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 45000 }).catch((e) => consoleErrors.push('load: ' + e.message.slice(0, 80)));

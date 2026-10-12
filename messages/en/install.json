@@ -5,6 +5,14 @@
   "step3": "Tap “Add” — that's it!",
   "bannerText": "Add the app to your Home Screen for faster access",
   "bannerAction": "See how",
+  "bannerInstall": "Install",
   "backToApp": "Back",
-  "note": "The app opens just like a native iPhone app without needing to open Safari each time."
+  "note": "The app opens just like a native iPhone app without needing to open Safari each time.",
+  "androidChromeStep1": "Tap the Chrome menu (⋮) at the top",
+  "androidChromeStep2": "Choose “Install app”",
+  "androidChromeStep3": "Tap “Install” — that's it!",
+  "androidOtherStep1": "Open your browser's menu",
+  "androidOtherStep2": "Choose “Install” or “Add to Home screen”",
+  "androidOtherStep3": "Tap “Add” to confirm",
+  "androidNote": "The app opens in full screen just like a native app without the browser address bar."
 }

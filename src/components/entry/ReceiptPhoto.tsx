@@ -44,11 +44,12 @@ export function useObjectUrl(blob: Blob | null): string | null {
 }
 
 function CameraInput({ onFile, label }: { onFile: (file: File) => void; label: string }) {
+  const isIos = typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent);
   return (
     <input
       type="file"
       accept="image/*"
-      capture="environment"
+      capture={isIos ? 'environment' : undefined}
       aria-label={label}
       className={FILE_OVERLAY}
       onChange={(e) => {
@@ -72,6 +73,29 @@ export function ReceiptPhoto({ photo, onChange }: ReceiptPhotoProps) {
   const url = useObjectUrl(photo);
   const [isBusy, setIsBusy] = React.useState(false);
   const [isViewerOpen, setIsViewerOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isViewerOpen) return;
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+    if (!/android/i.test(navigator.userAgent)) return;
+
+    let popped = false;
+    window.history.pushState({ photoViewer: true }, '');
+
+    const handlePopState = () => {
+      popped = true;
+      setIsViewerOpen(false);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      if (!popped && window.history.state?.photoViewer) {
+        window.history.back();
+      }
+    };
+  }, [isViewerOpen]);
 
   const handleFile = async (file: File) => {
     setIsBusy(true);

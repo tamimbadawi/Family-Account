@@ -99,9 +99,10 @@ export default function FamilyPage() {
 
   /** Opens the share sheet: sign-in details for a member just added, or a heads-up for an invited family. */
   const invite = async (to: { login: { email: string; password: string } } | { friend: string }) => {
+    const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
     const text =
       'login' in to
-        ? t('inviteWithLogin', { family: family.name ?? '', email: to.login.email, password: to.login.password })
+        ? t(isAndroid ? 'inviteWithLoginAndroid' : 'inviteWithLogin', { family: family.name ?? '', email: to.login.email, password: to.login.password })
         : t('familyInviteText', { name: to.friend });
     const result = await sendInvite(t('inviteTitle'), text, inviteLink(window.location.origin, locale));
     if (result === 'copied') toast.success(t('inviteCopied'));

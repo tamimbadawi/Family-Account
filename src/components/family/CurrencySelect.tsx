@@ -39,13 +39,13 @@ export function CurrencySelect({ id, value, onChange, noneLabel, exclude, classN
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-14 w-full cursor-pointer appearance-none truncate rounded-2xl bg-surface ps-4 pe-10 text-body text-ink shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="h-14 w-full cursor-pointer appearance-none truncate rounded-2xl bg-surface ps-4 pe-10 text-body text-ink shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-accent [color-scheme:light_dark]"
       >
-        {noneLabel !== undefined && <option value="">{noneLabel}</option>}
+        {noneLabel !== undefined && <option value="" className="bg-surface text-ink">{noneLabel}</option>}
         {choices
           .filter((c) => c.code !== exclude)
           .map((c) => (
-            <option key={c.code} value={c.code}>
+            <option key={c.code} value={c.code} className="bg-surface text-ink">
               {c.name === c.code ? c.code : `${c.code} · ${c.name}`}
             </option>
           ))}
