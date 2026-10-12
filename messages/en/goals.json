@@ -41,5 +41,10 @@
   "cheer3": "Nice work! {amount} closer to {name}.",
   "cheerHalf": "More than halfway to {name}. Keep going!",
   "cheerReached": "You did it! {name} is fully saved.",
-  "nudge": "Taken from {name}. That is okay. Top it up again when you can, you are still on your way."
+  "nudge": "Taken from {name}. That is okay. Top it up again when you can, you are still on your way.",
+  "target": "Goal: {amount}",
+  "seeEntriesOf": "See what went into {name}",
+  "noEntriesYet": "Nothing added yet. Tap Add money to start.",
+  "addedFrom": "Added from {wallet}",
+  "takenTo": "Taken out to {wallet}"
 }
