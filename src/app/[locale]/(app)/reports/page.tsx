@@ -155,11 +155,11 @@ function ReportsContent() {
                 )}
 
                 {/* Category Donut */}
-                <Card className="rounded-card bg-surface p-1 shadow-card gap-0">
+                <Card className="rounded-card bg-surface p-1.5 shadow-card gap-0">
                   <CategoryDonut
                     data={donutData}
                     total={donutTotal || summary?.expense || 0}
-                    height={72}
+                    height={112}
                   />
                 </Card>
 

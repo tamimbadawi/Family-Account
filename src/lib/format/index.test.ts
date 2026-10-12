@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDay, formatMonth, localISODate, money, normalizeDigits, pickName, shiftMonth } from './index';
+import { formatCenterTotal, formatDay, formatMonth, localISODate, money, normalizeDigits, pickName, shiftMonth } from './index';
 
 describe('normalizeDigits', () => {
   it('converts Arabic-Indic digits to ASCII', () => {
@@ -55,6 +55,31 @@ describe('money', () => {
     // In Arabic with latn numbers: 15 ألف ج.م
     expect(arCompact).toContain('15');
     expect(arCompact).toContain('ج.م');
+  });
+});
+
+describe('formatCenterTotal', () => {
+  it('formats amounts under 1,000 with currency unit', () => {
+    expect(formatCenterTotal(450, 'en')).toEqual({ value: '450', unit: 'EGP' });
+    expect(formatCenterTotal(450, 'ar')).toEqual({ value: '450', unit: 'ج.م' });
+    expect(formatCenterTotal(0, 'en')).toEqual({ value: '0', unit: 'EGP' });
+  });
+
+  it('formats thousands compactly with single decimal and clean unit', () => {
+    expect(formatCenterTotal(31900, 'en')).toEqual({ value: '31.9', unit: 'k EGP' });
+    expect(formatCenterTotal(31900, 'ar')).toEqual({ value: '31.9', unit: 'ألف ج.م' });
+    expect(formatCenterTotal(10000, 'en')).toEqual({ value: '10', unit: 'k EGP' });
+    expect(formatCenterTotal(10000, 'ar')).toEqual({ value: '10', unit: 'ألف ج.م' });
+  });
+
+  it('formats millions compactly with clean unit', () => {
+    expect(formatCenterTotal(1500000, 'en')).toEqual({ value: '1.5', unit: 'M EGP' });
+    expect(formatCenterTotal(1500000, 'ar')).toEqual({ value: '1.5', unit: 'مليون ج.م' });
+  });
+
+  it('supports custom currency codes', () => {
+    expect(formatCenterTotal(2500, 'en', { currency: 'USD' })).toEqual({ value: '2.5', unit: 'k USD' });
+    expect(formatCenterTotal(2500, 'ar', { currency: 'USD' })).toEqual({ value: '2.5', unit: 'ألف $' });
   });
 });
 

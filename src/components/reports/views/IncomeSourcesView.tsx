@@ -8,7 +8,7 @@ import { useEntries } from '@/lib/data/provider';
 import { calculateIncomeSources } from '@/lib/reports/income-sources';
 import { resolvePresetPeriod, type PresetPeriod } from '@/lib/reports/presets';
 import { Card } from '@/components/ui/card';
-import { money } from '@/lib/format';
+import { formatCenterTotal, money } from '@/lib/format';
 
 export function IncomeSourcesView() {
   const locale = useLocale();
@@ -25,6 +25,11 @@ export function IncomeSourcesView() {
     if (!entries) return null;
     return calculateIncomeSources(entries, period, locale === 'ar' ? 'ar' : 'en');
   }, [entries, period, locale]);
+
+  const center = React.useMemo(
+    () => (result ? formatCenterTotal(result.totalIncome, locale) : { value: '0', unit: '' }),
+    [result, locale]
+  );
 
   if (!result) return null;
 
@@ -72,7 +77,7 @@ export function IncomeSourcesView() {
             <p className="text-body font-medium">{t('emptyEntries')}</p>
           </div>
         ) : (
-          <div className="relative h-36 w-full">
+          <div className="relative h-40 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -81,8 +86,8 @@ export function IncomeSourcesView() {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  innerRadius={36}
-                  outerRadius={56}
+                  innerRadius={48}
+                  outerRadius={70}
                   paddingAngle={3}
                 >
                   {result.sources.map((entry) => (
@@ -111,12 +116,12 @@ export function IncomeSourcesView() {
               </PieChart>
             </ResponsiveContainer>
 
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className="text-body font-bold tabular-nums text-income leading-tight">
-                {money(result.totalIncome, locale, { compact: true, hideCurrency: true })}
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-1">
+              <span className="text-[17px] font-bold tabular-nums text-income leading-tight">
+                {center.value}
               </span>
-              <span className="text-caption font-medium text-ink-muted leading-none">
-                {locale.startsWith('ar') ? 'ج.م' : 'EGP'}
+              <span className="text-[11px] font-medium text-ink-muted leading-tight mt-0.5">
+                {center.unit}
               </span>
             </div>
           </div>

@@ -86,6 +86,48 @@ export function money(
   return `${prefix}${formattedNum} ${symbol}`;
 }
 
+/**
+ * Formats a total amount into a compact numeric value and separate currency unit
+ * designed specifically for center labels inside donut and pie charts.
+ * Prevents text overflow and clipping by keeping the number and unit strictly sized.
+ * Always formats using Western digits (0-9) via standard latn numbering in both languages.
+ *
+ * Examples:
+ *   formatCenterTotal(31900, 'en') => { value: '31.9', unit: 'k EGP' }
+ *   formatCenterTotal(31900, 'ar') => { value: '31.9', unit: 'ألف ج.م' }
+ *   formatCenterTotal(1500000, 'ar') => { value: '1.5', unit: 'مليون ج.م' }
+ *   formatCenterTotal(450, 'ar') => { value: '450', unit: 'ج.م' }
+ */
+export function formatCenterTotal(
+  total: number,
+  locale: string = 'en',
+  options?: { currency?: string }
+): { value: string; unit: string } {
+  const isAr = locale.startsWith('ar');
+  const symbol = currencySymbol(options?.currency, locale);
+  const abs = Math.abs(total);
+  const sign = total < 0 ? '-' : '';
+
+  if (abs >= 1_000_000) {
+    const num = (abs / 1_000_000).toFixed(1).replace(/\.0$/, '');
+    return {
+      value: `${sign}${num}`,
+      unit: isAr ? `مليون ${symbol}` : `M ${symbol}`,
+    };
+  }
+  if (abs >= 1_000) {
+    const num = (abs / 1_000).toFixed(1).replace(/\.0$/, '');
+    return {
+      value: `${sign}${num}`,
+      unit: isAr ? `ألف ${symbol}` : `k ${symbol}`,
+    };
+  }
+  return {
+    value: `${sign}${Math.round(abs).toString()}`,
+    unit: symbol,
+  };
+}
+
 export interface BilingualRow {
   name_ar?: string | null;
   name_en?: string | null;

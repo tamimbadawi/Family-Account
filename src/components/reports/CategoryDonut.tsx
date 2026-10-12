@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import type { CategoryTotal } from '@/lib/data/types';
-import { money, pickName } from '@/lib/format';
+import { formatCenterTotal, money, pickName } from '@/lib/format';
 import { useIsClient } from './useIsClient';
 
 export const DONUT_PALETTE = [
@@ -24,34 +24,12 @@ export interface CategoryDonutProps {
   className?: string;
 }
 
-function formatCenterTotal(total: number, locale: string) {
-  const isAr = locale.startsWith('ar');
-  if (total >= 1_000_000) {
-    const num = (total / 1_000_000).toFixed(1).replace(/\.0$/, '');
-    return {
-      value: num,
-      unit: isAr ? 'مليون ج.م' : 'M EGP',
-    };
-  }
-  if (total >= 1_000) {
-    const num = (total / 1_000).toFixed(1).replace(/\.0$/, '');
-    return {
-      value: num,
-      unit: isAr ? 'ألف ج.م' : 'k EGP',
-    };
-  }
-  return {
-    value: Math.round(total).toString(),
-    unit: isAr ? 'ج.م' : 'EGP',
-  };
-}
-
 export function CategoryDonut({
   data,
   total,
   onSelect,
   selectedId,
-  height = 84,
+  height = 112,
   className = '',
 }: CategoryDonutProps) {
   const locale = useLocale();
@@ -124,8 +102,8 @@ export function CategoryDonut({
             data={chartData}
             cx="50%"
             cy="50%"
-            innerRadius="64%"
-            outerRadius="88%"
+            innerRadius="68%"
+            outerRadius="90%"
             paddingAngle={2}
             dataKey="value"
             onClick={
@@ -154,12 +132,12 @@ export function CategoryDonut({
         </PieChart>
       </ResponsiveContainer>
 
-      {/* Center Total: Stacked number and unit to prevent clipping */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-1">
-        <span className="text-body font-bold tabular-nums text-ink leading-tight">
+      {/* Center Total: Stacked number and unit with generous clearance */}
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-1">
+        <span className="text-[17px] font-bold tabular-nums text-ink leading-tight">
           {center.value}
         </span>
-        <span className="text-caption font-medium text-ink-muted leading-none">
+        <span className="text-[11px] font-medium text-ink-muted leading-tight mt-0.5">
           {center.unit}
         </span>
       </div>
