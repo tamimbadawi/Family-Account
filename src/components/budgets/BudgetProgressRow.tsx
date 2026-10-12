@@ -85,7 +85,7 @@ export function BudgetProgressRow({ progress, names, onClick }: BudgetProgressRo
       </div>
 
       <div
-        className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-2"
+        className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-surface-2"
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={100}
@@ -98,28 +98,39 @@ export function BudgetProgressRow({ progress, names, onClick }: BudgetProgressRo
         />
       </div>
 
-      <div className="mt-1 flex items-center justify-between gap-2 text-caption">
+      <div className="mt-1.5 flex items-center justify-between gap-2 text-caption">
         {level === 'ok' ? (
           <span />
+        ) : level === 'near' ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-warning/12 px-2.5 py-0.5 font-semibold text-warning">
+            <TriangleAlert className="size-3.5" />
+            {t('statusNear')}
+          </span>
         ) : (
-          <span className={`flex items-center gap-1 font-semibold ${TEXT[level]}`}>
-            <TriangleAlert className="size-4" />
-            {level === 'over' ? t('statusOver') : t('statusNear')}
+          <span className="inline-flex items-center gap-1 rounded-full bg-expense-soft px-2.5 py-0.5 font-bold text-expense">
+            <TriangleAlert className="size-3.5 stroke-[2.25]" />
+            {t('statusOver')}
           </span>
         )}
-        <span className={`font-medium tabular-nums ${level === 'over' ? 'text-expense' : 'text-ink-muted'}`}>
+        <span
+          className={`font-semibold tabular-nums ${
+            level === 'over' ? 'text-expense font-bold' : level === 'near' ? 'text-warning' : 'text-ink-muted'
+          }`}
+        >
           {remaining < 0 ? t('overBy', { amount: fmt(-remaining) }) : t('left', { amount: fmt(remaining) })}
         </span>
       </div>
     </>
   );
 
-  if (!onClick) return <div className="px-3.5 py-3">{body}</div>;
+  const rowTone = level === 'over' ? 'bg-expense-soft/20' : level === 'near' ? 'bg-warning/[0.04]' : '';
+
+  if (!onClick) return <div className={`px-3.5 py-3 ${rowTone}`}>{body}</div>;
   return (
     <button
       type="button"
       onClick={onClick}
-      className="block w-full px-3.5 py-3 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 cursor-pointer"
+      className={`block w-full px-3.5 py-3 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 cursor-pointer ${rowTone}`}
     >
       {body}
     </button>

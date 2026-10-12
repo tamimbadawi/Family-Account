@@ -5,6 +5,7 @@ import {
   budgetLevel,
   budgetPercent,
   budgetProgress,
+  budgetThresholdCross,
   budgetTotals,
   budgetWarnings,
   messageVariant,
@@ -111,5 +112,38 @@ describe('messageVariant', () => {
       expect(['1', '2', '3']).toContain(messageVariant(`seed-${i}`));
       expect(['1', '2', '3']).toContain(messageVariant());
     }
+  });
+});
+
+describe('budgetThresholdCross', () => {
+  it('detects crossing 80% threshold', () => {
+    // Under 80% to >= 80%
+    expect(budgetThresholdCross(1000, 750, 850)).toEqual({ threshold: '80', level: 'near' });
+    expect(budgetThresholdCross(1000, 799, 800)).toEqual({ threshold: '80', level: 'near' });
+  });
+
+  it('detects crossing 100% threshold', () => {
+    // Under 100% to >= 100%
+    expect(budgetThresholdCross(1000, 850, 1050)).toEqual({ threshold: '100', level: 'over' });
+    expect(budgetThresholdCross(1000, 999, 1000)).toEqual({ threshold: '100', level: 'over' });
+  });
+
+  it('detects crossing both 80% and 100% at once and gives the stronger 100% warning', () => {
+    // Jump from 50% directly to 110%
+    expect(budgetThresholdCross(1000, 500, 1100)).toEqual({ threshold: '100', level: 'over' });
+  });
+
+  it('returns null when remaining in same tier', () => {
+    // Still under 80%
+    expect(budgetThresholdCross(1000, 500, 700)).toBeNull();
+    // Already in 80-100% tier
+    expect(budgetThresholdCross(1000, 850, 950)).toBeNull();
+    // Already above 100% tier
+    expect(budgetThresholdCross(1000, 1050, 1200)).toBeNull();
+  });
+
+  it('returns null on zero or negative budget amount', () => {
+    expect(budgetThresholdCross(0, 0, 100)).toBeNull();
+    expect(budgetThresholdCross(-500, 0, 100)).toBeNull();
   });
 });

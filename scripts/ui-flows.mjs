@@ -48,9 +48,9 @@ async function homeNumbers(page) {
   const num = (re) => Number((text.match(re)?.[1] || '0').replace(/,/g, ''));
   return { spent: num(/Spent this month\s*([\d,]+)/), moneyIn: num(/Money in ([\d,]+)/) };
 }
-async function openSheet(page) {
-  await tap(page, 'Add entry');
-  await page.getByText('New entry').first().waitFor({ timeout: 8000 });
+async function openSheet(page, isAr = false) {
+  await tap(page, isAr ? 'إضافة' : 'Add entry');
+  await page.getByText(isAr ? 'تسجيل جديد' : 'New entry').first().waitFor({ timeout: 8000 });
 }
 /** One popup: the typed amount is shown and Save is on screen, no Next step, no scrolling. */
 async function assertOnePopup(page, amountText) {
@@ -62,7 +62,7 @@ async function assertOnePopup(page, amountText) {
   await assertUsable(page, page.getByRole("button", { name: /^(Save|Saved|Choose a category|Choose Sub \/ Save)$/ }).last(), "Save button without scrolling");
 }
 async function saveButton(page) {
-  return page.getByRole('button', { name: /^(Save|Saved|Choose Sub \/ Save)$/ }).last();
+  return page.getByRole('button', { name: /^(Save|Saved|Choose Sub \/ Save|حفظ|تم الحفظ|اختار الفرع \/ حفظ)$/ }).last();
 }
 
 const FLOWS = {
@@ -890,6 +890,34 @@ const FLOWS = {
     await searchInput.fill('٢٥٠');
     await sleep(600);
   },
+  async budget_alerts(page, { locale }) {
+    const ar = locale === 'ar';
+    // 1. Visit Settings > Budgets and verify progress display warning states
+    await page.goto(`${BASE}/${locale}/settings/budgets`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(1000);
+
+    const progressRows = page.locator('[role="progressbar"]');
+    await assertUsable(page, progressRows.first(), 'Budget progress bar');
+
+    // 2. Go to Home, add an entry that triggers an alert
+    await page.goto(`${BASE}/${locale}`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(1000);
+
+    await openSheet(page, ar);
+    await typeAmount(page, ['9', '9', '9', '9']);
+    await tap(page, ar ? 'الطعام' : 'Food');
+    await tap(page, ar ? 'البقالة' : 'Groceries');
+    await tap(page, ar ? 'سوبرماركت' : 'Supermarket');
+
+    const save = await saveButton(page);
+    await assertUsable(page, save, 'Save button');
+    await save.click();
+    await sleep(1500);
+
+    // Verify feedback toast is visible
+    const toastElem = page.locator('[data-sonner-toast]').first();
+    await assertUsable(page, toastElem, 'Feedback toast on save');
+  },
 };
 
 const MULTI_LOCALE_FLOW_NAMES = [
@@ -903,6 +931,7 @@ const MULTI_LOCALE_FLOW_NAMES = [
   'download_data',
   'budgets',
   'history_search',
+  'budget_alerts',
 ];
 const LOCALES = ['en', 'ar'];
 
