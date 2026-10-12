@@ -76,14 +76,14 @@ and the orchestrator applies it when merging.
 ## 5. Orchestrator loop (Claude)
 
 **Merge gate (non-negotiable, added 2026-10-06 after the user found two interaction bugs):** nothing merges unless,
-on the PR's own preview, BOTH are green: `npm run ui:check` (every screen, sizes 390x844, 375x667 and 412x700 for
+on the PR's branch (run locally; only `main` deploys to Vercel, PR branches have no preview), BOTH are green: `npm run ui:check` (every screen, sizes 390x844, 375x667 and 412x700 for
 Android-in-a-browser, light and dark, /en and /ar) AND `npm run ui:flows` (every user action, including with the
 keyboard open). Look-and-feel steps also need the user's OK on the preview. Never skip this to go faster.
 
 Whenever the user says a chat opened a PR or is BLOCKED (or just "check"):
 1. `git fetch`; find every new `step/*` branch on origin. Merge in dependency order (stacked branches after their base).
 2. For each: build, lint, typecheck, test, and a quick look at the diff and preview against `AGENTS.md`, `DESIGN.md` and the workflow.
-3. **Look-and-feel gates: A1, A2b, A3b, A5.** For these, send the user the Vercel preview link and wait for their OK before merging (the agent keeps working on its next step meanwhile; stacking is allowed).
+3. **Look-and-feel gates: A1, A2b, A3b, A5.** For these, send the user screenshots from `npm run ui:check` and wait for their OK before merging (the agent keeps working on its next step meanwhile; stacking is allowed).
 4. Green and on-spec → merge into `main` (`--no-ff`), push, mark ✅ in `PROGRESS.md` with the chat's note, apply shared-file requests.
 5. Not OK → fix trivial issues myself during the merge; otherwise give the user a short paste-ready fix prompt for that chat.
 6. If a chat was BLOCKED and is now unblocked, tell the user to send it: "continue your queue".

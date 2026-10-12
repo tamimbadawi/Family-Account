@@ -7,8 +7,6 @@
 ## Agent
 <!-- AG-1 or AG-2 -->
 
-## Preview URL
-
 ## Notes for PROGRESS.md (one line)
 
 ## Shared-file change requests
