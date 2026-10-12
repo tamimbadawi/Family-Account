@@ -11,16 +11,23 @@ import { InstallBanner } from '@/components/install/InstallBanner';
 import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
 import { toLoginEmail } from '@/lib/auth/email';
 import { routeAfterSignIn } from '@/lib/auth/after-sign-in';
+import { isSignUpEnabled, signUpErrorKey, validateSignUp } from '@/lib/auth/sign-up';
 
 export default function LoginPage() {
   const tAuth = useTranslations('auth');
   const router = useRouter();
 
+  const canSignUp = isSignUpEnabled();
+  const [mode, setMode] = React.useState<'signin' | 'signup'>('signin');
+  const signingUp = canSignUp && mode === 'signup';
+
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const [repeat, setRepeat] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false);
 
   const [error, setError] = React.useState<string | null>(null);
+  const [notice, setNotice] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,10 +38,32 @@ export default function LoginPage() {
       router.push('/');
       return;
     }
-    setBusy(true);
     setError(null);
+    setNotice(null);
+    if (signingUp) {
+      const invalid = validateSignUp(email, password, repeat);
+      if (invalid) {
+        setError(tAuth(invalid));
+        return;
+      }
+    }
+    setBusy(true);
     try {
       const supabase = getSupabaseBrowserClient();
+      if (signingUp) {
+        const { data, error: signUpError } = await supabase.auth.signUp({ email: email.trim(), password });
+        if (signUpError || !data.user) {
+          setError(navigator.onLine ? tAuth(signUpError ? signUpErrorKey(signUpError) : 'signUpFailed') : tAuth('noConnection'));
+          return;
+        }
+        // No session yet means Supabase wants the email confirmed first
+        if (!data.session) {
+          setNotice(tAuth('checkEmail'));
+          return;
+        }
+        router.replace(await routeAfterSignIn(data.user));
+        return;
+      }
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: toLoginEmail(email),
         password,
@@ -58,7 +87,8 @@ export default function LoginPage() {
       </div>
 
       <div className="flex flex-col items-center text-center mt-2">
-        <div className="relative size-24 overflow-hidden rounded-[22px] shadow-card bg-surface">
+        {/* Smaller while signing up: the extra field must still fit a 360x640 phone */}
+        <div className={`relative overflow-hidden rounded-[22px] shadow-card bg-surface ${signingUp ? 'size-16' : 'size-24'}`}>
           <Image
             src="/icons/icon-1024.png"
             alt={tAuth('appName')}
@@ -72,7 +102,7 @@ export default function LoginPage() {
           {tAuth('appName')}
         </h1>
         <p className="mt-1 text-caption text-ink-muted">
-          {tAuth('loginSubtitle')}
+          {signingUp ? tAuth('signUpSubtitle') : tAuth('loginSubtitle')}
         </p>
       </div>
 
@@ -108,7 +138,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={tAuth('password')}
-              autoComplete="current-password"
+              autoComplete={signingUp ? 'new-password' : 'current-password'}
               required
               className="h-14 bg-surface pe-12 text-body shadow-xs"
             />
@@ -123,15 +153,51 @@ export default function LoginPage() {
           </div>
         </div>
 
+        {signingUp && (
+          <div>
+            <label className="mb-1.5 block text-caption font-medium text-ink-muted">
+              {tAuth('repeatPassword')}
+            </label>
+            <Input
+              type={showPassword ? 'text' : 'password'}
+              value={repeat}
+              onChange={(e) => setRepeat(e.target.value)}
+              placeholder={tAuth('repeatPassword')}
+              autoComplete="new-password"
+              required
+              className="h-14 bg-surface text-body shadow-xs"
+            />
+          </div>
+        )}
+
         {error && (
           <p role="alert" className="text-body font-medium text-danger">
             {error}
           </p>
         )}
+        {notice && (
+          <p role="status" className="text-body font-medium text-ink">
+            {notice}
+          </p>
+        )}
 
         <Button type="submit" disabled={busy} className="h-14 w-full text-heading font-semibold mt-2 text-accent-ink">
-          {tAuth('signIn')}
+          {signingUp ? tAuth('signUp') : tAuth('signIn')}
         </Button>
+
+        {canSignUp && (
+          <button
+            type="button"
+            onClick={() => {
+              setMode(signingUp ? 'signin' : 'signup');
+              setError(null);
+              setNotice(null);
+            }}
+            className="flex min-h-12 w-full items-center justify-center text-body font-semibold text-accent"
+          >
+            {signingUp ? tAuth('alreadyHaveAccountPrompt') : tAuth('createAccountPrompt')}
+          </button>
+        )}
       </form>
 
       <div className="flex flex-col items-center gap-2 pt-2 text-center">
