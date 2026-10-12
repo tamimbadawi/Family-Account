@@ -13,6 +13,7 @@ Changes that are finished and checked, waiting to go live. Nothing here is live 
 | PR | What it changes |
 |---|---|
 | [#105](https://github.com/tamimbadawi/Family-Account/pull/105) | iPhone install steps describe the Share button (square with an up arrow) and every place it can be, instead of "tap ••• at the bottom" |
+| [#105](https://github.com/tamimbadawi/Family-Account/pull/105) | **Operator dashboard** at `/operator`: Overview (usage numbers, entries per day), Families (people, sign-ins, entries), Inbox (support messages with who/where/photos), To do (who looks stuck). **On deploy also:** apply migration `0025_operator_insights.sql` and redeploy the `operator` Edge Function, both through the Supabase MCP, then run `get_advisors` |
 
 ## Deployed
 
