@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Calendar, ChevronLeft, ChevronRight, PenLine } from 'lucide-react';
 import { useRepository, useSavingsGoals, useWallets } from '@/lib/data/provider';
 import { useSaveError } from '@/components/ui/use-save-error';
-import type { Wallet } from '@/lib/data/types';
+import type { EnrichedSavingsGoal, Wallet } from '@/lib/data/types';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { formatMonth, pickName, shiftMonth } from '@/lib/format';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -162,6 +162,56 @@ export function WalletSelect({ value, onChange, exclude, label }: WalletSelectPr
 }
 
 /** Date chip showing Today / Yesterday / the date; opens the app's own calendar (works the same on every phone). */
+export interface GoalSelectProps {
+  goals: EnrichedSavingsGoal[];
+  value: string | null;
+  onChange: (goalId: string) => void;
+}
+
+/** Savings goal chip ("Family Trip ▾"): which goal the money goes into. */
+export function GoalSelect({ goals, value, onChange }: GoalSelectProps) {
+  const locale = useLocale();
+  const t = useTranslations('entry');
+  const tGoals = useTranslations('goals');
+  const current = goals.find((g) => g.id === value);
+  const nameOf = (g: EnrichedSavingsGoal) => pickName({ name_ar: g.nameAr, name_en: g.nameEn }, locale);
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  return (
+    <>
+      <button type="button" onClick={() => setIsOpen(true)} aria-label={t('toGoal')} className={CHIP}>
+        <CategoryIcon name={current?.icon ?? 'sparkles'} className="size-5 shrink-0 text-accent" />
+        <span className="truncate">{current ? nameOf(current) : t('toGoal')}</span>
+      </button>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent showCloseButton={false} onFocusOutside={keepFocus} onCloseAutoFocus={keepFocus} className="max-w-[calc(100%-1.5rem)] gap-3 p-4">
+          <DialogTitle>{t('toGoal')}</DialogTitle>
+          {goals.map((g) => (
+            <button
+              key={g.id}
+              type="button"
+              onClick={() => {
+                onChange(g.id);
+                setIsOpen(false);
+              }}
+              className={`${OPTION} ${g.id === value ? 'bg-accent text-accent-ink' : 'bg-surface-2 text-ink'}`}
+            >
+              <CategoryIcon
+                name={g.icon ?? 'sparkles'}
+                className={`size-5 shrink-0 ${g.id === value ? 'text-accent-ink' : 'text-accent'}`}
+              />
+              <span className="min-w-0 flex-1 truncate text-start">{nameOf(g)}</span>
+              <span className={`shrink-0 text-caption font-medium tabular-nums ${g.id === value ? 'text-accent-ink' : 'text-ink-muted'}`}>
+                {g.isReached ? tGoals('reached') : `${g.percent}%`}
+              </span>
+            </button>
+          ))}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 export function DateChip({ value, onChange }: { value: string; onChange: (date: string) => void }) {
   const t = useTranslations('entry');
   const locale = useLocale();

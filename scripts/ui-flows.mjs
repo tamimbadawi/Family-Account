@@ -1068,13 +1068,14 @@ const FLOWS = {
     await assertUsable(page, addMoneyBtn, 'Add money button');
     await addMoneyBtn.click();
     await sleep(600);
+    // It opens the main + sheet on "Goal", with this goal chosen and a wallet to take the money from
     const fundSheet = page.getByRole('dialog');
-    const fromWallet = fundSheet.locator('button[aria-pressed]').first();
-    await assertUsable(page, fromWallet, 'wallet to take the money from');
-    await fromWallet.click();
+    await assertUsable(page, fundSheet.getByRole('radio', { name: ar ? 'هدف' : 'Goal', exact: true, checked: true }), 'Goal chosen in the + sheet');
+    await assertUsable(page, fundSheet.getByRole('button', { name: ar ? 'من' : 'From', exact: true }), 'wallet to take the money from');
+    await assertUsable(page, fundSheet.getByRole('button', { name: ar ? 'إلى الهدف' : 'To goal', exact: true }), 'goal the money goes into');
     for (const key of ['5', '0', '0']) await fundSheet.getByRole('button', { name: key, exact: true }).click();
-    const addToGoalBtn = fundSheet.getByRole('button', { name: ar ? 'إضافة للهدف' : 'Add to goal' });
-    await assertUsable(page, addToGoalBtn, 'Add to goal button');
+    const addToGoalBtn = fundSheet.getByRole('button', { name: ar ? 'حفظ' : 'Save', exact: true });
+    await assertUsable(page, addToGoalBtn, 'Save button');
     await addToGoalBtn.click();
     await sleep(1500);
     const savedLine = page.getByText(/500/).first();
@@ -1110,7 +1111,7 @@ const FLOWS = {
   currencies: async (page, { locale = 'en' }) => {
     const ar = locale === 'ar';
     // 1. Navigate to Settings -> Family
-    await page.goto(BASE + `/${locale}/settings/family`, { waitUntil: 'networkidle', timeout: 45000 });
+    await page.goto(BASE + `/${locale}/settings/currencies`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(1000);
 
     // 2. Locate second currency select

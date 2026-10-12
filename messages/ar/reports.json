@@ -162,6 +162,10 @@
     "seeAllWallets": "عرض كل المحافظ",
     "noTransfers": "لا توجد تحويلات مسجلة",
     "noTransfersDesc": "ستظهر هنا التحويلات بين محافظك.",
-    "walletHistory": "عرض الحركات"
+    "walletHistory": "عرض الحركات",
+    "savingsGoals": "أهداف الادخار",
+    "savingsGoalsDesc": "قربت قد إيه من كل هدف",
+    "savedInGoals": "المتحوّش في الأهداف",
+    "manageGoals": "افتح أهداف الادخار"
   }
 }

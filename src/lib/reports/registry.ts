@@ -125,6 +125,16 @@ export const REPORTS_REGISTRY: ReportDefinition[] = [
     isImplemented: true,
   },
 
+  {
+    id: 'savings-goals',
+    group: 'wallets',
+    icon: 'Target',
+    titleKey: 'savingsGoals',
+    descKey: 'savingsGoalsDesc',
+    route: '/reports/r/savings-goals',
+    isImplemented: true,
+  },
+
   // --- Group 3: Planning (التخطيط) — Part A5e ---
   {
     id: 'budget-vs-actual',

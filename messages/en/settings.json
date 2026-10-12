@@ -77,5 +77,6 @@
     "signIn": "Signing in or password",
     "other": "Something else"
   },
-  "supportTooMany": "You sent a lot of messages today. Try again tomorrow."
+  "supportTooMany": "You sent a lot of messages today. Try again tomorrow.",
+  "currencies": "Currencies"
 }

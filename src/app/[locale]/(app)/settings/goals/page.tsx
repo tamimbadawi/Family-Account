@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
 import { useHousehold, useRepository, useSavingsGoals, useWalletBalances } from '@/lib/data/provider';
 import { useSaveError } from '@/components/ui/use-save-error';
+import { useEntrySheet } from '@/components/entry/EntrySheetContext';
 import type { EnrichedSavingsGoal } from '@/lib/data/types';
 import { currencySymbol, localISODate, money, normalizeDigits, pickName } from '@/lib/format';
 import { previewValue } from '@/lib/format/expression';
@@ -49,6 +50,8 @@ export default function SavingsGoalsPage() {
   const repo = useRepository();
   const saveError = useSaveError();
   const shouldReduceMotion = useReducedMotion();
+  // Adding money to a goal happens in the main + sheet, opened on "Goal" with this goal chosen
+  const { openAdd } = useEntrySheet();
 
   const goals = useSavingsGoals(false);
   const household = useHousehold();
@@ -352,7 +355,7 @@ export default function SavingsGoalsPage() {
                   <div className="flex flex-wrap items-center pt-1 gap-2 border-t border-line/20">
                     <button
                       type="button"
-                      onClick={() => openFund(goal)}
+                      onClick={() => openAdd('transfer', { goalId: goal.id })}
                       className="flex min-h-[48px] items-center gap-1.5 rounded-xl bg-surface-2 hover:bg-line/40 px-3.5 py-2 text-body font-semibold text-accent transition-transform active:scale-95 cursor-pointer"
                     >
                       <Plus className="size-4.5" />

@@ -16,6 +16,7 @@ import {
   Trash2,
   Users,
   Wallet,
+  Coins,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
@@ -206,6 +207,19 @@ export default function SettingsPage() {
           </span>
         </div>
 
+        {/* Currencies */}
+        <Link
+          href="/settings/currencies"
+          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-0.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-income-soft text-income">
+              <Coins className="size-4.5" />
+            </div>
+            <span className="text-body font-semibold text-ink">{t('currencies')}</span>
+          </div>
+          <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
+        </Link>
         {/* Download CSV */}
         <div
           role="button"

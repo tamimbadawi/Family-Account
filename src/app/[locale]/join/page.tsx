@@ -208,7 +208,7 @@ export default function JoinPage() {
       if (err instanceof FamilyAdminError) {
         if (err.message === 'email_taken') {
           setError(tAuth('emailTaken'));
-        } else if (err.message === 'invalid_code' || err.message === 'suspended') {
+        } else if (err.message === 'invalid_code' || err.message === 'invite_expired' || err.message === 'suspended') {
           setError(tAuth('joinExpired'));
         } else if (err.message === 'bad_name') {
           setError(tAuth('nameEnglishOnly'));

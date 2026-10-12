@@ -15,6 +15,7 @@ import {
   PiggyBank,
   Receipt,
   Search,
+  Target,
   TrendingUp,
   Users,
   Wallet,
@@ -27,6 +28,8 @@ interface ReportIconProps {
 
 export function ReportIcon({ name, className = 'size-5' }: ReportIconProps) {
   switch (name) {
+    case 'Target':
+      return <Target className={className} />;
     case 'ArrowLeftRight':
       return <ArrowLeftRight className={className} />;
     case 'BarChart3':
