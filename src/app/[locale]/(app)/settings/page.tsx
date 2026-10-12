@@ -222,9 +222,6 @@ export default function SettingsPage() {
               <div className="text-body font-semibold text-ink leading-tight">
                 {t('download')}
               </div>
-              <div className="text-caption text-ink-muted leading-tight">
-                CSV (Excel)
-              </div>
             </div>
           </div>
           {isExporting ? (
