@@ -48,6 +48,7 @@
   "sendInvite": "Send invite",
   "inviteTitle": "Family Accounts",
   "inviteWithLogin": "Join {family} on our family accounts app. Open this link on your iPhone and sign in with your email {email} and the password {password}. You will choose your own password after that.",
+  "inviteWithLoginAndroid": "Join {family} on our family accounts app. Open this link on your phone and sign in with your email {email} and the password {password}. You will choose your own password after that.",
   "inviteCopied": "Invite copied. Paste it in a message.",
   "inviteFailed": "Couldn't send the invite. Try again.",
   "otherFamilies": "Spread the word",

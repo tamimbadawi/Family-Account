@@ -4,7 +4,7 @@ import * as React from 'react';
 
 /**
  * Same fix the entry sheet uses: the drawer library pins a pixel height on the sheet while the
- * iPhone keyboard is open (so the field stays above the keyboard), but it does not always undo it
+ * mobile keyboard is open (so the field stays above the keyboard), but it does not always undo it
  * when the keyboard closes. Once the keyboard is gone, hand the height back to the layout.
  */
 export function useRestoreSheetAfterKeyboard(
@@ -16,13 +16,20 @@ export function useRestoreSheetAfterKeyboard(
     if (!isOpen || !viewport) return;
 
     let frame = 0;
+    const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
+    let maxSeenHeight = viewport.height;
+
     const onResize = () => {
       cancelAnimationFrame(frame);
       // Run after the library's own resize handler has written its styles
       frame = requestAnimationFrame(() => {
         const sheet = sheetRef.current;
-        const keyboardClosed = window.innerHeight - viewport.height < 60;
-        if (sheet && keyboardClosed) {
+        if (!sheet) return;
+        maxSeenHeight = Math.max(maxSeenHeight, viewport.height);
+        const keyboardClosed = isAndroid
+          ? maxSeenHeight - viewport.height < 100
+          : window.innerHeight - viewport.height < 60;
+        if (keyboardClosed) {
           sheet.style.removeProperty('height');
           sheet.style.removeProperty('bottom');
         }

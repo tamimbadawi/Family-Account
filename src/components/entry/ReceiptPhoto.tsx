@@ -6,6 +6,7 @@ import { Dialog as DialogPrimitive } from 'radix-ui';
 import { Camera, Loader2, RefreshCw, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { compressPhoto } from '@/lib/photos/compress';
+import { useAndroidBackToClose } from '@/lib/android-back';
 
 const CHIP =
   'relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-surface-2 text-accent transition-transform active:scale-95 cursor-pointer';
@@ -44,11 +45,12 @@ export function useObjectUrl(blob: Blob | null): string | null {
 }
 
 function CameraInput({ onFile, label }: { onFile: (file: File) => void; label: string }) {
+  const isIos = typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent);
   return (
     <input
       type="file"
       accept="image/*"
-      capture="environment"
+      capture={isIos ? 'environment' : undefined}
       aria-label={label}
       className={FILE_OVERLAY}
       onChange={(e) => {
@@ -72,6 +74,8 @@ export function ReceiptPhoto({ photo, onChange }: ReceiptPhotoProps) {
   const url = useObjectUrl(photo);
   const [isBusy, setIsBusy] = React.useState(false);
   const [isViewerOpen, setIsViewerOpen] = React.useState(false);
+
+  useAndroidBackToClose(isViewerOpen, () => setIsViewerOpen(false));
 
   const handleFile = async (file: File) => {
     setIsBusy(true);

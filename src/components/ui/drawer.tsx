@@ -2,12 +2,17 @@
 
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { useAndroidBackToClose } from "@/lib/android-back"
 import { Drawer as DrawerPrimitive } from "vaul"
 
 function Drawer({
+  open,
+  onOpenChange,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
-  return <DrawerPrimitive.Root data-slot="drawer" {...props} />
+  useAndroidBackToClose(open, () => onOpenChange?.(false))
+
+  return <DrawerPrimitive.Root data-slot="drawer" open={open} onOpenChange={onOpenChange} {...props} />
 }
 
 function DrawerTrigger({

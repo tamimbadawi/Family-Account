@@ -10,8 +10,39 @@ const BASE = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, ''
 const CHROME = process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const OUT = path.resolve('.ui-check/flows');
 fs.mkdirSync(OUT, { recursive: true });
-const VIEWPORTS = [[390, 844], [375, 667], [412, 700]];
-const KEYBOARD = [390, 420]; // what is left of an iPhone screen with the keyboard open
+const IPHONE_UA =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
+const ANDROID_UA =
+  'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36';
+
+const IPHONE_PROFILES = [
+  { name: 'iphone', os: 'ios', vp: [390, 844], ua: IPHONE_UA },
+  { name: 'iphone-se', os: 'ios', vp: [375, 667], ua: IPHONE_UA },
+];
+const ANDROID_PROFILES = [
+  { name: 'android-mid', os: 'android', vp: [412, 915], ua: ANDROID_UA },
+  { name: 'android-budget', os: 'android', vp: [360, 640], ua: ANDROID_UA },
+  { name: 'android-tall', os: 'android', vp: [360, 800], ua: ANDROID_UA },
+  { name: 'android-browser', os: 'android', vp: [412, 700], ua: ANDROID_UA },
+];
+const ALL_PROFILES = [...IPHONE_PROFILES, ...ANDROID_PROFILES];
+const KEYBOARD_PROFILE = { name: 'iphone-kbd', os: 'ios', vp: [390, 420], ua: IPHONE_UA };
+
+let profiles = ALL_PROFILES;
+if (process.env.UI_SIZES) {
+  const sizes = process.env.UI_SIZES.split(',').map((s) => s.split('x').map(Number));
+  profiles = sizes.map(([w, h]) => {
+    const existing = ALL_PROFILES.find((p) => p.vp[0] === w && p.vp[1] === h);
+    if (existing) return existing;
+    const isIos = w === 390 || (w === 375 && h === 667);
+    return {
+      name: `${isIos ? 'iphone' : 'android'}-${w}x${h}`,
+      os: isIos ? 'ios' : 'android',
+      vp: [w, h],
+      ua: isIos ? IPHONE_UA : ANDROID_UA,
+    };
+  });
+}
 
 const reportsMessages = {
   en: JSON.parse(fs.readFileSync(path.resolve('messages/en/reports.json'), 'utf8')),
@@ -878,13 +909,13 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
 const jobs = names.flatMap((name) => {
   if (MULTI_LOCALE_FLOW_NAMES.includes(name)) {
     return LOCALES.flatMap((locale) =>
-      VIEWPORTS.map((vp) => ({ name, locale, vp }))
+      profiles.map((profile) => ({ name, locale, profile }))
     );
   }
-  return (name === 'newgroup' ? [...VIEWPORTS, KEYBOARD] : VIEWPORTS).map((vp) => ({
+  return (name === 'newgroup' ? [...profiles, KEYBOARD_PROFILE] : profiles).map((profile) => ({
     name,
     locale: 'en',
-    vp,
+    profile,
   }));
 });
 
@@ -893,8 +924,9 @@ const started = Date.now();
 const queue = [...jobs];
 await Promise.all(Array.from({ length: 4 }, async () => {
   while (queue.length) {
-    const { name, locale, vp: [w, h] } = queue.shift();
-    const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+    const { name, locale, profile } = queue.shift();
+    const [w, h] = profile.vp;
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: profile.ua });
     const page = await ctx.newPage();
     await page.addInitScript(() => {
       const style = document.createElement('style');

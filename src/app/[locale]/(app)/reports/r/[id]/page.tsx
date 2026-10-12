@@ -47,7 +47,7 @@ export default async function ReportDetailPage({ params }: ReportPageProps) {
   const t = await getTranslations('reports');
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-6 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex flex-col gap-2.5 select-none">
+    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-6 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex flex-col gap-2.5 [@media(max-height:650px)]:gap-1.5 [@media(max-height:650px)]:pb-2 select-none">
       {/* 1. Back Navigation & Header */}
       <div className="flex items-center gap-2.5 pt-0.5">
         <Link

@@ -157,10 +157,12 @@ export default function OperatorPage() {
         // Send the new admin their sign-in details straight away
         {
           label: t('sendLogin'),
-          onClick: () =>
-            void sendInvite(t('loginTitle'), t('loginText', login), inviteLink(window.location.origin, locale)).then((r) => {
+          onClick: () => {
+            const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
+            void sendInvite(t('loginTitle'), t(isAndroid ? 'loginTextAndroid' : 'loginText', login), inviteLink(window.location.origin, locale)).then((r) => {
               if (r === 'copied') toast.success(t('loginCopied'));
-            }),
+            });
+          },
         }
       );
     } else if (sheet.kind === 'decline') {
