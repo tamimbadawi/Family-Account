@@ -76,7 +76,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="px-5 space-y-2.5 pt-1 select-none">
+    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-6 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-2.5 select-none">
       {/* Primary Inset Group */}
       <div className="bg-surface rounded-card border border-line/40 shadow-card divide-y divide-line/30">
         {/* Categories */}
