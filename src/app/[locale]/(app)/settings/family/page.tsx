@@ -15,7 +15,7 @@ import { useHouseholdMembers } from '@/lib/data/provider';
 import { isAuthConfigured } from '@/lib/supabase/client';
 import { familyAdmin, type FamilyList, type FamilyMember } from '@/lib/auth/family-admin';
 import { isEmail, loginLabel, normalizeEmail } from '@/lib/auth/email';
-import { inviteLink, sendInvite } from '@/lib/auth/invite';
+import { inviteLink, joinLink, sendInvite } from '@/lib/auth/invite';
 import { inviteFamily, listFamilyInvites, type SentInvite } from '@/lib/auth/family-invites';
 import { isEnglishName } from '@/lib/members';
 import { FAMILY_NAME_MAX, useFamilyName } from '@/lib/auth/family-name';
@@ -97,14 +97,15 @@ export default function FamilyPage() {
     setSheet(next);
   };
 
-  /** Opens the share sheet: sign-in details for a member just added, or a heads-up for an invited family. */
-  const invite = async (to: { login: { email: string; password: string } } | { friend: string }) => {
-    const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
+  /** Opens the share sheet: the personal link of a member just added, or a heads-up for an invited family. */
+  const invite = async (to: { member: string; token: string } | { friend: string }) => {
     const text =
-      'login' in to
-        ? t(isAndroid ? 'inviteWithLoginAndroid' : 'inviteWithLogin', { family: family.name ?? '', email: to.login.email, password: to.login.password })
+      'token' in to
+        ? t('inviteWithLink', { name: to.member, family: family.name ?? '' })
         : t('familyInviteText', { name: to.friend });
-    const result = await sendInvite(t('inviteTitle'), text, inviteLink(window.location.origin, locale));
+    const url =
+      'token' in to ? joinLink(window.location.origin, locale, to.token) : inviteLink(window.location.origin, locale);
+    const result = await sendInvite(t('inviteTitle'), text, url);
     if (result === 'copied') toast.success(t('inviteCopied'));
     else if (result === 'failed') toast.error(t('inviteFailed'));
   };
@@ -138,12 +139,20 @@ export default function FamilyPage() {
       // The name is what the app shows; the email is only what they sign in with
       if (!isEnglishName(name)) return setError(t('errors.bad_name'));
       if (!isEmail(email)) return setError(t('errors.bad_email'));
-      const login = { email: normalizeEmail(email), password };
+      const member = name.trim();
+      let token = '';
       void run(
-        () => familyAdmin({ action: 'add_member', email: login.email, displayName: name.trim(), password }),
-        t('added', { name: name.trim() }),
-        // Straight after adding someone, offer to send them how to sign in
-        { label: t('sendInvite'), onClick: () => void invite({ login }) }
+        async () => {
+          const added = await familyAdmin<{ token: string }>({
+            action: 'add_member',
+            email: normalizeEmail(email),
+            displayName: member,
+          });
+          token = added.token;
+        },
+        t('added', { name: member }),
+        // Straight after adding someone, offer to send them their own one-time link
+        { label: t('sendInvite'), onClick: () => void invite({ member, token }) }
       );
     } else if (sheet.kind === 'inviteFamily') {
       const friend = name.trim();
@@ -421,7 +430,7 @@ export default function FamilyPage() {
                   <p className="text-caption text-ink-muted">{t('friendEmailHint')}</p>
                 </>
               )}
-              {(sheet?.kind === 'add' || sheet?.kind === 'reset') && (
+              {sheet?.kind === 'reset' && (
                 <>
                   <Input
                     aria-label={t('password')}

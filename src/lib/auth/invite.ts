@@ -8,6 +8,16 @@ export function inviteLink(origin: string, locale: string): string {
   return `${origin.replace(/\/+$/, '')}/${locale}/login`;
 }
 
+/** One person's own link: the one-time token rides after the #, so it never reaches a server or a link preview. */
+export function joinLink(origin: string, locale: string, token: string): string {
+  return `${origin.replace(/\/+$/, '')}/${locale}/join#t=${encodeURIComponent(token)}`;
+}
+
+/** The token from a personal link's "#t=..." part, or null when there is none. */
+export function joinToken(hash: string): string | null {
+  return new URLSearchParams(hash.replace(/^#/, '')).get('t') || null;
+}
+
 export async function sendInvite(title: string, text: string, url: string): Promise<InviteResult> {
   if (typeof navigator === 'undefined') return 'failed';
   if (typeof navigator.share === 'function') {

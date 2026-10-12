@@ -2,7 +2,7 @@
   "title": "Family",
   "admin": "Admin",
   "member": "Member",
-  "ownerHint": "You are the admin. Add each family member with their name, their email and a first password. They sign in with the email; everyone sees the name.",
+  "ownerHint": "You are the admin. Add each family member with their name and email, then send them their own link. They sign in with the email; everyone sees the name.",
   "memberHint": "Everyone who can use the app. Only the admin can add or remove people.",
   "addMember": "Add family member",
   "name": "Name",
@@ -16,7 +16,7 @@
   "adminFor": "Make {name} the admin?",
   "removeHint": "They can no longer sign in. Everything they already entered stays.",
   "adminHint": "They will manage the family instead of you. You stay as a member.",
-  "added": "{name} can sign in now",
+  "added": "{name} is added. Send their link now.",
   "resetDone": "Password reset",
   "removed": "Removed",
   "adminDone": "Admin changed",
@@ -47,8 +47,6 @@
   "save": "Save",
   "sendInvite": "Send invite",
   "inviteTitle": "Family Accounts",
-  "inviteWithLogin": "Join {family} on our family accounts app. Open this link on your iPhone and sign in with your email {email} and the password {password}. You will choose your own password after that.",
-  "inviteWithLoginAndroid": "Join {family} on our family accounts app. Open this link on your phone and sign in with your email {email} and the password {password}. You will choose your own password after that.",
   "inviteCopied": "Invite copied. Paste it in a message.",
   "inviteFailed": "Couldn't send the invite. Try again.",
   "otherFamilies": "Spread the word",
@@ -68,5 +66,6 @@
     "approved": "Started",
     "declined": "Not now",
     "expired": "Expired"
-  }
+  },
+  "inviteWithLink": "Hi {name}! Join {family} on our family accounts app. This link is only for you and works once. Open it on your phone, tap Continue and choose your password."
 }
