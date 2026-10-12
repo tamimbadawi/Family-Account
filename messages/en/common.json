@@ -17,5 +17,11 @@
   "loading": "Loading…",
   "share": "Share",
   "noConnection": "No connection — try again",
-  "saveFailed": "Couldn't save. Try again."
+  "saveFailed": "Couldn't save. Try again.",
+  "currencyPicker": {
+    "title": "Choose a currency",
+    "search": "Search currency",
+    "clear": "Clear search",
+    "empty": "No currency found"
+  }
 }
