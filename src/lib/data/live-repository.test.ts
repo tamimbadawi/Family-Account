@@ -176,3 +176,30 @@ describe('LiveRepository sample data', () => {
     expect(deleted.map((e) => e.id)).toEqual(['r1']);
   });
 });
+
+describe('LiveRepository pull without a session', () => {
+  it('keeps the copy on the phone instead of emptying it (the installed app woke up before its sign-in)', async () => {
+    const db = new FamilyAccountsDB(`test-live-nosession-${Math.random().toString(36).slice(2, 9)}`);
+    await db.meta.put({ key: 'householdId', value: HID });
+    await db.households.put({ id: HID, name: 'Family', currency: 'EGP', created_at: serverNow });
+    await db.accounts.put({ id: 'a1', household_id: HID, type: 'cash', name_en: 'Cash', sort_order: 0, is_archived: false, created_at: serverNow, updated_at: serverNow } as never);
+
+    const asked: string[] = [];
+    const client = {
+      auth: { getSession: async () => ({ data: { session: null } }) },
+      // Without a session the server answers as a stranger: no family, no rows
+      from(table: string) {
+        asked.push(table);
+        const chain = { select: () => chain, eq: () => chain, gt: () => chain, order: () => chain, range: () => chain, abortSignal: async () => ({ data: [], error: null }) };
+        return chain;
+      },
+      rpc: () => ({ abortSignal: async () => ({ error: null }) }),
+    };
+    await new LiveRepository(db, () => client as never).refresh();
+
+    expect(asked).toEqual([]);
+    expect(await db.households.count()).toBe(1);
+    expect(await db.accounts.count()).toBe(1);
+    expect((await db.meta.get('householdId'))?.value).toBe(HID);
+  });
+});
