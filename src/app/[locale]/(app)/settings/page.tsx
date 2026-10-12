@@ -68,6 +68,7 @@ export default function SettingsPage() {
   };
 
   const signingOutRef = React.useRef(false);
+  const [isSigningOut, setIsSigningOut] = React.useState(false);
   const handleSignOut = async () => {
     if (!isAuthConfigured()) {
       toast.info(t('signOut'));
@@ -75,15 +76,26 @@ export default function SettingsPage() {
     }
     if (signingOutRef.current) return;
     signingOutRef.current = true;
-    // No step may leave the person stuck on this screen: each one gets a few seconds at most
+    // The first tap shows at once that it worked
+    setIsSigningOut(true);
+    // No step may leave the person waiting: each one gets a moment at most, then we move on
     const within = (work: Promise<unknown>, ms: number) =>
       Promise.race([work.catch((err) => console.warn('[sign-out]', err)), new Promise((done) => setTimeout(done, ms))]);
-    const auth = getSupabaseBrowserClient().auth;
-    await within(auth.signOut(), 4000);
-    // If the server could not be reached, still forget the session on this phone
-    await within(auth.signOut({ scope: 'local' }), 1500);
+    await within(getSupabaseBrowserClient().auth.signOut(), 2000);
+    // Whatever the server said, forget the session on this phone
+    try {
+      for (const part of document.cookie.split(';')) {
+        const name = part.split('=')[0].trim();
+        if (name.startsWith('sb-')) document.cookie = `${name}=; path=/; max-age=0`;
+      }
+      for (const key of Object.keys(window.localStorage)) {
+        if (key.startsWith('sb-')) window.localStorage.removeItem(key);
+      }
+    } catch (err) {
+      console.warn('[sign-out]', err);
+    }
     // Nothing of the family stays on the phone after signing out
-    await within(repo.clearCache?.() ?? Promise.resolve(), 3000);
+    await within(repo.clearCache?.() ?? Promise.resolve(), 1500);
     // A full page load, so the sign-in screen always opens (a soft move could stay on this screen)
     window.location.replace(`/${locale}/login`);
   };
@@ -297,6 +309,8 @@ export default function SettingsPage() {
         <button
           type="button"
           onClick={handleSignOut}
+          disabled={isSigningOut}
+          aria-busy={isSigningOut}
           className="w-full flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
         >
           <div className="flex items-center gap-3">
@@ -304,7 +318,7 @@ export default function SettingsPage() {
               <LogOut className="size-4.5 rtl:rotate-180" />
             </div>
             <span className="text-body font-semibold text-expense">
-              {t('signOut')}
+              {isSigningOut ? t('signingOut') : t('signOut')}
             </span>
           </div>
         </button>
