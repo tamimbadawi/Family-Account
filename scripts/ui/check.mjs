@@ -24,17 +24,41 @@ const { values: flags, positionals } = parseArgs({
   allowPositionals: true,
 });
 
-// Determine routes to test
+// Determine locales
+const targetLocales = flags.locales
+  ? flags.locales.split(',').map((l) => l.trim().toLowerCase())
+  : (flags.quick ? ['en'] : CONFIG.locales);
+
+// Determine raw routes to test
 let rawRoutes = [];
 if (flags.routes) {
   rawRoutes = flags.routes.split(',').map((r) => r.trim()).filter(Boolean);
 } else if (positionals.length > 0) {
   rawRoutes = positionals;
+} else if (flags.quick) {
+  rawRoutes = [CONFIG.defaultRoutes[0]];
 } else {
   rawRoutes = CONFIG.defaultRoutes;
 }
 
-const routes = rawRoutes.map(normalizeRoute);
+// Expand routes if provided without locale prefix
+const hasLocalePrefix = (r) => CONFIG.locales.some((loc) => r === `/${loc}` || r.startsWith(`/${loc}/`));
+const expandedRoutes = [];
+for (const r of rawRoutes.map(normalizeRoute)) {
+  if (hasLocalePrefix(r)) {
+    if (flags.locales) {
+      const match = targetLocales.some((loc) => r === `/${loc}` || r.startsWith(`/${loc}/`));
+      if (match) expandedRoutes.push(r);
+    } else {
+      expandedRoutes.push(r);
+    }
+  } else {
+    for (const loc of targetLocales) {
+      expandedRoutes.push(r === '/' ? `/${loc}` : `/${loc}${r}`);
+    }
+  }
+}
+const routes = [...new Set(expandedRoutes)];
 
 // Determine viewport sizes
 let sizes = [];

@@ -3,9 +3,11 @@
 
 export type InviteResult = 'shared' | 'copied' | 'cancelled' | 'failed';
 
-/** The sign-in page in the inviter's language, e.g. "https://app.example/en/login". */
-export function inviteLink(origin: string, locale: string): string {
-  return `${origin.replace(/\/+$/, '')}/${locale}/login`;
+/** The sign-in page in the inviter's language, e.g. "https://app.example/en/login?invite=CODE". */
+export function inviteLink(origin: string, locale: string, code?: string): string {
+  const base = `${origin.replace(/\/+$/, '')}/${locale}/login`;
+  if (code) return `${base}?invite=${encodeURIComponent(code)}`;
+  return base;
 }
 
 export async function sendInvite(title: string, text: string, url: string): Promise<InviteResult> {

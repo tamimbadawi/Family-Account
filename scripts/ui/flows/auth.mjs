@@ -8,7 +8,7 @@ import { tap, type, sleep, assertUsable } from '../helpers.mjs';
 export async function auth_setup(page, { url, locale = 'en' }) {
   const envTestPath = path.resolve('.env.test');
   let testUsername = 'injy';
-  let testPassword = 'password123';
+  let testPassword = '123456';
 
   if (fs.existsSync(envTestPath)) {
     const content = fs.readFileSync(envTestPath, 'utf8');

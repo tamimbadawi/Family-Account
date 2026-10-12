@@ -19,6 +19,18 @@ import { inviteLink, sendInvite } from '@/lib/auth/invite';
 import { inviteFamily, listFamilyInvites, type SentInvite } from '@/lib/auth/family-invites';
 import { isEnglishName } from '@/lib/members';
 import { FAMILY_NAME_MAX, useFamilyName } from '@/lib/auth/family-name';
+import {
+  getLocalUsers,
+  getLocalSession,
+  addLocalMember,
+  resetLocalPassword,
+  removeLocalMember,
+  transferLocalOwner,
+  isLocalOwner,
+  createLocalInvite,
+  type LocalUser,
+} from '@/lib/auth/local-auth';
+import { DEMO_HOUSEHOLD_ID } from '@/lib/data/mock-seed';
 
 type Sheet =
   | { kind: 'add' }
@@ -97,13 +109,20 @@ export default function FamilyPage() {
     setSheet(next);
   };
 
+  const [localUsers, setLocalUsers] = React.useState<LocalUser[]>(() => (!live ? getLocalUsers() : []));
+  const reloadLocal = React.useCallback(() => {
+    if (!live) setLocalUsers([...getLocalUsers()]);
+  }, [live]);
+
   /** Opens the share sheet: sign-in details for a member just added, or a heads-up for an invited family. */
-  const invite = async (to: { login: { email: string; password: string } } | { friend: string }) => {
+  const invite = async (to: { login: { email: string; password: string }; code?: string } | { friend: string; code?: string }) => {
+    const link = inviteLink(window.location.origin, locale, to.code);
+    const codeSuffix = to.code ? `\nCode: ${to.code}` : '';
     const text =
       'login' in to
-        ? t('inviteWithLogin', { family: family.name ?? '', email: to.login.email, password: to.login.password })
-        : t('familyInviteText', { name: to.friend });
-    const result = await sendInvite(t('inviteTitle'), text, inviteLink(window.location.origin, locale));
+        ? `${t('inviteWithLogin', { family: family.name ?? '', email: to.login.email, password: to.login.password })}${codeSuffix}`
+        : `${t('familyInviteText', { name: to.friend })}${codeSuffix}`;
+    const result = await sendInvite(t('inviteTitle'), text, link);
     if (result === 'copied') toast.success(t('inviteCopied'));
     else if (result === 'failed') toast.error(t('inviteFailed'));
   };
@@ -137,39 +156,117 @@ export default function FamilyPage() {
       // The name is what the app shows; the email is only what they sign in with
       if (!isEnglishName(name)) return setError(t('errors.bad_name'));
       if (!isEmail(email)) return setError(t('errors.bad_email'));
+      if (password.length < 6) return setError(t('errors.short_password'));
       const login = { email: normalizeEmail(email), password };
+      let inviteCodeGenerated: string | undefined;
       void run(
-        () => familyAdmin({ action: 'add_member', email: login.email, displayName: name.trim(), password }),
+        async () => {
+          if (live) {
+            await familyAdmin({ action: 'add_member', email: login.email, displayName: name.trim(), password });
+          } else {
+            const inv = createLocalInvite({
+              type: 'member',
+              invitedName: name.trim(),
+              invitedEmail: login.email,
+              householdId: currentHouseholdId,
+            });
+            inviteCodeGenerated = inv.code;
+            await addLocalMember({
+              email: login.email,
+              displayName: name.trim(),
+              password,
+              householdId: currentHouseholdId,
+            });
+            reloadLocal();
+          }
+        },
         t('added', { name: name.trim() }),
         // Straight after adding someone, offer to send them how to sign in
-        { label: t('sendInvite'), onClick: () => void invite({ login }) }
+        { label: t('sendInvite'), onClick: () => void invite({ login, code: inviteCodeGenerated }) }
       );
     } else if (sheet.kind === 'inviteFamily') {
       const friend = name.trim();
       if (!friend) return setError(t('errors.no_friend_name'));
       if (!isEmail(email)) return setError(t('errors.bad_email'));
+      const friendEmail = normalizeEmail(email);
+      let adminCodeGenerated: string | undefined;
       void run(
         async () => {
-          await inviteFamily(friend, normalizeEmail(email));
+          if (!live) {
+            const inv = createLocalInvite({
+              type: 'admin',
+              invitedName: friend,
+              invitedEmail: friendEmail,
+            });
+            adminCodeGenerated = inv.code;
+          }
+          await inviteFamily(friend, friendEmail);
           loadInvites();
         },
         t('familyInvited', { name: friend }),
         // Let the friend know it's coming, from the same tap (the share sheet needs one)
-        { label: t('tellThem', { name: friend }), onClick: () => void invite({ friend }) }
+        { label: t('tellThem', { name: friend }), onClick: () => void invite({ friend, code: adminCodeGenerated }) }
       );
     } else if (sheet.kind === 'reset') {
-      void run(() => familyAdmin({ action: 'reset_password', userId: sheet.member.userId, password }), t('resetDone'));
+      void run(
+        async () => {
+          if (live) {
+            await familyAdmin({ action: 'reset_password', userId: sheet.member.userId, password });
+          } else {
+            resetLocalPassword(sheet.member.userId, password);
+            reloadLocal();
+          }
+        },
+        t('resetDone')
+      );
     } else if (sheet.kind === 'remove') {
-      void run(() => familyAdmin({ action: 'remove_member', userId: sheet.member.userId }), t('removed'));
+      void run(
+        async () => {
+          if (live) {
+            await familyAdmin({ action: 'remove_member', userId: sheet.member.userId });
+          } else {
+            await removeLocalMember(sheet.member.userId);
+            reloadLocal();
+          }
+        },
+        t('removed')
+      );
     } else {
-      void run(() => familyAdmin({ action: 'transfer_owner', userId: sheet.member.userId }), t('adminDone'));
+      void run(
+        async () => {
+          if (live) {
+            await familyAdmin({ action: 'transfer_owner', userId: sheet.member.userId });
+          } else {
+            transferLocalOwner(sheet.member.userId);
+            reloadLocal();
+          }
+        },
+        t('adminDone')
+      );
     }
   };
 
-  const members: FamilyMember[] = live
-    ? (list?.members ?? [])
-    : sampleMembers.map((m) => ({ userId: m.userId, displayName: m.displayName, role: m.role, email: '' }));
-  const isOwner = live && Boolean(list?.isOwner);
+  const currentHouseholdId = getLocalSession()?.householdId ?? DEMO_HOUSEHOLD_ID;
+
+  const members: FamilyMember[] = React.useMemo(() => {
+    if (live) return list?.members ?? [];
+    const filtered = localUsers.filter((u) => u.householdId === currentHouseholdId);
+    const seen = new Set<string>();
+    return filtered
+      .filter((u) => {
+        if (seen.has(u.userId)) return false;
+        seen.add(u.userId);
+        return true;
+      })
+      .map((u) => ({
+        userId: u.userId,
+        displayName: u.displayName,
+        role: u.role,
+        email: u.email,
+      }));
+  }, [live, list, localUsers, currentHouseholdId]);
+
+  const isOwner = live ? Boolean(list?.isOwner) : isLocalOwner();
   // The family admin can change the family's name (sample-data mode: anyone, as there is no admin)
   const canRename = isOwner || !live;
 

@@ -21,6 +21,7 @@ import { useRepository } from '@/lib/data/provider';
 import { localISODate } from '@/lib/format';
 import { useFamilyMembers } from '@/lib/auth/use-family-members';
 import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
+import { signOutLocal } from '@/lib/auth/local-auth';
 import { entriesToCsv } from '@/lib/reports/export';
 import { SupportDrawer } from '@/components/settings/SupportDrawer';
 
@@ -65,14 +66,13 @@ export default function SettingsPage() {
   };
 
   const handleSignOut = async () => {
-    if (!isAuthConfigured()) {
-      toast.info(t('signOut'));
-      return;
+    if (isAuthConfigured()) {
+      await getSupabaseBrowserClient().auth.signOut().catch(() => {});
     }
-    await getSupabaseBrowserClient().auth.signOut();
+    signOutLocal();
     // Nothing of the family stays on the phone after signing out
     await repo.clearCache?.().catch((err) => console.warn('[sync] clear failed', err));
-    router.replace('/login');
+    window.location.href = `/${locale}/login`;
   };
 
   return (

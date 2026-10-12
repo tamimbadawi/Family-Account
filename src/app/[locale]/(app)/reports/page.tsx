@@ -88,7 +88,7 @@ function ReportsContent() {
           <button
             type="button"
             onClick={() => setActiveTab('overview')}
-            className={`flex-1 rounded-full py-1.5 transition-all text-center truncate px-1 ${
+            className={`flex-1 min-h-[44px] rounded-full py-2.5 transition-all text-center truncate px-1 flex items-center justify-center ${
               activeTab === 'overview'
                 ? 'bg-surface text-ink shadow-xs'
                 : 'text-ink-muted hover:text-ink'
@@ -99,7 +99,7 @@ function ReportsContent() {
           <button
             type="button"
             onClick={() => setActiveTab('all')}
-            className={`flex-1 rounded-full py-1.5 transition-all text-center truncate px-1 ${
+            className={`flex-1 min-h-[44px] rounded-full py-2.5 transition-all text-center truncate px-1 flex items-center justify-center ${
               activeTab === 'all'
                 ? 'bg-surface text-ink shadow-xs'
                 : 'text-ink-muted hover:text-ink'
@@ -110,7 +110,7 @@ function ReportsContent() {
           <button
             type="button"
             onClick={() => setActiveTab('breakdown')}
-            className={`flex-1 rounded-full py-1.5 transition-all text-center truncate px-1 ${
+            className={`flex-1 min-h-[44px] rounded-full py-2.5 transition-all text-center truncate px-1 flex items-center justify-center ${
               activeTab === 'breakdown'
                 ? 'bg-surface text-ink shadow-xs'
                 : 'text-ink-muted hover:text-ink'

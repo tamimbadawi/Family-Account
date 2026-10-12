@@ -187,7 +187,7 @@ export function RankedCategories({
           <button
             type="button"
             onClick={handleOpenAllSheet}
-            className="flex w-full items-center justify-center gap-1.5 py-1.5 text-body font-semibold text-accent hover:underline active:scale-95 transition-all"
+            className="flex min-h-[44px] w-full items-center justify-center gap-1.5 py-2.5 text-body font-semibold text-accent hover:underline active:scale-95 transition-all"
           >
             <span>{t('seeAllCategories')}</span>
             {rootTotals.length > 3 && (

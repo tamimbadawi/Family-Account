@@ -131,7 +131,23 @@ export class MockRepository implements Repository {
 
   /** The household new rows belong to. */
   protected async householdId(explicit?: string): Promise<string> {
-    return explicit ?? DEMO_HOUSEHOLD_ID;
+    if (explicit) return explicit;
+    if (typeof document !== 'undefined') {
+      const cookies = document.cookie ? document.cookie.split(';') : [];
+      for (const c of cookies) {
+        const [name, ...val] = c.trim().split('=');
+        if (name === 'fa_session' && val.length > 0) {
+          try {
+            const decoded = decodeURIComponent(val.join('='));
+            const s = JSON.parse(decoded);
+            if (s?.householdId) return s.householdId;
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
+    return DEMO_HOUSEHOLD_ID;
   }
 
   // Ensures database is seeded on first access (idempotent, StrictMode-safe via shared promise)
@@ -347,12 +363,63 @@ export class MockRepository implements Repository {
   // ---------- Household & Members ----------
 
   async getHousehold(): Promise<Household | null> {
-    const row = await this.db.households.get(await this.householdId());
+    const hid = await this.householdId();
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('fa_local_households');
+        if (raw) {
+          const list = JSON.parse(raw);
+          const found = list.find((h: any) => h.id === hid);
+          if (found) {
+            return {
+              id: found.id,
+              name: found.name,
+              currency: found.currency || 'EGP',
+              createdAt: new Date().toISOString(),
+            };
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+    const row = await this.db.households.get(hid);
     return row ? toHousehold(row) : null;
   }
 
   async getMembers(): Promise<Member[]> {
-    const rows = await this.db.household_members.toArray();
+    const hid = await this.householdId();
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('fa_local_users');
+        if (raw) {
+          const users = JSON.parse(raw);
+          if (Array.isArray(users)) {
+            const filtered = users.filter((u: any) => u.householdId === hid);
+            if (filtered.length > 0) {
+              const seen = new Set<string>();
+              return filtered
+                .filter((u: any) => {
+                  if (seen.has(u.userId)) return false;
+                  seen.add(u.userId);
+                  return true;
+                })
+                .map((u: any) => ({
+                  userId: u.userId,
+                  householdId: hid,
+                  displayName: u.displayName,
+                  role: u.role,
+                  locale: 'en',
+                  createdAt: new Date().toISOString(),
+                }));
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+    const rows = await this.db.household_members.where('household_id').equals(hid).toArray();
     return rows.map(toMember);
   }
 

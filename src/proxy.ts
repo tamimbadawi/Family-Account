@@ -15,26 +15,35 @@ function pathWithoutLocale(pathname: string): string {
 
 export async function proxy(request: NextRequest) {
   const response = handleI18nRouting(request);
+  if (response.headers.get('location')) return response;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  // No Supabase configured (local sample-data mode): the app stays open, as in Phase A
-  if (!url || !key || response.headers.get("location")) return response;
-
-  // Refresh the session cookies on every request (they travel with the i18n response)
-  const supabase = createServerClient(url, key, {
-    cookies: {
-      getAll: () => request.cookies.getAll(),
-      setAll: (toSet) => {
-        toSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
-      },
-    },
-  });
-  const { data } = await supabase.auth.getClaims();
 
   const path = pathWithoutLocale(request.nextUrl.pathname);
   const isPublic = PUBLIC_PAGES.some((p) => path === p || path.startsWith(p + '/'));
-  if (!data?.claims && !isPublic) {
+
+  let hasSession = false;
+
+  if (url && key) {
+    // Refresh the session cookies on every request (they travel with the i18n response)
+    const supabase = createServerClient(url, key, {
+      cookies: {
+        getAll: () => request.cookies.getAll(),
+        setAll: (toSet) => {
+          toSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+        },
+      },
+    });
+    const { data } = await supabase.auth.getClaims();
+    hasSession = Boolean(data?.claims);
+  } else {
+    // Local sample-data mode: check for fa_session cookie
+    const localSession = request.cookies.get('fa_session');
+    hasSession = Boolean(localSession?.value);
+  }
+
+  if (!hasSession && !isPublic) {
     const locale = request.nextUrl.pathname.split('/')[1];
     const login = request.nextUrl.clone();
     login.pathname = `/${(routing.locales as readonly string[]).includes(locale) ? locale : routing.defaultLocale}/login`;

@@ -38,6 +38,8 @@ const { values: flags, positionals } = parseArgs({
   options: {
     base: { type: 'string' },
     flows: { type: 'string' },
+    sizes: { type: 'string' },
+    locales: { type: 'string' },
     quick: { type: 'boolean', default: false },
     prod: { type: 'boolean', default: false },
     parallel: { type: 'string', default: '1' },
@@ -64,11 +66,23 @@ for (const name of flowNames) {
 }
 
 // Viewports and locales
-const sizes = flags.quick
-  ? [CONFIG.quickSize]
-  : [...CONFIG.defaultSizes, CONFIG.keyboardSize];
+let sizes = [];
+if (flags.quick) {
+  sizes = [CONFIG.quickSize];
+} else if (flags.sizes) {
+  sizes = flags.sizes.split(',').map((s) => s.trim().split('x').map(Number));
+} else {
+  sizes = [...CONFIG.defaultSizes, CONFIG.keyboardSize];
+}
 
-const locales = flags.quick ? ['en'] : CONFIG.locales;
+let locales = [];
+if (flags.quick) {
+  locales = ['en'];
+} else if (flags.locales) {
+  locales = flags.locales.split(',').map((l) => l.trim().toLowerCase());
+} else {
+  locales = CONFIG.locales;
+}
 
 const OUT = path.resolve('.ui-check/flows');
 fs.mkdirSync(OUT, { recursive: true });

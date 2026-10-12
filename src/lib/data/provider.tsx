@@ -10,9 +10,10 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { mockRepository } from './mock-repository';
-import { LiveRepository } from './live-repository';
+import { LiveRepository, getLiveRepository } from './live-repository';
 import { getLastNMonths } from '@/lib/reports/months';
 import { budgetProgress, type BudgetProgress } from '@/lib/reports/budgets';
+import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
 import type { ListEntriesParams, Repository } from './repository';
 import type {
   Budget,
@@ -32,13 +33,15 @@ import type {
   WalletBalance,
 } from './types';
 
-let liveRepository: LiveRepository | null = null;
-
-// Resolves repository implementation based on NEXT_PUBLIC_DATA_MODE
+// Resolves repository implementation based on NEXT_PUBLIC_DATA_MODE and auth state
 export function getDefaultRepository(): Repository {
-  if (process.env.NEXT_PUBLIC_DATA_MODE === 'live') {
-    liveRepository ??= new LiveRepository();
-    return liveRepository;
+  const mode =
+    typeof process !== 'undefined'
+      ? process.env.NEXT_PUBLIC_DATA_MODE
+      : undefined;
+
+  if (mode === 'live' || (mode !== 'mock' && isAuthConfigured())) {
+    return getLiveRepository();
   }
   return mockRepository;
 }
@@ -51,7 +54,45 @@ export interface RepositoryProviderProps {
 }
 
 export function RepositoryProvider({ children, repository }: RepositoryProviderProps) {
-  const activeRepo = useMemo(() => repository ?? getDefaultRepository(), [repository]);
+  const [activeRepo, setActiveRepo] = useState<Repository>(
+    () => repository ?? getDefaultRepository()
+  );
+
+  useEffect(() => {
+    if (repository) {
+      setActiveRepo(repository);
+      return;
+    }
+
+    if (!isAuthConfigured()) {
+      setActiveRepo(getDefaultRepository());
+      return;
+    }
+
+    const supabase = getSupabaseBrowserClient();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      const mode = process.env.NEXT_PUBLIC_DATA_MODE;
+      if (session?.user && mode !== 'mock') {
+        setActiveRepo(getLiveRepository());
+      } else if (!session && mode === 'mock') {
+        setActiveRepo(mockRepository);
+      }
+    });
+
+    supabase.auth.getSession().then(({ data }) => {
+      const mode = process.env.NEXT_PUBLIC_DATA_MODE;
+      if (data.session?.user && mode !== 'mock') {
+        setActiveRepo(getLiveRepository());
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [repository]);
+
   const [isReady, setIsReady] = useState(
     () => typeof activeRepo.ensureSeeded !== 'function'
   );

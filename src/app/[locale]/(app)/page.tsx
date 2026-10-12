@@ -226,7 +226,7 @@ export default function HomePage() {
           </h2>
           <Link
             href="/history"
-            className="flex items-center gap-0.5 text-caption font-semibold text-accent hover:underline"
+            className="inline-flex min-h-[44px] min-w-[44px] -my-2.5 items-center justify-end gap-0.5 px-2 text-caption font-semibold text-accent hover:underline"
           >
             <span>{tCommon('seeAll')}</span>
             <ChevronRight className="size-4 rtl:rotate-180" />
