@@ -109,7 +109,20 @@ export async function pull(db: FamilyAccountsDB, source: PullSource, now = new D
   const householdId = household.id;
   if (known && known !== householdId) await clearLocalCopy(db);
 
-  const full = known !== householdId || needsFullPull(await meta<string>(db, 'lastFullPullAt'), now);
+  // A table that has a cursor (rows were seen) but holds nothing was emptied behind our back (seen on
+  // 2026-10-12 after a sign-out: only the newest rows came down and the app looked empty).
+  // Rows are never hard-deleted one by one, so that means: bring everything down again.
+  let emptied = false;
+  if (known === householdId) {
+    for (const table of SYNCED_TABLES) {
+      const store = db[table] as unknown as { count(): Promise<number> };
+      if ((await meta<string>(db, `cursor:${table}`)) && (await store.count()) === 0) {
+        emptied = true;
+        break;
+      }
+    }
+  }
+  const full = known !== householdId || emptied || needsFullPull(await meta<string>(db, 'lastFullPullAt'), now);
   const members = await source.members(householdId);
 
   const fetched = await Promise.all(

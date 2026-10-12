@@ -11,7 +11,7 @@ import { InstallBanner } from '@/components/install/InstallBanner';
 import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
 import { toLoginEmail } from '@/lib/auth/email';
 import { routeAfterSignIn } from '@/lib/auth/after-sign-in';
-import { goAfterAuth } from '@/lib/auth/go';
+import { goAfterAuth, startFresh } from '@/lib/auth/go';
 import { callFunction } from '@/lib/auth/family-admin';
 import { isSignUpEnabled, signUpErrorKey, validateSignUp } from '@/lib/auth/sign-up';
 
@@ -69,7 +69,9 @@ export default function LoginPage() {
         setError(navigator.onLine ? tAuth('wrongPassword') : tAuth('noConnection'));
         return;
       }
-      goAfterAuth(locale, await routeAfterSignIn(data.user));
+      const next = await routeAfterSignIn(data.user);
+      await startFresh();
+      goAfterAuth(locale, next);
     } catch {
       setError(tAuth('noConnection'));
     } finally {
