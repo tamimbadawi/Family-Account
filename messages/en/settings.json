@@ -78,5 +78,6 @@
     "other": "Something else"
   },
   "supportTooMany": "You sent a lot of messages today. Try again tomorrow.",
-  "currencies": "Currencies"
+  "currencies": "Currencies",
+  "signingOut": "Signing out…"
 }

@@ -7,3 +7,16 @@
 export function goAfterAuth(locale: string, route: string): void {
   window.location.replace(`/${locale}${route === '/' ? '' : route}`);
 }
+
+/**
+ * Right after signing in: forget whatever copy of a family is on this phone, so the whole
+ * household is downloaded afresh for the person who just signed in. Never waits more than 3 s.
+ */
+export async function startFresh(): Promise<void> {
+  const { db } = await import('@/lib/offline/db');
+  const { clearLocalCopy } = await import('@/lib/offline/sync');
+  await Promise.race([
+    clearLocalCopy(db).catch((err) => console.warn('[sign-in] could not clear the copy', err)),
+    new Promise((done) => setTimeout(done, 3000)),
+  ]);
+}

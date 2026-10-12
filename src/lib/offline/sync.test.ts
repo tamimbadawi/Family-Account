@@ -88,6 +88,18 @@ describe('pull()', () => {
     expect(await db.transactions.count()).toBe(3);
   });
 
+  it('downloads everything again when the copy was emptied but its cursors were left behind', async () => {
+    const data = { transactions: [entry('t1', '2026-10-07T10:00:00Z'), entry('t2', '2026-10-07T11:00:00Z')] };
+    await pull(db, fakeSource(data).source, new Date('2026-10-07T12:00:00Z'));
+    // The rows vanish, the "already seen up to here" marks stay
+    await db.transactions.clear();
+
+    const again = fakeSource(data);
+    await pull(db, again.source, new Date('2026-10-07T12:30:00Z'));
+    expect(again.calls.find((c) => c.table === 'transactions')?.since).toBeNull();
+    expect(await db.transactions.count()).toBe(2);
+  });
+
   it('an edit made on another phone replaces the copy (last save wins, no duplicate)', async () => {
     const data = { transactions: [entry('t1', '2026-10-07T10:00:00Z')] };
     await pull(db, fakeSource(data).source, new Date('2026-10-07T10:30:00Z'));
