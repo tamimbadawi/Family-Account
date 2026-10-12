@@ -66,6 +66,7 @@ jobs:
           $P -f supabase/migrations/0001_schema.sql
           out=$(psql -h localhost -U postgres -q -f supabase/tests/rls_smoke_test.sql 2>&1 || true)
           echo "$out"
+          echo "$out" | grep -q "SMOKE TEST RESULTS" || { echo "::error::Smoke test did not run"; exit 1; }
           if echo "$out" | grep -q "^FAIL"; then echo "::error::Smoke test has failures"; exit 1; fi
 
   ui:
