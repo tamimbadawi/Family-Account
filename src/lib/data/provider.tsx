@@ -35,6 +35,9 @@ import type {
   WalletBalance,
 } from './types';
 
+import { isAuthConfigured } from '@/lib/supabase/client';
+import { startLiveSync } from '@/lib/offline/live-sync';
+
 let liveRepository: LiveRepository | null = null;
 
 // Resolves repository implementation based on NEXT_PUBLIC_DATA_MODE
@@ -47,6 +50,11 @@ export function getDefaultRepository(): Repository {
 }
 
 const RepositoryContext = createContext<Repository | null>(null);
+const LiveSyncContext = createContext<{ isUpdating: boolean }>({ isUpdating: false });
+
+export function useLiveSyncUpdating(): boolean {
+  return useContext(LiveSyncContext).isUpdating;
+}
 
 export interface RepositoryProviderProps {
   children: React.ReactNode;
@@ -58,6 +66,17 @@ export function RepositoryProvider({ children, repository }: RepositoryProviderP
   const [isReady, setIsReady] = useState(
     () => typeof activeRepo.ensureSeeded !== 'function'
   );
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const household = useLiveQuery(
+    async () => {
+      if (typeof window === 'undefined') return null;
+      return activeRepo.getHousehold();
+    },
+    [activeRepo],
+    undefined
+  );
+  const householdId = household?.id;
 
   useEffect(() => {
     let cancelled = false;
@@ -100,17 +119,37 @@ export function RepositoryProvider({ children, repository }: RepositoryProviderP
     };
   }, [activeRepo]);
 
+  // Live mode: Realtime subscriptions (postgres_changes) for the signed-in household.
+  useEffect(() => {
+    if (!isAuthConfigured() || !householdId || !activeRepo.refresh) {
+      return;
+    }
+    const stopLiveSync = startLiveSync({
+      householdId,
+      refresh: () => activeRepo.refresh!(),
+      onUpdatingChange: setIsUpdating,
+    });
+    return () => {
+      stopLiveSync();
+      setIsUpdating(false);
+    };
+  }, [activeRepo, householdId]);
+
   if (!isReady) {
     return (
       <RepositoryContext.Provider value={activeRepo}>
-        <div className="fixed inset-0 bg-canvas" aria-hidden="true" />
+        <LiveSyncContext.Provider value={{ isUpdating }}>
+          <div className="fixed inset-0 bg-canvas" aria-hidden="true" />
+        </LiveSyncContext.Provider>
       </RepositoryContext.Provider>
     );
   }
 
   return (
     <RepositoryContext.Provider value={activeRepo}>
-      <MembersProvider>{children}</MembersProvider>
+      <LiveSyncContext.Provider value={{ isUpdating }}>
+        <MembersProvider>{children}</MembersProvider>
+      </LiveSyncContext.Provider>
     </RepositoryContext.Provider>
   );
 }

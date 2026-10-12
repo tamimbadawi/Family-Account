@@ -30,7 +30,7 @@ describe('MockRepository with fake-indexeddb', () => {
     expect(names).toContain('Baba');
 
     const wallets = await repo.getWallets();
-    expect(wallets).toHaveLength(4);
+    expect(wallets).toHaveLength(6);
     expect(wallets.map((w) => w.nameAr)).toContain('كاش');
     expect(wallets.map((w) => w.nameAr)).toContain('البنك الأهلي');
     expect(wallets.map((w) => w.nameAr)).toContain('بنك CIB');
@@ -62,7 +62,7 @@ describe('MockRepository with fake-indexeddb', () => {
 
   it('calculates wallet balances accurately factoring opening balance and transactions', async () => {
     const balances = await repo.walletBalances();
-    expect(balances).toHaveLength(4);
+    expect(balances).toHaveLength(6);
 
     const cashWallet = balances.find((w) => w.id === WALLET_CASH_ID);
     const bankWallet = balances.find((w) => w.id === WALLET_BANK_ID);
