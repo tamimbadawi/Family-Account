@@ -94,5 +94,7 @@
   "clearSearch": "مسح البحث",
   "emptySearchTitle": "لم نجد أي نتائج",
   "emptySearchHint": "جرّب البحث باسم تاني أو بمبلغ تاني.",
-  "clearSearchAction": "مسح البحث"
+  "clearSearchAction": "مسح البحث",
+  "summaryLabel": "إجمالي اللي ظاهر",
+  "seeHistory": "شوف تاريخه"
 }
