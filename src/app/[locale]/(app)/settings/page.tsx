@@ -12,6 +12,7 @@ import {
   LogOut,
   PiggyBank,
   Repeat,
+  Smartphone,
   Target,
   Trash2,
   Users,
@@ -26,6 +27,7 @@ import { useFamilyMembers } from '@/lib/auth/use-family-members';
 import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
 import { entriesToCsv } from '@/lib/reports/export';
 import { SupportDrawer } from '@/components/settings/SupportDrawer';
+import { useCanInstall } from '@/lib/standalone';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
@@ -34,6 +36,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const pathname = usePathname();
   const repo = useRepository();
+  const canInstall = useCanInstall();
 
   const [isExporting, setIsExporting] = React.useState(false);
   const [isSupportOpen, setIsSupportOpen] = React.useState(false);
@@ -229,28 +232,41 @@ export default function SettingsPage() {
             <span className="min-w-0 text-body font-semibold text-ink leading-tight">{t('currencies')}</span>
           </Link>
         </div>
-        {/* Download CSV */}
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={handleDownloadCsv}
-          onKeyDown={(e) => e.key === 'Enter' && handleDownloadCsv()}
-          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-0.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-member-3-soft text-member-3">
-              <Download className="size-4.5" />
-            </div>
-            <div className="text-start">
-              <div className="text-body font-semibold text-ink leading-tight">
+        {/* Download my data; while the app is still open in Safari, "Install app" sits beside it
+            (one shared row, so Settings still fits the screen) */}
+        <div className={canInstall ? 'grid grid-cols-2 divide-x divide-line/30 rtl:divide-x-reverse' : ''}>
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={handleDownloadCsv}
+            onKeyDown={(e) => e.key === 'Enter' && handleDownloadCsv()}
+            className="flex min-h-[48px] items-center justify-between gap-2 px-3.5 py-2.5 [@media(max-height:700px)]:py-0.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
+          >
+            <div className="flex min-w-0 items-center gap-2.5">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-member-3-soft text-member-3">
+                <Download className="size-4.5" />
+              </div>
+              <div className="min-w-0 text-start text-body font-semibold text-ink leading-tight">
                 {t('download')}
               </div>
             </div>
+            {isExporting ? (
+              <span className="text-caption text-ink-muted">...</span>
+            ) : (
+              !canInstall && <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
+            )}
           </div>
-          {isExporting ? (
-            <span className="text-caption text-ink-muted">...</span>
-          ) : (
-            <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
+
+          {canInstall && (
+            <Link
+              href="/install"
+              className="flex min-h-[48px] items-center gap-2.5 px-3.5 py-2.5 [@media(max-height:700px)]:py-0.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+            >
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+                <Smartphone className="size-4.5" />
+              </div>
+              <span className="min-w-0 text-body font-semibold text-ink leading-tight">{t('install')}</span>
+            </Link>
           )}
         </div>
 

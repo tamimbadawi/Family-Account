@@ -79,5 +79,6 @@
   },
   "supportTooMany": "You sent a lot of messages today. Try again tomorrow.",
   "currencies": "Currencies",
-  "signingOut": "Signing out…"
+  "signingOut": "Signing out…",
+  "install": "Install app"
 }

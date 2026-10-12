@@ -155,8 +155,9 @@ function ReportsContent() {
                   </div>
                 )}
 
-                {/* Category Donut */}
-                <Card className="rounded-card bg-surface p-1.5 shadow-card gap-0">
+                {/* Category Donut; left out on short screens (Safari before the app is installed),
+                    so the savings goals below always fit on this first page */}
+                <Card className="rounded-card bg-surface p-1.5 shadow-card gap-0 [@media(max-height:739px)]:hidden">
                   <CategoryDonut
                     data={donutData}
                     total={donutTotal || summary?.expense || 0}
@@ -171,8 +172,8 @@ function ReportsContent() {
                   onDataLoaded={handleCategoryDataLoaded}
                 />
 
-                {/* Savings goals, when the screen is tall enough; always on page 2 */}
-                <SavingsGoalsRow className="[@media(max-height:739px)]:hidden" />
+                {/* Savings goals, right under the categories; on very small screens (iPhone SE in Safari) on page 2 */}
+                <SavingsGoalsRow className="[@media(max-height:599px)]:hidden" />
               </div>
             ) : (
               /* PAGE 2: 6-Month Trends and Wallet Balances */
@@ -193,7 +194,7 @@ function ReportsContent() {
 
                 <WalletBalancesCard />
 
-                <SavingsGoalsRow className="[@media(min-height:740px)]:hidden" />
+                <SavingsGoalsRow className="[@media(min-height:600px)]:hidden" />
               </div>
             )}
           </div>
