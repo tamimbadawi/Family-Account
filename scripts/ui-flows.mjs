@@ -715,6 +715,9 @@ const FLOWS = {
     await sleep(350);
     await sheet.getByRole('button', { name: 'Supermarket', exact: true }).click();
     await sleep(350);
+    // Several can be chosen, so the list stays open until Done
+    await sheet.getByRole('button', { name: 'Done', exact: true }).click();
+    await sleep(350);
     const show = sheet.getByRole('button', { name: /^Show \d+ entr/ });
     await assertUsable(page, show, 'Show N entries button');
     const expected = Number((await show.innerText()).match(/\d+/)[0]);

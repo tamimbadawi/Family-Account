@@ -76,13 +76,13 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-6 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-2.5 select-none">
+    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-6 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-2.5 [@media(max-height:700px)]:space-y-1.5 [@media(max-height:700px)]:pb-2 select-none">
       {/* Primary Inset Group */}
       <div className="bg-surface rounded-card border border-line/40 shadow-card divide-y divide-line/30">
         {/* Categories */}
         <Link
           href="/settings/categories"
-          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
         >
           <div className="flex items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent/12 text-accent">
@@ -98,7 +98,7 @@ export default function SettingsPage() {
         {/* Wallets */}
         <Link
           href="/settings/wallets"
-          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
         >
           <div className="flex items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-income-soft text-income">
@@ -114,7 +114,7 @@ export default function SettingsPage() {
         {/* Budgets */}
         <Link
           href="/settings/budgets"
-          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
         >
           <div className="flex items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-member-2-soft text-member-2">
@@ -130,7 +130,7 @@ export default function SettingsPage() {
         {/* Recently Deleted */}
         <Link
           href="/settings/deleted"
-          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
         >
           <div className="flex items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-expense-soft text-expense">
@@ -152,7 +152,7 @@ export default function SettingsPage() {
           tabIndex={0}
           onClick={handleLanguageToggle}
           onKeyDown={(e) => e.key === 'Enter' && handleLanguageToggle()}
-          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
+          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
         >
           <div className="flex items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-warning/12 text-warning">
@@ -178,7 +178,7 @@ export default function SettingsPage() {
           tabIndex={0}
           onClick={handleDownloadCsv}
           onKeyDown={(e) => e.key === 'Enter' && handleDownloadCsv()}
-          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
+          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
         >
           <div className="flex items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-member-3-soft text-member-3">
@@ -204,7 +204,7 @@ export default function SettingsPage() {
         <button
           type="button"
           onClick={() => setIsSupportOpen(true)}
-          className="w-full flex min-h-[48px] items-center justify-between px-3.5 py-2.5 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
+          className="w-full flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
         >
           <div className="flex items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
@@ -216,11 +216,11 @@ export default function SettingsPage() {
         </button>
       </div>
 
-      {/* Family Section */}
-      <div className="bg-surface rounded-card border border-line/40 shadow-card">
+      {/* Family and account group */}
+      <div className="bg-surface rounded-card border border-line/40 shadow-card divide-y divide-line/30">
         <Link
           href="/settings/family"
-          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
         >
           <div className="flex items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-member-1-soft text-member-1">
@@ -237,14 +237,12 @@ export default function SettingsPage() {
           </div>
           <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
         </Link>
-      </div>
 
-      {/* Change password (only with real sign-in) */}
-      {isAuthConfigured() && (
-        <div className="bg-surface rounded-card border border-line/40 shadow-card">
+        {/* Change password (only with real sign-in) */}
+        {isAuthConfigured() && (
           <Link
             href="/choose-password"
-            className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+            className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
           >
             <div className="flex items-center gap-3">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
@@ -254,15 +252,15 @@ export default function SettingsPage() {
             </div>
             <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
           </Link>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Sign out section */}
       <div className="bg-surface rounded-card border border-line/40 shadow-card">
         <button
           type="button"
           onClick={handleSignOut}
-          className="w-full flex min-h-[48px] items-center justify-between px-3.5 py-2.5 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
+          className="w-full flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
         >
           <div className="flex items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-expense-soft text-expense">
