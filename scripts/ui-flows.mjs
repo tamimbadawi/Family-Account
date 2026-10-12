@@ -1046,7 +1046,8 @@ const FLOWS = {
     // 4. Fill in target amount
     const amountInput = page.getByPlaceholder('50,000').first();
     await assertUsable(page, amountInput, 'Target amount input');
-    await amountInput.fill('30000');
+    // Typed the way the hint shows it, with a comma
+    await amountInput.fill('30,000');
 
     // 5. Submit form
     const saveGoalBtn = page.getByRole('button', { name: ar ? 'إضافة هدف' : 'Add goal' }).first();
@@ -1061,6 +1062,23 @@ const FLOWS = {
     // 7. Verify progress bar is visible
     const progress = page.locator('[role="progressbar"]').first();
     await assertUsable(page, progress, 'Goal progress bar');
+
+    // 7b. Add money to the goal: choose the wallet it comes from, key in 500, save
+    const addMoneyBtn = page.getByRole('button', { name: ar ? 'إضافة مبلغ' : 'Add money' }).first();
+    await assertUsable(page, addMoneyBtn, 'Add money button');
+    await addMoneyBtn.click();
+    await sleep(600);
+    const fundSheet = page.getByRole('dialog');
+    const fromWallet = fundSheet.locator('button[aria-pressed]').first();
+    await assertUsable(page, fromWallet, 'wallet to take the money from');
+    await fromWallet.click();
+    for (const key of ['5', '0', '0']) await fundSheet.getByRole('button', { name: key, exact: true }).click();
+    const addToGoalBtn = fundSheet.getByRole('button', { name: ar ? 'إضافة للهدف' : 'Add to goal' });
+    await assertUsable(page, addToGoalBtn, 'Add to goal button');
+    await addToGoalBtn.click();
+    await sleep(1500);
+    const savedLine = page.getByText(/500/).first();
+    await assertUsable(page, savedLine, 'saved amount on the goal card after adding money');
 
     // 8. Stop the goal
     const stopBtn = page.getByRole('button', { name: ar ? /إيقاف/ : /Stop/ }).first();
@@ -1084,8 +1102,15 @@ const FLOWS = {
     await secondSelect.evaluate((el) => el.scrollIntoView({ block: 'center' }));
     await assertUsable(page, secondSelect, 'Second currency select');
 
-    // 3. Select USD
-    await secondSelect.selectOption('USD');
+    // 3. Open the picker, search for USD and choose it
+    await secondSelect.click();
+    await sleep(600);
+    const picker = page.getByRole('dialog');
+    await picker.getByRole('textbox').fill('USD');
+    await sleep(300);
+    const usd = picker.getByRole('button', { name: /USD/ }).first();
+    await assertUsable(page, usd, 'USD in the currency picker');
+    await usd.click();
     await sleep(600);
 
     // 4. Save button appears

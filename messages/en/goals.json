@@ -20,5 +20,12 @@
   "stop": "Stop",
   "stopped": "Goal stopped",
   "restored": "Goal restored",
-  "back": "Back"
+  "back": "Back",
+  "addMoneyTo": "Add to {name}",
+  "fromWallet": "Take the money from",
+  "addToGoal": "Add to goal",
+  "chooseFromFirst": "Choose where the money comes from",
+  "moneyAdded": "Added to {name}",
+  "noOtherWallet": "Money for a goal is moved from one of your wallets, like cash or a bank account. Add a wallet first.",
+  "addWalletFirst": "Add a wallet"
 }

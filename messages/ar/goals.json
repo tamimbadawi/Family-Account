@@ -20,5 +20,12 @@
   "stop": "إيقاف",
   "stopped": "تم إيقاف الهدف",
   "restored": "تمت استعادة الهدف",
-  "back": "رجوع"
+  "back": "رجوع",
+  "addMoneyTo": "إضافة إلى {name}",
+  "fromWallet": "خُد الفلوس من",
+  "addToGoal": "إضافة للهدف",
+  "chooseFromFirst": "اختار الفلوس هتيجي منين",
+  "moneyAdded": "اتضافت إلى {name}",
+  "noOtherWallet": "فلوس الهدف بتتنقل من محفظة عندك، زي الكاش أو حساب البنك. ضيف محفظة الأول.",
+  "addWalletFirst": "إضافة محفظة"
 }
