@@ -172,8 +172,8 @@ function ReportsContent() {
                   onDataLoaded={handleCategoryDataLoaded}
                 />
 
-                {/* Savings goals, right under the categories; on very small screens (iPhone SE in Safari) on page 2 */}
-                <SavingsGoalsRow className="[@media(max-height:599px)]:hidden" />
+                {/* Savings goals, right under the categories: always on this first page */}
+                <SavingsGoalsRow />
               </div>
             ) : (
               /* PAGE 2: 6-Month Trends and Wallet Balances */
@@ -193,8 +193,6 @@ function ReportsContent() {
                 />
 
                 <WalletBalancesCard />
-
-                <SavingsGoalsRow className="[@media(min-height:600px)]:hidden" />
               </div>
             )}
           </div>
