@@ -13,12 +13,14 @@ import type {
   Item,
   Subcategory,
 } from '@/lib/data/types';
-import { useRepository, useWallets } from '@/lib/data/provider';
+import { useRepository, useSavingsGoals, useWallets } from '@/lib/data/provider';
+import { Link } from '@/i18n/navigation';
 import { useSaveError } from '@/components/ui/use-save-error';
 import { validateEntry } from '@/lib/validation/entry';
 import { generalItemFor } from '@/lib/data/general-item';
 import { previewValue } from '@/lib/format/expression';
-import { money } from '@/lib/format';
+import { goalCheer } from '@/lib/goals/progress';
+import { money, pickName } from '@/lib/format';
 import { budgetPercent, messageVariant } from '@/lib/reports/budgets';
 import { budgetWarningsForEntry } from '@/components/budgets/budget-warning';
 
@@ -31,10 +33,11 @@ import {
 import { Button } from '@/components/ui/button';
 
 import { TypeToggle } from './TypeToggle';
+import type { SheetType } from './TypeToggle';
 import { AmountDisplay } from './AmountDisplay';
 import { AmountPad } from './AmountPad';
 import { CategoryRow } from './CategoryRow';
-import { DateChip, NoteChip, WalletSelect } from './DetailsRow';
+import { DateChip, GoalSelect, NoteChip, WalletSelect } from './DetailsRow';
 import { ReceiptPhoto } from './ReceiptPhoto';
 import { useEntrySheet } from './EntrySheetContext';
 import { MONTHLY, RecurrencePicker } from './RecurrencePicker';
@@ -52,20 +55,23 @@ interface EntrySheetFormProps {
   editingEntry: EnrichedEntry | null;
   initialType?: EntryType;
   initialRecurring?: boolean;
+  initialGoalId?: string | null;
   onClose: () => void;
 }
 
-function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, onClose }: EntrySheetFormProps) {
+function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, initialGoalId, onClose }: EntrySheetFormProps) {
   const t = useTranslations('entry');
   const tCommon = useTranslations('common');
   const tBudgets = useTranslations('budgets');
+  const tGoals = useTranslations('goals');
   const locale = useLocale();
   const repo = useRepository();
   const saveError = useSaveError();
   const wallets = useWallets();
+  const goals = useSavingsGoals(false);
 
   // Initial values
-  const defaultType = editingEntry ? editingEntry.type : (initialType ?? 'expense');
+  const defaultType = editingEntry ? editingEntry.type : initialGoalId ? 'transfer' : (initialType ?? 'expense');
   const defaultAmount = editingEntry ? String(editingEntry.amount) : '';
   const defaultWalletId = editingEntry
     ? editingEntry.accountId
@@ -98,6 +104,36 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, onC
   const [selectedWalletId, setSelectedWalletId] = React.useState<string | null>(defaultWalletId);
   const [selectedToWalletId, setSelectedToWalletId] = React.useState<string | null>(defaultToWalletId);
   const selectedWallet = wallets?.find((w) => w.id === selectedWalletId);
+
+  // "Goal": a move from a wallet into a savings goal's wallet. Saved as a normal transfer, so the books balance.
+  const [isGoal, setIsGoal] = React.useState(Boolean(initialGoalId));
+  const [goalId, setGoalId] = React.useState<string | null>(initialGoalId ?? null);
+  const selectedGoal = isGoal ? (goals?.find((g) => g.id === goalId) ?? goals?.[0]) : undefined;
+  // The money cannot come from the goal's own wallet
+  const fromWalletId =
+    isGoal && selectedGoal && selectedWalletId === selectedGoal.walletId
+      ? (wallets?.find((w) => w.id !== selectedGoal.walletId)?.id ?? null)
+      : selectedWalletId;
+  const toWalletId = isGoal ? (selectedGoal?.walletId ?? null) : selectedToWalletId;
+  // Moving money out of a goal's wallet gets a kind note (never a blocking question)
+  const drainedGoal =
+    !isGoal && type === 'transfer' ? goals?.find((g) => g.walletId === selectedWalletId) : undefined;
+  // Money going into a goal's wallet (from "Goal" or a plain move) earns a kind word once saved
+  const filledGoal = type === 'transfer' && !drainedGoal ? goals?.find((g) => g.walletId === toWalletId) : undefined;
+  const goalName = (g: { nameAr: string | null; nameEn: string | null }) =>
+    pickName({ name_ar: g.nameAr, name_en: g.nameEn }, locale);
+  const savedMessage = () => {
+    if (filledGoal) {
+      const cheer = goalCheer(filledGoal.currentAmount, numericAmount, filledGoal.targetAmount);
+      return tGoals(cheer.key, {
+        name: goalName(filledGoal),
+        percent: cheer.percent,
+        amount: money(numericAmount, locale, { currency: selectedWallet?.currency }),
+      });
+    }
+    if (drainedGoal) return tGoals('nudge', { name: goalName(drainedGoal) });
+    return t('saved') + ' ✓';
+  };
 
   // Move: picking the wallet that is already on the other side swaps the two
   const pickFromWallet = (id: string) => {
@@ -159,7 +195,9 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, onC
   const [recurrence, setRecurrence] = React.useState<RecurrenceConfig | null>(initialRecurring ? MONTHLY : null);
 
   // When type changes, clear incompatible item (expense <-> income or transfer)
-  const handleTypeChange = (newType: EntryType) => {
+  const handleTypeChange = (next: SheetType) => {
+    const newType: EntryType = next === 'goal' ? 'transfer' : next;
+    setIsGoal(next === 'goal');
     if (newType !== type) {
       setType(newType);
       setSelectedItem(null);
@@ -188,7 +226,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, onC
   );
   const hasItem = Boolean(selectedItem) || Boolean(path.category);
   const hasWallets = isTransfer
-    ? Boolean(selectedWalletId && selectedToWalletId && selectedWalletId !== selectedToWalletId)
+    ? Boolean(fromWalletId && toWalletId && fromWalletId !== toWalletId)
     : Boolean(selectedWalletId);
 
   const canSave = numericAmount > 0 && hasWallets && (isTransfer || hasItem) && !isSubmitting;
@@ -228,8 +266,8 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, onC
       type,
       amount: numericAmount,
       occurredOn,
-      accountId: selectedWalletId!,
-      toAccountId: isTransfer ? selectedToWalletId : null,
+      accountId: (isTransfer ? fromWalletId : selectedWalletId)!,
+      toAccountId: isTransfer ? toWalletId : null,
       itemId,
       note: note.trim() || null,
     };
@@ -257,8 +295,8 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, onC
             interval: recurrence.interval,
             daysOfWeek: recurrence.daysOfWeek.length > 0 ? recurrence.daysOfWeek : null,
             endDate: recurrence.endDate,
-            accountId: selectedWalletId!,
-            toAccountId: isTransfer ? selectedToWalletId : null,
+            accountId: (isTransfer ? fromWalletId : selectedWalletId)!,
+            toAccountId: isTransfer ? toWalletId : null,
             itemId,
             note: note.trim() || null,
           });
@@ -277,7 +315,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, onC
         setIsSuccess(true);
         setTimeout(() => {
           onClose();
-          toast(t('saved') + ' ✓', {
+          toast(savedMessage(), {
             action: {
               label: tCommon('undo'),
               onClick: async () => {
@@ -360,7 +398,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, onC
   return (
     <div className="flex flex-col gap-2 [@media(min-height:740px)]:gap-3 px-5 pb-2 [@media(min-height:740px)]:pb-[max(1rem,env(safe-area-inset-bottom))] select-none">
       {/* One sheet that fits an iPhone screen: type, amount, category, pad, details, save */}
-      <TypeToggle value={type} onChange={handleTypeChange} />
+      <TypeToggle value={isGoal ? 'goal' : type} onChange={handleTypeChange} showGoal={mode === 'add'} />
 
       {/* Amount, with the chosen main category (and group) beside it */}
       <div className="flex items-center gap-2">
@@ -368,7 +406,31 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, onC
         <div ref={setBreadcrumbSlot} className="flex max-w-[56%] shrink-0 empty:hidden" />
       </div>
 
-      {isTransfer ? (
+      {isGoal ? (
+        goals && goals.length === 0 ? (
+          <Link
+            href="/settings/goals"
+            onClick={onClose}
+            className="flex min-h-12 items-center justify-center rounded-2xl bg-accent-soft px-4 text-center text-body font-semibold text-accent"
+          >
+            {t('createGoalFirst')}
+          </Link>
+        ) : (
+          <div className="flex items-center gap-2">
+            {/* From a wallet (cash or a bank) into the chosen goal */}
+            <WalletSelect
+              label={t('from')}
+              value={fromWalletId}
+              onChange={setSelectedWalletId}
+              exclude={selectedGoal?.walletId}
+            />
+            <div className="flex size-12 shrink-0 items-center justify-center text-ink-muted">
+              <ArrowRight className="size-5 rtl:rotate-180" />
+            </div>
+            <GoalSelect goals={goals ?? []} value={selectedGoal?.id ?? null} onChange={setGoalId} />
+          </div>
+        )
+      ) : isTransfer ? (
         <div className="flex items-center gap-2">
           {/* Both pickers list every wallet: choosing the one already on the other side swaps them,
               so money can move bank → cash as easily as cash → bank */}
@@ -411,8 +473,13 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, onC
         )}
       </div>
 
-      {mode === 'add' && !isNoteOpen && (
-        <RecurrencePicker value={recurrence} onChange={setRecurrence} startDate={occurredOn} />
+      {drainedGoal && !isNoteOpen ? (
+        <p role="note" className="rounded-2xl bg-accent-soft px-3 py-2 text-caption text-ink leading-snug">
+          {tGoals('takeNote', { name: goalName(drainedGoal) })}
+        </p>
+      ) : (
+        mode === 'add' &&
+        !isNoteOpen && <RecurrencePicker value={recurrence} onChange={setRecurrence} startDate={occurredOn} />
       )}
 
       <div className="flex gap-2">
@@ -513,7 +580,7 @@ function keepOpenForToasts(e: { target: EventTarget | null; preventDefault: () =
 
 export function EntrySheet() {
   const t = useTranslations('entry');
-  const { isOpen, mode, editingEntry, initialType, initialRecurring, close } = useEntrySheet();
+  const { isOpen, mode, editingEntry, initialType, initialRecurring, initialGoalId, close } = useEntrySheet();
   const sheetRef = React.useRef<HTMLDivElement>(null);
   useRestoreSheetAfterKeyboard(sheetRef, isOpen);
 
@@ -537,11 +604,12 @@ export function EntrySheet() {
 
           {isOpen && (
             <EntrySheetForm
-              key={editingEntry?.id ?? (initialType ?? 'new')}
+              key={editingEntry?.id ?? `${initialType ?? 'new'}:${initialGoalId ?? ''}`}
               mode={mode}
               editingEntry={editingEntry}
               initialType={initialType}
               initialRecurring={initialRecurring}
+              initialGoalId={initialGoalId}
               onClose={close}
             />
           )}

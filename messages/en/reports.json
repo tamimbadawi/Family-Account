@@ -162,6 +162,12 @@
     "seeAllWallets": "See all wallets",
     "noTransfers": "No transfers recorded",
     "noTransfersDesc": "Transfers between your wallets will appear here.",
-    "walletHistory": "View history"
+    "walletHistory": "View history",
+    "savingsGoals": "Savings goals",
+    "savingsGoalsDesc": "How close you are to each goal",
+    "savedInGoals": "Saved in goals",
+    "manageGoals": "Open savings goals",
+    "savedInGoalsLine": "{amount} saved · {count, plural, one {# goal} other {# goals}}",
+    "noGoalsYet": "Start saving for something"
   }
 }

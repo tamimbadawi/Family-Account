@@ -59,5 +59,8 @@
   "chooseCategoryFirst": "اختار الفئة",
   "chooseSubOrSave": "اختار الفرع / حفظ",
   "backTo": "رجوع لـ {name}",
-  "savingsGoal": "هدف ادخار"
+  "savingsGoal": "هدف ادخار",
+  "goal": "هدف",
+  "toGoal": "إلى الهدف",
+  "createGoalFirst": "اعمل هدف ادخار الأول"
 }

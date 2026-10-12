@@ -34,6 +34,17 @@
   "takeNote": "You set this money aside for {name}. It is fine to use it if you need it. Your goal will just take a little longer.",
   "takeFromGoal": "Take from goal",
   "chooseToFirst": "Choose where the money goes",
-  "moneyTaken": "Taken from {name}",
-  "notEnoughInGoal": "This goal only has {amount}"
+  "notEnoughInGoal": "This goal only has {amount}",
+  "noDate": "No date",
+  "cheer1": "Well done! {name} is now {percent}% of the way.",
+  "cheer2": "Every bit counts. {name} is at {percent}%.",
+  "cheer3": "Nice work! {amount} closer to {name}.",
+  "cheerHalf": "More than halfway to {name}. Keep going!",
+  "cheerReached": "You did it! {name} is fully saved.",
+  "nudge": "Taken from {name}. That is okay. Top it up again when you can, you are still on your way.",
+  "target": "Goal: {amount}",
+  "seeEntriesOf": "See what went into {name}",
+  "noEntriesYet": "Nothing added yet. Tap Add money to start.",
+  "addedFrom": "Added from {wallet}",
+  "takenTo": "Taken out to {wallet}"
 }

@@ -17,40 +17,12 @@ const reply = (status: number, body: unknown) =>
 
 const secretKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-async function signHouseholdId(hid: string): Promise<string> {
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw',
-    enc.encode(secretKey),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-  const sigBuf = await crypto.subtle.sign('HMAC', key, enc.encode(`family_invite:${hid}`));
-  const hex = Array.from(new Uint8Array(sigBuf)).map((b) => b.toString(16).padStart(2, '0')).join('');
-  return `${hid}.${hex.slice(0, 32)}`;
-}
+// 24-hour invite codes. 'new_family' lets someone start their own family; 'member' lets someone join this one.
+type InviteKind = 'new_family' | 'member';
+const INVITE_HOURS = 24;
 
-async function verifyHouseholdCode(code: string): Promise<string | null> {
-  const [hid, sig] = (code ?? '').split('.');
-  if (!hid || !sig || !/^[0-9a-f-]{36}$/i.test(hid)) return null;
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw',
-    enc.encode(secretKey),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-  const sigBuf = await crypto.subtle.sign('HMAC', key, enc.encode(`family_invite:${hid}`));
-  const hex = Array.from(new Uint8Array(sigBuf)).map((b) => b.toString(16).padStart(2, '0')).join('');
-  if (hex.slice(0, 32) !== sig) return null;
-  return hid;
-}
-
-// 24-hour New Family Invite Token
-async function signNewFamilyInvite(hid: string, exp: number): Promise<string> {
-  const payload = `new_family:${hid}:${exp}`;
+async function signInvite(kind: InviteKind, hid: string, exp: number): Promise<string> {
+  const payload = `${kind}:${hid}:${exp}`;
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
     'raw',
@@ -64,14 +36,14 @@ async function signNewFamilyInvite(hid: string, exp: number): Promise<string> {
   return `${payload}.${hex.slice(0, 32)}`;
 }
 
-async function verifyNewFamilyInvite(code: string): Promise<{ valid: boolean; expired?: boolean; hid?: string }> {
+async function verifyInvite(kind: InviteKind, code: string): Promise<{ valid: boolean; expired?: boolean; hid?: string }> {
   const [payload, sig] = (code ?? '').split('.');
   if (!payload || !sig) return { valid: false };
   const parts = payload.split(':');
-  if (parts.length !== 3 || parts[0] !== 'new_family') return { valid: false };
+  if (parts.length !== 3 || parts[0] !== kind) return { valid: false };
   const [, hid, expStr] = parts;
   const exp = Number(expStr);
-  if (!exp || isNaN(exp)) return { valid: false };
+  if (!exp || isNaN(exp) || !/^[0-9a-f-]{36}$/i.test(hid)) return { valid: false };
 
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
@@ -113,14 +85,16 @@ Deno.serve(async (req) => {
   if (body.action === 'get_invite_info') {
     const code = String(body.code ?? '');
     if (code.startsWith('new_family:')) {
-      const result = await verifyNewFamilyInvite(code);
+      const result = await verifyInvite('new_family', code);
       if (result.expired) return reply(400, { error: 'invite_expired' });
       if (!result.valid) return reply(400, { error: 'invalid_code' });
       return reply(200, { valid: true, type: 'new_family' });
     }
 
-    const hid = await verifyHouseholdCode(code);
-    if (!hid) return reply(400, { error: 'invalid_code' });
+    const member = await verifyInvite('member', code);
+    if (member.expired) return reply(400, { error: 'invite_expired' });
+    if (!member.valid || !member.hid) return reply(400, { error: 'invalid_code' });
+    const hid = member.hid;
     const { data: family } = await admin.from('households').select('name, status').eq('id', hid).maybeSingle();
     if (!family || family.status !== 'active') return reply(403, { error: 'suspended' });
     return reply(200, { valid: true, type: 'join_member', familyName: family.name });
@@ -129,7 +103,7 @@ Deno.serve(async (req) => {
   // Recipient creates an account to start their own family (via 24h invite link)
   if (body.action === 'start_family_by_invite') {
     const code = String(body.code ?? '');
-    const result = await verifyNewFamilyInvite(code);
+    const result = await verifyInvite('new_family', code);
     if (result.expired) return reply(400, { error: 'invite_expired' });
     if (!result.valid) return reply(400, { error: 'invalid_code' });
 
@@ -159,8 +133,10 @@ Deno.serve(async (req) => {
 
   // Recipient joins existing household as a member
   if (body.action === 'join_by_link') {
-    const hid = await verifyHouseholdCode(body.code ?? '');
-    if (!hid) return reply(400, { error: 'invalid_code' });
+    const member = await verifyInvite('member', String(body.code ?? ''));
+    if (member.expired) return reply(400, { error: 'invite_expired' });
+    if (!member.valid || !member.hid) return reply(400, { error: 'invalid_code' });
+    const hid = member.hid;
     const { data: family } = await admin.from('households').select('status').eq('id', hid).maybeSingle();
     if (!family || family.status !== 'active') return reply(403, { error: 'suspended' });
 
@@ -215,15 +191,17 @@ Deno.serve(async (req) => {
 
   // Generate 24-hour invite link for a brand new family
   if (body.action === 'create_family_invite_link') {
-    const exp = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
-    const code = await signNewFamilyInvite(hid, exp);
+    const exp = Date.now() + INVITE_HOURS * 60 * 60 * 1000;
+    const code = await signInvite('new_family', hid, exp);
     return reply(200, { ok: true, code, expiresAt: new Date(exp).toISOString() });
   }
 
-  // Get the invite link code for existing family member
+  // The family admin makes a 24-hour link that lets someone join this family
   if (body.action === 'get_invite_link') {
-    const code = await signHouseholdId(hid);
-    return reply(200, { ok: true, code, familyName: family.name });
+    if (!isOwner) return reply(403, { error: 'owner_only' });
+    const exp = Date.now() + INVITE_HOURS * 60 * 60 * 1000;
+    const code = await signInvite('member', hid, exp);
+    return reply(200, { ok: true, code, familyName: family.name, expiresAt: new Date(exp).toISOString() });
   }
 
   // Everyone in the household may see the member list

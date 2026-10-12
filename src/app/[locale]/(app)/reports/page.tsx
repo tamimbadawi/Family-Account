@@ -8,6 +8,7 @@ import { CategoryDonut } from '@/components/reports/CategoryDonut';
 import { RankedCategories } from '@/components/reports/RankedCategories';
 import { SixMonthTrends } from '@/components/reports/SixMonthTrends';
 import { WalletBalancesCard } from '@/components/reports/WalletBalancesCard';
+import { SavingsGoalsRow } from '@/components/reports/SavingsGoalsRow';
 import { BreakdownTab } from '@/components/reports/BreakdownTab';
 import { AllReportsTab } from '@/components/reports/AllReportsTab';
 import { useMonthSummary } from '@/lib/data/provider';
@@ -169,6 +170,9 @@ function ReportsContent() {
                   kind="expense"
                   onDataLoaded={handleCategoryDataLoaded}
                 />
+
+                {/* Savings goals, when the screen is tall enough; always on page 2 */}
+                <SavingsGoalsRow className="[@media(max-height:739px)]:hidden" />
               </div>
             ) : (
               /* PAGE 2: 6-Month Trends and Wallet Balances */
@@ -188,6 +192,8 @@ function ReportsContent() {
                 />
 
                 <WalletBalancesCard />
+
+                <SavingsGoalsRow className="[@media(min-height:740px)]:hidden" />
               </div>
             )}
           </div>

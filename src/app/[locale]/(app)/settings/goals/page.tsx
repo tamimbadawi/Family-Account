@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
 import { useHousehold, useRepository, useSavingsGoals, useWalletBalances } from '@/lib/data/provider';
 import { useSaveError } from '@/components/ui/use-save-error';
+import { useEntrySheet } from '@/components/entry/EntrySheetContext';
 import type { EnrichedSavingsGoal } from '@/lib/data/types';
 import { currencySymbol, localISODate, money, normalizeDigits, pickName } from '@/lib/format';
 import { previewValue } from '@/lib/format/expression';
@@ -29,6 +30,8 @@ import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { AmountDisplay } from '@/components/entry/AmountDisplay';
 import { AmountPad } from '@/components/entry/AmountPad';
+import { FutureDateField } from '@/components/entry/DetailsRow';
+import { GoalEntries } from '@/components/goals/GoalEntries';
 import { Input } from '@/components/ui/input';
 
 const GOAL_ICONS = [
@@ -49,6 +52,10 @@ export default function SavingsGoalsPage() {
   const repo = useRepository();
   const saveError = useSaveError();
   const shouldReduceMotion = useReducedMotion();
+  // Adding money to a goal happens in the main + sheet, opened on "Goal" with this goal chosen
+  const { openAdd, openEdit } = useEntrySheet();
+  // The goal whose entries are being looked at (tap a goal card)
+  const [historyGoal, setHistoryGoal] = React.useState<EnrichedSavingsGoal | null>(null);
 
   const goals = useSavingsGoals(false);
   const household = useHousehold();
@@ -97,7 +104,7 @@ export default function SavingsGoalsPage() {
         toAccountId: isTake ? fromWalletId : fundingGoal.walletId,
       });
       setFundingGoal(null);
-      toast.success(t(isTake ? 'moneyTaken' : 'moneyAdded', { name: goalName }) + ' ✓', {
+      toast.success(isTake ? t('nudge', { name: goalName }) : t('moneyAdded', { name: goalName }) + ' ✓', {
         action: {
           label: tCommon('undo'),
           onClick: async () => {
@@ -277,82 +284,88 @@ export default function SavingsGoalsPage() {
               );
               const isStopping = stoppingId === goal.id;
               const formattedDate = formatGoalTargetDate(goal.targetDate, locale);
+              const goalCurrency = wallets.find((w) => w.id === goal.walletId)?.currency;
 
               return (
                 <div
                   key={goal.id}
                   className="p-4 bg-surface rounded-card border border-line/40 shadow-card space-y-3 select-none"
                 >
-                  {/* Top: Icon + Name + Target Date / Completed Badge */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-income-soft text-income">
-                        <CategoryIcon name={goal.icon ?? 'sparkles'} className="size-5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h2 className="text-body font-bold text-ink truncate leading-tight">
-                          {name}
-                        </h2>
-                        <div className="text-caption text-ink-muted leading-tight mt-0.5 truncate">
-                          {formattedDate ? `${formattedDate} · ` : ''}
-                          {goal.walletNameEn ? (
-                            <span className="truncate">
-                              {pickName({ name_ar: goal.walletNameAr, name_en: goal.walletNameEn }, locale)}
-                            </span>
-                          ) : null}
+                  {/* The whole top of the card opens everything that went into or out of this goal */}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-label={t('seeEntriesOf', { name })}
+                    onClick={() => setHistoryGoal(goal)}
+                    onKeyDown={(e) => e.key === 'Enter' && setHistoryGoal(goal)}
+                    className="space-y-3 cursor-pointer rounded-xl transition-opacity active:opacity-70"
+                  >
+                    {/* Icon + name + total and date, with how far along on the other side */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-income-soft text-income">
+                          <CategoryIcon name={goal.icon ?? 'sparkles'} className="size-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h2 className="text-body font-bold text-ink leading-tight break-words">{name}</h2>
+                          <div className="text-caption text-ink-muted tabular-nums leading-tight mt-0.5">
+                            {t('target', { amount: money(goal.targetAmount, locale, { currency: goalCurrency }) })}
+                            {formattedDate ? ` · ${formattedDate}` : ''}
+                          </div>
                         </div>
                       </div>
+
+                      {goal.isReached ? (
+                        <motion.div
+                          initial={shouldReduceMotion ? { opacity: 0 } : { scale: 0.85, opacity: 0 }}
+                          animate={shouldReduceMotion ? { opacity: 1 } : { scale: 1, opacity: 1 }}
+                          transition={{ duration: 0.25 }}
+                          className="flex shrink-0 items-center gap-1 rounded-full bg-income-soft px-2.5 py-1 text-caption font-bold text-income select-none"
+                        >
+                          <Trophy className="size-3.5" />
+                          <span>{t('reached')}</span>
+                        </motion.div>
+                      ) : (
+                        <span className="shrink-0 text-heading font-bold tabular-nums text-accent leading-tight">
+                          {goal.percent}%
+                        </span>
+                      )}
                     </div>
 
-                    {/* Reached celebration badge */}
-                    {goal.isReached && (
-                      <motion.div
-                        initial={shouldReduceMotion ? { opacity: 0 } : { scale: 0.85, opacity: 0 }}
-                        animate={shouldReduceMotion ? { opacity: 1 } : { scale: 1, opacity: 1 }}
-                        transition={{ duration: 0.25 }}
-                        className="flex shrink-0 items-center gap-1 rounded-full bg-income-soft px-2.5 py-1 text-caption font-bold text-income select-none"
+                    {/* Progress bar, then saved on one side and what is left (in red) on the other */}
+                    <div className="space-y-1.5">
+                      <div
+                        role="progressbar"
+                        aria-valuenow={goal.percent}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        className="h-2.5 w-full bg-surface-2 rounded-full overflow-hidden"
                       >
-                        <Trophy className="size-3.5" />
-                        <span>{t('reached')}</span>
-                      </motion.div>
-                    )}
-                  </div>
+                        <motion.div
+                          initial={shouldReduceMotion ? false : { width: 0 }}
+                          animate={{ width: `${goal.barPercent}%` }}
+                          transition={{ duration: 0.45, ease: 'easeOut' }}
+                          className={`h-full rounded-full ${goal.isReached ? 'bg-income' : 'bg-accent'}`}
+                        />
+                      </div>
 
-                  {/* Progress Bar */}
-                  <div className="space-y-1.5">
-                    <div
-                      role="progressbar"
-                      aria-valuenow={goal.percent}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      className="h-2.5 w-full bg-surface-2 rounded-full overflow-hidden"
-                    >
-                      <motion.div
-                        initial={shouldReduceMotion ? false : { width: 0 }}
-                        animate={{ width: `${goal.barPercent}%` }}
-                        transition={{ duration: 0.45, ease: 'easeOut' }}
-                        className={`h-full rounded-full ${goal.isReached ? 'bg-income' : 'bg-accent'}`}
-                      />
-                    </div>
-
-                    {/* Stats Row */}
-                    <div className="flex items-center justify-between text-caption font-semibold tabular-nums leading-tight">
-                      <span className="text-ink">
-                        {t('saved', { amount: money(goal.currentAmount, locale) })}
-                      </span>
-                      <span className="text-ink-muted">
-                        {goal.isReached
-                          ? `${money(goal.targetAmount, locale)} (100%)`
-                          : `${t('left', { amount: money(goal.remaining, locale) })} (${goal.percent}%)`}
-                      </span>
+                      <div className="flex flex-wrap items-center justify-between gap-x-3 text-caption font-semibold tabular-nums leading-tight">
+                        <span className="text-ink">
+                          {t('saved', { amount: money(goal.currentAmount, locale, { currency: goalCurrency }) })}
+                        </span>
+                        {!goal.isReached && (
+                          <span className="text-expense">
+                            {t('left', { amount: money(goal.remaining, locale, { currency: goalCurrency }) })}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-
                   {/* Action Buttons */}
                   <div className="flex flex-wrap items-center pt-1 gap-2 border-t border-line/20">
                     <button
                       type="button"
-                      onClick={() => openFund(goal)}
+                      onClick={() => openAdd('transfer', { goalId: goal.id })}
                       className="flex min-h-[48px] items-center gap-1.5 rounded-xl bg-surface-2 hover:bg-line/40 px-3.5 py-2 text-body font-semibold text-accent transition-transform active:scale-95 cursor-pointer"
                     >
                       <Plus className="size-4.5" />
@@ -436,11 +449,11 @@ export default function SavingsGoalsPage() {
               <label className="text-caption font-semibold text-ink-muted">
                 {t('targetDate')} ({t('optional')})
               </label>
-              <Input
-                type="date"
+              <FutureDateField
                 value={targetDate}
-                onChange={(e) => setTargetDate(e.target.value)}
-                className="h-12 rounded-2xl bg-surface-2 text-body"
+                onChange={setTargetDate}
+                label={t('targetDate')}
+                noneLabel={t('noDate')}
               />
             </div>
             </div>
@@ -501,6 +514,28 @@ export default function SavingsGoalsPage() {
               {t('addGoal')}
             </Button>
           </form>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Everything that went into or out of one goal */}
+      <Drawer open={historyGoal !== null} onOpenChange={(open) => !open && setHistoryGoal(null)}>
+        <DrawerContent className="max-h-[92dvh]">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[max(env(safe-area-inset-bottom,0px),1.5rem)]">
+            <DrawerHeader className="px-0 pt-4 pb-2">
+              <DrawerTitle className="text-title font-bold text-ink text-start">
+                {historyGoal && pickName({ name_ar: historyGoal.nameAr, name_en: historyGoal.nameEn }, locale)}
+              </DrawerTitle>
+            </DrawerHeader>
+            {historyGoal && (
+              <GoalEntries
+                goal={historyGoal}
+                onOpenEntry={(entry) => {
+                  setHistoryGoal(null);
+                  openEdit(entry);
+                }}
+              />
+            )}
           </div>
         </DrawerContent>
       </Drawer>

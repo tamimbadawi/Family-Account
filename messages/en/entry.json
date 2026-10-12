@@ -59,5 +59,8 @@
   "chooseCategoryFirst": "Choose a category",
   "chooseSubOrSave": "Choose Sub / Save",
   "backTo": "Back to {name}",
-  "savingsGoal": "Savings goal"
+  "savingsGoal": "Savings goal",
+  "goal": "Goal",
+  "toGoal": "To goal",
+  "createGoalFirst": "Create a savings goal first"
 }

@@ -64,7 +64,7 @@ function EntryPartsDemo() {
       {/* 1. Type Toggle */}
       <section className="mb-8 space-y-3">
         <h2 className="text-heading font-semibold text-ink">{t('typeToggleSection')}</h2>
-        <TypeToggle value={entryType} onChange={setEntryType} />
+        <TypeToggle value={entryType} onChange={(v) => v !== 'goal' && setEntryType(v)} />
       </section>
 
       {/* 2. Amount Display + AmountPad */}

@@ -45,25 +45,30 @@ export function calculateGoalProgress(targetAmount: number, currentAmount: numbe
 }
 
 /**
- * Formats a target date (YYYY-MM-DD) for display (e.g., "Dec 2026" or "ديسمبر 2026").
- * Always formats digits in Western / Latin system.
+ * Formats a target date (YYYY-MM-DD) for display as dd/mm/yyyy, the same in both languages
+ * (a date saved as YYYY-MM shows as mm/yyyy). Western digits always.
  */
 export function formatGoalTargetDate(dateStr: string | null | undefined, locale: string): string | null {
   if (!dateStr) return null;
   const match = dateStr.match(/^(\d{4})-(\d{2})(?:-(\d{2}))?$/);
   if (!match) return null;
 
-  const year = Number(match[1]);
-  const month = Number(match[2]) - 1;
-  const day = match[3] ? Number(match[3]) : 1;
+  void locale;
+  return match[3] ? `${match[3]}/${match[2]}/${match[1]}` : `${match[2]}/${match[1]}`;
+}
 
-  const d = new Date(Date.UTC(year, month, day));
-  const intlLocale = locale.startsWith('ar') ? 'ar-EG' : 'en-EG';
+export type GoalCheer = 'cheerReached' | 'cheerHalf' | 'cheer1' | 'cheer2' | 'cheer3';
 
-  return new Intl.DateTimeFormat(intlLocale, {
-    month: 'short',
-    year: 'numeric',
-    numberingSystem: 'latn',
-    timeZone: 'UTC',
-  }).format(d);
+/**
+ * Which kind word to show after money is added to a goal: reaching it, passing halfway,
+ * or one of three everyday ones (they take turns, so it does not read the same every time).
+ * `percent` is how far the goal is after the addition (never above 100).
+ */
+export function goalCheer(savedBefore: number, added: number, target: number): { key: GoalCheer; percent: number } {
+  const after = savedBefore + added;
+  const percent = target > 0 ? Math.min(100, Math.floor((after / target) * 100)) : 0;
+  if (target > 0 && after >= target) return { key: 'cheerReached', percent: 100 };
+  if (target > 0 && savedBefore < target / 2 && after >= target / 2) return { key: 'cheerHalf', percent };
+  const turn = Math.abs(Math.round(after)) % 3;
+  return { key: turn === 0 ? 'cheer1' : turn === 1 ? 'cheer2' : 'cheer3', percent };
 }

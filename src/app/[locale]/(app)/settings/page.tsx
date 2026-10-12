@@ -16,6 +16,7 @@ import {
   Trash2,
   Users,
   Wallet,
+  Coins,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
@@ -66,15 +67,25 @@ export default function SettingsPage() {
     }
   };
 
+  const signingOutRef = React.useRef(false);
   const handleSignOut = async () => {
     if (!isAuthConfigured()) {
       toast.info(t('signOut'));
       return;
     }
-    await getSupabaseBrowserClient().auth.signOut();
+    if (signingOutRef.current) return;
+    signingOutRef.current = true;
+    // No step may leave the person stuck on this screen: each one gets a few seconds at most
+    const within = (work: Promise<unknown>, ms: number) =>
+      Promise.race([work.catch((err) => console.warn('[sign-out]', err)), new Promise((done) => setTimeout(done, ms))]);
+    const auth = getSupabaseBrowserClient().auth;
+    await within(auth.signOut(), 4000);
+    // If the server could not be reached, still forget the session on this phone
+    await within(auth.signOut({ scope: 'local' }), 1500);
     // Nothing of the family stays on the phone after signing out
-    await repo.clearCache?.().catch((err) => console.warn('[sync] clear failed', err));
-    router.replace('/login');
+    await within(repo.clearCache?.() ?? Promise.resolve(), 3000);
+    // A full page load, so the sign-in screen always opens (a soft move could stay on this screen)
+    window.location.replace(`/${locale}/login`);
   };
 
   return (
@@ -180,32 +191,32 @@ export default function SettingsPage() {
 
       {/* Preferences & Family Group */}
       <div className="bg-surface rounded-card border border-line/40 shadow-card divide-y divide-line/30">
-        {/* Language switch */}
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={handleLanguageToggle}
-          onKeyDown={(e) => e.key === 'Enter' && handleLanguageToggle()}
-          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-0.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
-        >
-          <div className="flex items-center gap-3">
+        {/* Language and Currencies share one row, so Settings still fits the screen without scrolling */}
+        <div className="grid grid-cols-2 divide-x divide-line/30 rtl:divide-x-reverse">
+          <button
+            type="button"
+            onClick={handleLanguageToggle}
+            className="flex min-h-[48px] items-center gap-2.5 px-3.5 py-2.5 [@media(max-height:700px)]:py-0.5 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
+          >
             <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-warning/12 text-warning">
               <Globe className="size-4.5" />
             </div>
-            <div className="text-start">
-              <div className="text-body font-semibold text-ink leading-tight">
-                {t('language')}
-              </div>
-              <div className="text-caption text-ink-muted leading-tight">
-                {locale === 'ar' ? 'العربية' : 'English'}
-              </div>
+            <div className="min-w-0">
+              <div className="text-body font-semibold text-ink leading-tight">{t('language')}</div>
+              <div className="text-caption text-ink-muted leading-tight">{locale === 'ar' ? 'العربية' : 'English'}</div>
             </div>
-          </div>
-          <span className="text-caption font-semibold px-2 py-0.5 rounded-lg bg-surface-2 text-ink">
-            {locale === 'ar' ? 'English' : 'عربي'}
-          </span>
-        </div>
+          </button>
 
+          <Link
+            href="/settings/currencies"
+            className="flex min-h-[48px] items-center gap-2.5 px-3.5 py-2.5 [@media(max-height:700px)]:py-0.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+          >
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-income-soft text-income">
+              <Coins className="size-4.5" />
+            </div>
+            <span className="min-w-0 text-body font-semibold text-ink leading-tight">{t('currencies')}</span>
+          </Link>
+        </div>
         {/* Download CSV */}
         <div
           role="button"

@@ -34,6 +34,17 @@
   "takeNote": "الفلوس دي متشالة عشان {name}. عادي تستخدمها لو محتاجها، بس الهدف هياخد وقت أطول شوية.",
   "takeFromGoal": "سحب من الهدف",
   "chooseToFirst": "اختار الفلوس هتروح فين",
-  "moneyTaken": "اتسحبت من {name}",
-  "notEnoughInGoal": "الهدف فيه {amount} بس"
+  "notEnoughInGoal": "الهدف فيه {amount} بس",
+  "noDate": "من غير تاريخ",
+  "cheer1": "برافو! {name} وصل {percent}% من الهدف.",
+  "cheer2": "كل مبلغ بيفرق. {name} بقى {percent}%.",
+  "cheer3": "شغل حلو! قربت {amount} من {name}.",
+  "cheerHalf": "عدّيت نص الطريق لـ {name}. كمّل!",
+  "cheerReached": "عملتها! {name} اكتمل.",
+  "nudge": "اتسحب من {name}. ولا يهمك، رجّعهم وقت ما تقدر، انت لسه ماشي في طريقك.",
+  "target": "الهدف: {amount}",
+  "seeEntriesOf": "شوف اللي اتحط في {name}",
+  "noEntriesYet": "لسه مفيش حاجة. دوس إضافة مبلغ وابدأ.",
+  "addedFrom": "اتضاف من {wallet}",
+  "takenTo": "اتسحب إلى {wallet}"
 }
