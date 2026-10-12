@@ -41,6 +41,41 @@ export function budgetLevel(spent: number, amount: number): BudgetLevel {
   return 'ok';
 }
 
+export type BudgetThreshold = '80' | '100';
+
+export interface ThresholdCross {
+  threshold: BudgetThreshold;
+  level: BudgetLevel;
+}
+
+/**
+ * Checks whether an expense addition took the month's spending across the 80% or 100% threshold.
+ * Returns the threshold crossed on this entry, or null if no threshold was crossed
+ * (remained under 80%, stayed within 80-100%, or was already over 100%).
+ * If an entry crosses both 80% and 100% at once, returns the stronger '100' threshold.
+ */
+export function budgetThresholdCross(
+  budgetAmount: number,
+  spentBefore: number,
+  spentAfter: number
+): ThresholdCross | null {
+  if (budgetAmount <= 0) return null;
+  const t80 = round2(budgetAmount * BUDGET_WARN_AT);
+  const t100 = round2(budgetAmount);
+
+  // Crossed 100% on this addition
+  if (spentBefore < t100 && spentAfter >= t100) {
+    return { threshold: '100', level: 'over' };
+  }
+
+  // Crossed 80% on this addition (and stayed under 100%)
+  if (spentBefore < t80 && spentAfter >= t80 && spentAfter < t100) {
+    return { threshold: '80', level: 'near' };
+  }
+
+  return null;
+}
+
 /** Does this entry count against this budget? */
 export function budgetCovers(budget: Budget, entry: BudgetEntryLike): boolean {
   if (entry.type !== 'expense') return false;
