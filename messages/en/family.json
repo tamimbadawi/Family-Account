@@ -45,9 +45,11 @@
   "renameFamily": "Change family name",
   "renamed": "Family name changed",
   "save": "Save",
-  "sendInvite": "Send invite",
+  "inviteMember": "Share invite link",
+  "inviteMemberHint": "Anyone with this link can open it to add their details and join your family.",
+  "sendInvite": "Share invite link",
   "inviteTitle": "Family Accounts",
-  "inviteCopied": "Invite copied. Paste it in a message.",
+  "inviteCopied": "Invite link copied",
   "inviteFailed": "Couldn't send the invite. Try again.",
   "otherFamilies": "Spread the word",
   "otherFamiliesHint": "Know a family who'd love this app? Invite them. Their space is private, just like yours.",
@@ -67,5 +69,17 @@
     "declined": "Not now",
     "expired": "Expired"
   },
-  "inviteWithLink": "Hi {name}! Join {family} on our family accounts app. This link is only for you and works once. Open it on your phone, tap Continue and choose your password."
+  "inviteWithLink": "Join {family} on our family accounts app. Open this link on your phone to join:",
+  "newFamilyInviteText": "We use a simple app to track our family's money — I think you'll love it! I'm sharing a link so you can set up your own family space. Open it on your phone within 24 hours:",
+  "newFamilyInviteHint": "The link expires in 24 hours. They open it to set up their own family.",
+  "currencies": "Currencies",
+  "currenciesHint": "All wallets use these. Amounts in different currencies are never added together.",
+  "mainCurrency": "Main currency",
+  "secondCurrency": "Second currency (optional)",
+  "noSecondCurrency": "None (one currency only)",
+  "saveCurrencies": "Save currencies",
+  "saving": "Saving...",
+  "currenciesSaved": "Currencies updated",
+  "currencyInUse": "A wallet still uses a currency you removed",
+  "chooseCurrencies": "Choose one or two currencies"
 }

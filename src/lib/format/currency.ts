@@ -21,16 +21,28 @@ const ARABIC_SYMBOLS: Record<string, string> = {
 };
 
 export const DEFAULT_CURRENCY = 'EGP';
+let currentDefaultCurrency: string = DEFAULT_CURRENCY;
+
+export function setDefaultCurrency(code: string): void {
+  if (isCurrencyCode(code)) {
+    currentDefaultCurrency = code.toUpperCase();
+  }
+}
+
+export function getDefaultCurrency(): string {
+  return currentDefaultCurrency;
+}
 
 export function isCurrencyCode(code: string): boolean {
   return /^[A-Z]{3}$/.test(code);
 }
 
 /** Label written next to an amount: "EGP" / "ج.م", "USD" / "$". */
-export function currencySymbol(code: string = DEFAULT_CURRENCY, locale: string = 'en'): string {
-  const upper = code.toUpperCase();
-  if (locale.startsWith('ar')) return ARABIC_SYMBOLS[upper] ?? upper;
-  return upper;
+export function currencySymbol(code?: string, locale: string = 'en'): string {
+  const upper = code ? code.toUpperCase() : '';
+  const effective = (upper && isCurrencyCode(upper) ? upper : currentDefaultCurrency);
+  if (locale.startsWith('ar')) return ARABIC_SYMBOLS[effective] ?? effective;
+  return effective;
 }
 
 /** The currency's name in the app language, e.g. "US Dollar" / "دولار أمريكي". */

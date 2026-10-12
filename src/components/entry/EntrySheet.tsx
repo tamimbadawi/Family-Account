@@ -97,6 +97,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, onC
   const [amountStr, setAmountStr] = React.useState(defaultAmount);
   const [selectedWalletId, setSelectedWalletId] = React.useState<string | null>(defaultWalletId);
   const [selectedToWalletId, setSelectedToWalletId] = React.useState<string | null>(defaultToWalletId);
+  const selectedWallet = wallets?.find((w) => w.id === selectedWalletId);
 
   // Move: picking the wallet that is already on the other side swaps the two
   const pickFromWallet = (id: string) => {
@@ -363,7 +364,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, onC
 
       {/* Amount, with the chosen main category (and group) beside it */}
       <div className="flex items-center gap-2">
-        <AmountDisplay value={amountStr} type={type} className="min-w-0 flex-1" />
+        <AmountDisplay value={amountStr} type={type} currency={selectedWallet?.currency} className="min-w-0 flex-1" />
         <div ref={setBreadcrumbSlot} className="flex max-w-[56%] shrink-0 empty:hidden" />
       </div>
 

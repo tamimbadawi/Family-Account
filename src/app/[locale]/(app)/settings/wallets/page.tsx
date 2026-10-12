@@ -13,7 +13,7 @@ import { Link } from '@/i18n/navigation';
 import { useRepository, useWallets, useWalletBalances } from '@/lib/data/provider';
 import { useSaveError } from '@/components/ui/use-save-error';
 import type { Wallet, WalletType } from '@/lib/data/types';
-import { money, normalizeDigits, pickName } from '@/lib/format';
+import { currencySymbol, money, normalizeDigits, pickName } from '@/lib/format';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { ColorIconPicker } from '@/components/settings/ColorIconPicker';
 import { useRestoreSheetAfterKeyboard } from '@/components/settings/useRestoreSheetAfterKeyboard';
@@ -357,7 +357,7 @@ export default function WalletManagerPage() {
             {/* Opening Balance */}
             <div className="space-y-1">
               <label className="text-caption font-semibold text-ink-muted">
-                {t('openingBalance')} (EGP)
+                {t('openingBalance')} ({currencySymbol(editingWallet?.currency, locale)})
               </label>
               <input
                 type="text"

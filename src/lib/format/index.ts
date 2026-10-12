@@ -4,7 +4,7 @@
  */
 import { currencySymbol } from './currency';
 
-export { COMMON_CURRENCIES, DEFAULT_CURRENCY, currencyChoices, currencyName, currencySymbol, isCurrencyCode } from './currency';
+export { COMMON_CURRENCIES, DEFAULT_CURRENCY, currencyChoices, currencyName, currencySymbol, isCurrencyCode, setDefaultCurrency, getDefaultCurrency } from './currency';
 export type { CurrencyChoice } from './currency';
 
 export interface MoneyOptions {

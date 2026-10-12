@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ChevronLeft, Crown, Heart, House, KeyRound, Pencil, Send, UserMinus, UserPlus } from 'lucide-react';
+import { ChevronLeft, Crown, Heart, KeyRound, Pencil, Send, UserMinus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
 import { WalletShortcut } from '@/components/layout/WalletShortcut';
@@ -11,18 +11,16 @@ import { useRestoreSheetAfterKeyboard } from '@/components/settings/useRestoreSh
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useHouseholdMembers } from '@/lib/data/provider';
+import { useHousehold, useHouseholdMembers, useRepository } from '@/lib/data/provider';
+import { CurrencySelect } from '@/components/family/CurrencySelect';
+import { currencyName, currencySymbol } from '@/lib/format';
+import { isOfflineError } from '@/lib/data/errors';
 import { isAuthConfigured } from '@/lib/supabase/client';
-import { familyAdmin, type FamilyList, type FamilyMember } from '@/lib/auth/family-admin';
-import { isEmail, loginLabel, normalizeEmail } from '@/lib/auth/email';
-import { inviteLink, joinLink, sendInvite } from '@/lib/auth/invite';
-import { inviteFamily, listFamilyInvites, type SentInvite } from '@/lib/auth/family-invites';
-import { isEnglishName } from '@/lib/members';
+import { familyAdmin, createFamilyInviteLink, type FamilyList, type FamilyMember } from '@/lib/auth/family-admin';
+import { joinLink, familyInviteLink, sendInvite } from '@/lib/auth/invite';
 import { FAMILY_NAME_MAX, useFamilyName } from '@/lib/auth/family-name';
 
 type Sheet =
-  | { kind: 'add' }
-  | { kind: 'inviteFamily' }
   | { kind: 'rename' }
   | { kind: 'reset'; member: FamilyMember }
   | { kind: 'remove'; member: FamilyMember }
@@ -36,11 +34,56 @@ const ACTION =
 /** Settings → Family: everyone sees who is in the household; only the admin (owner) can change it. */
 export default function FamilyPage() {
   const t = useTranslations('family');
+  const tCommon = useTranslations('common');
   const tSettings = useTranslations('settings');
   const locale = useLocale();
   const live = isAuthConfigured();
+  const repo = useRepository();
+  const household = useHousehold();
   const sampleMembers = useHouseholdMembers();
   const family = useFamilyName();
+
+  const currentCurrencies = React.useMemo(() => {
+    return household?.currencies ?? (household?.currency ? [household.currency] : ['EGP']);
+  }, [household]);
+  const defaultMain = currentCurrencies[0] || 'EGP';
+  const defaultSecond = currentCurrencies[1] || '';
+
+  const [overrideMain, setOverrideMain] = React.useState<string | null>(null);
+  const [overrideSecond, setOverrideSecond] = React.useState<string | null>(null);
+  const [savingCurrencies, setSavingCurrencies] = React.useState(false);
+
+  const mainCurrency = overrideMain ?? defaultMain;
+  const secondCurrency = overrideSecond !== null ? overrideSecond : defaultSecond;
+
+  const hasCurrencyChanges = mainCurrency !== defaultMain || secondCurrency !== defaultSecond;
+
+  const handleSaveCurrencies = async () => {
+    if (savingCurrencies) return;
+    setSavingCurrencies(true);
+    try {
+      const next = secondCurrency ? [mainCurrency, secondCurrency] : [mainCurrency];
+      await repo.setHouseholdCurrencies(next);
+      setOverrideMain(null);
+      setOverrideSecond(null);
+      toast.success(t('currenciesSaved'));
+    } catch (err) {
+      if (isOfflineError(err) || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+        toast.error(tCommon('noConnection'));
+      } else {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes('wallet still uses')) {
+          toast.error(t('currencyInUse'));
+        } else if (msg.includes('one or two') || msg.includes('Choose')) {
+          toast.error(t('chooseCurrencies'));
+        } else {
+          toast.error(t('errors.failed'));
+        }
+      }
+    } finally {
+      setSavingCurrencies(false);
+    }
+  };
 
   const [list, setList] = React.useState<FamilyList | null>(null);
   const [loadFailed, setLoadFailed] = React.useState(false);
@@ -51,17 +94,7 @@ export default function FamilyPage() {
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [name, setName] = React.useState('');
-  const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
-  const [invites, setInvites] = React.useState<SentInvite[]>([]);
-
-  // The families this family invited, and whether each was started yet
-  const loadInvites = React.useCallback(() => {
-    listFamilyInvites()
-      .then(setInvites)
-      .catch(() => {});
-  }, []);
-  React.useEffect(loadInvites, [loadInvites]);
 
   const load = React.useCallback(async () => {
     try {
@@ -92,22 +125,56 @@ export default function FamilyPage() {
   const open = (next: Sheet) => {
     setError(null);
     setName('');
-    setEmail('');
     setPassword('');
     setSheet(next);
   };
 
-  /** Opens the share sheet: the personal link of a member just added, or a heads-up for an invited family. */
-  const invite = async (to: { member: string; token: string } | { friend: string }) => {
-    const text =
-      'token' in to
-        ? t('inviteWithLink', { name: to.member, family: family.name ?? '' })
-        : t('familyInviteText', { name: to.friend });
-    const url =
-      'token' in to ? joinLink(window.location.origin, locale, to.token) : inviteLink(window.location.origin, locale);
-    const result = await sendInvite(t('inviteTitle'), text, url);
-    if (result === 'copied') toast.success(t('inviteCopied'));
-    else if (result === 'failed') toast.error(t('inviteFailed'));
+  /** Shares the family member invite link directly. Zero inputs needed. */
+  const inviteMember = async () => {
+    setBusy(true);
+    try {
+      let code = 'sample';
+      let familyName = family.name ?? '';
+      if (live) {
+        const res = await familyAdmin<{ ok: boolean; code: string; familyName: string }>({
+          action: 'get_invite_link',
+        });
+        code = res.code;
+        familyName = res.familyName || familyName;
+      }
+      const url = joinLink(window.location.origin, locale, code);
+      const text = t('inviteWithLink', { family: familyName });
+      const result = await sendInvite(t('inviteTitle'), text, url);
+      if (result === 'copied') toast.success(t('inviteCopied'));
+      else if (result === 'failed') toast.error(t('inviteFailed'));
+    } catch {
+      toast.error(t('inviteFailed'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Generates a 24h invite link for a new family and shares it immediately. Zero inputs needed. */
+  const inviteNewFamily = async () => {
+    setBusy(true);
+    try {
+      let url: string;
+      if (live) {
+        const res = await createFamilyInviteLink();
+        url = familyInviteLink(window.location.origin, locale, res.code);
+      } else {
+        // Sample-data mode: generate a demo link
+        url = familyInviteLink(window.location.origin, locale, 'demo');
+      }
+      const text = t('newFamilyInviteText');
+      const result = await sendInvite(t('inviteTitle'), text, url);
+      if (result === 'copied') toast.success(t('inviteCopied'));
+      else if (result === 'failed') toast.error(t('inviteFailed'));
+    } catch {
+      toast.error(t('inviteFailed'));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const run = async (
@@ -135,38 +202,6 @@ export default function FamilyPage() {
     if (sheet.kind === 'rename') {
       if (!name.trim()) return setError(t('errors.no_family_name'));
       void run(() => family.rename(name), t('renamed'));
-    } else if (sheet.kind === 'add') {
-      // The name is what the app shows; the email is only what they sign in with
-      if (!isEnglishName(name)) return setError(t('errors.bad_name'));
-      if (!isEmail(email)) return setError(t('errors.bad_email'));
-      const member = name.trim();
-      let token = '';
-      void run(
-        async () => {
-          const added = await familyAdmin<{ token: string }>({
-            action: 'add_member',
-            email: normalizeEmail(email),
-            displayName: member,
-          });
-          token = added.token;
-        },
-        t('added', { name: member }),
-        // Straight after adding someone, offer to send them their own one-time link
-        { label: t('sendInvite'), onClick: () => void invite({ member, token }) }
-      );
-    } else if (sheet.kind === 'inviteFamily') {
-      const friend = name.trim();
-      if (!friend) return setError(t('errors.no_friend_name'));
-      if (!isEmail(email)) return setError(t('errors.bad_email'));
-      void run(
-        async () => {
-          await inviteFamily(friend, normalizeEmail(email));
-          loadInvites();
-        },
-        t('familyInvited', { name: friend }),
-        // Let the friend know it's coming, from the same tap (the share sheet needs one)
-        { label: t('tellThem', { name: friend }), onClick: () => void invite({ friend }) }
-      );
     } else if (sheet.kind === 'reset') {
       void run(() => familyAdmin({ action: 'reset_password', userId: sheet.member.userId, password }), t('resetDone'));
     } else if (sheet.kind === 'remove') {
@@ -182,6 +217,7 @@ export default function FamilyPage() {
   const isOwner = live && Boolean(list?.isOwner);
   // The family admin can change the family's name (sample-data mode: anyone, as there is no admin)
   const canRename = isOwner || !live;
+  const canEditCurrencies = isOwner || !live;
 
   return (
     <div className="flex h-full flex-col overflow-y-auto overscroll-contain">
@@ -256,7 +292,6 @@ export default function FamilyPage() {
                     </div>
                     <div className="truncate text-caption text-ink-muted">
                       {m.role === 'owner' ? t('admin') : t('member')}
-                      {m.email && <span dir="ltr"> · {loginLabel(m.email)}</span>}
                     </div>
                   </div>
                   {isOwner && m.userId !== list?.me && (
@@ -282,12 +317,82 @@ export default function FamilyPage() {
           </div>
         )}
 
-        {isOwner && (
-          <Button onClick={() => open({ kind: 'add' })} className="h-14 w-full gap-2 text-heading font-semibold text-accent-ink">
-            <UserPlus className="size-5" />
-            {t('addMember')}
-          </Button>
+        {(isOwner || !live) && (
+          <div className="space-y-2">
+            <Button onClick={inviteMember} disabled={busy} className="h-14 w-full gap-2 text-heading font-semibold text-accent-ink">
+              <Send className="size-5 rtl:-scale-x-100" />
+              {t('inviteMember')}
+            </Button>
+            <p className="text-center text-caption text-ink-muted">{t('inviteMemberHint')}</p>
+          </div>
         )}
+
+        {/* Currencies card */}
+        <section className="space-y-2.5 rounded-card border border-line/40 bg-surface p-3.5 shadow-card">
+          <div className="space-y-0.5">
+            <h2 className="text-body font-semibold text-ink">{t('currencies')}</h2>
+            <p className="text-caption text-ink-muted">{t('currenciesHint')}</p>
+          </div>
+
+          {canEditCurrencies ? (
+            <div className="space-y-2.5">
+              <div className="space-y-2.5">
+                <div className="space-y-1">
+                  <label htmlFor="main-currency" className="text-caption font-medium text-ink-muted">
+                    {t('mainCurrency')}
+                  </label>
+                  <CurrencySelect
+                    id="main-currency"
+                    value={mainCurrency}
+                    exclude={secondCurrency}
+                    onChange={setOverrideMain}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label htmlFor="second-currency" className="text-caption font-medium text-ink-muted">
+                    {t('secondCurrency')}
+                  </label>
+                  <CurrencySelect
+                    id="second-currency"
+                    value={secondCurrency}
+                    exclude={mainCurrency}
+                    noneLabel={t('noSecondCurrency')}
+                    onChange={setOverrideSecond}
+                  />
+                </div>
+              </div>
+
+              {hasCurrencyChanges && (
+                <Button
+                  type="button"
+                  onClick={handleSaveCurrencies}
+                  disabled={savingCurrencies}
+                  className="h-12 w-full text-body font-semibold text-accent-ink"
+                >
+                  {savingCurrencies ? t('saving') : t('saveCurrencies')}
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2.5 pt-0.5">
+              <div>
+                <span className="block text-caption text-ink-muted">{t('mainCurrency')}</span>
+                <span className="truncate text-body font-semibold text-ink">
+                  {currencyName(mainCurrency, locale)} ({currencySymbol(mainCurrency, locale)})
+                </span>
+              </div>
+              {secondCurrency && (
+                <div>
+                  <span className="block text-caption text-ink-muted">{t('secondCurrency')}</span>
+                  <span className="truncate text-body font-semibold text-ink">
+                    {currencyName(secondCurrency, locale)} ({currencySymbol(secondCurrency, locale)})
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
 
         <section className="space-y-3">
           <div className="space-y-3 rounded-card bg-accent-soft p-4">
@@ -302,41 +407,15 @@ export default function FamilyPage() {
             </div>
             <Button
               variant="outline"
-              onClick={() => open({ kind: 'inviteFamily' })}
+              onClick={inviteNewFamily}
+              disabled={busy}
               className="h-14 w-full gap-2 border-transparent bg-surface text-heading font-semibold text-accent"
             >
               <Send className="size-5 rtl:-scale-x-100" />
               {t('inviteFamily')}
             </Button>
+            <p className="text-center text-caption text-ink-muted">{t('newFamilyInviteHint')}</p>
           </div>
-          {invites.length > 0 && (
-            <div className="divide-y divide-line/40 rounded-card border border-line/40 bg-surface shadow-card">
-              {invites.map((i) => (
-                <div key={i.id} className={ROW}>
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
-                    <House className="size-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-body font-semibold text-ink">{i.friendName}</div>
-                    <div className="truncate text-caption text-ink-muted">
-                      <span dir="ltr">{i.email}</span>
-                    </div>
-                  </div>
-                  <span
-                    className={`shrink-0 text-caption font-semibold ${
-                      i.status === 'approved'
-                        ? 'text-income'
-                        : i.status === 'declined' || i.status === 'expired'
-                          ? 'text-ink-muted'
-                          : 'text-warning'
-                    }`}
-                  >
-                    {i.hoursLeft ? t('waitingHoursLeft', { hours: i.hoursLeft }) : t(`inviteStatus.${i.status}`)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
         </section>
       </div>
 
@@ -345,8 +424,6 @@ export default function FamilyPage() {
           <div className="min-h-0 overflow-y-auto px-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <DrawerHeader className="px-0 pt-1 pb-2">
               <DrawerTitle className="text-title font-bold text-ink">
-                {sheet?.kind === 'add' && t('addMember')}
-                {sheet?.kind === 'inviteFamily' && t('inviteFamily')}
                 {sheet?.kind === 'rename' && t('renameFamily')}
                 {sheet?.kind === 'reset' && t('resetFor', { name: sheet.member.displayName })}
                 {sheet?.kind === 'remove' && t('removeFor', { name: sheet.member.displayName })}
@@ -370,65 +447,6 @@ export default function FamilyPage() {
                   onChange={(e) => setName(e.target.value)}
                   className="h-14 bg-surface-2 text-body"
                 />
-              )}
-              {sheet?.kind === 'add' && (
-                <>
-                  <Input
-                    aria-label={t('name')}
-                    placeholder={t('namePlaceholder')}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    dir="ltr"
-                    lang="en"
-                    autoCapitalize="words"
-                    className="h-14 bg-surface-2 text-body"
-                  />
-                  <p className="text-caption text-ink-muted">{t('nameHint')}</p>
-                  <Input
-                    type="email"
-                    inputMode="email"
-                    dir="ltr"
-                    aria-label={t('email')}
-                    placeholder={t('email')}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value.replace(/\s+/g, ''))}
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    autoComplete="off"
-                    className="h-14 bg-surface-2 text-body"
-                  />
-                  <p className="text-caption text-ink-muted">{t('emailHint')}</p>
-                </>
-              )}
-              {sheet?.kind === 'inviteFamily' && (
-                <>
-                  <p className="text-body text-ink-muted">{t('inviteFamilyHint')}</p>
-                  <Input
-                    aria-label={t('friendName')}
-                    placeholder={t('friendName')}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    maxLength={60}
-                    autoCapitalize="words"
-                    className="h-14 bg-surface-2 text-body"
-                  />
-                  <Input
-                    type="email"
-                    inputMode="email"
-                    dir="ltr"
-                    aria-label={t('friendEmail')}
-                    placeholder={t('friendEmail')}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value.replace(/\s+/g, ''))}
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    autoComplete="off"
-                    className="h-14 bg-surface-2 text-body"
-                  />
-                  <p className="text-caption text-ink-muted">{t('friendEmailHint')}</p>
-                </>
               )}
               {sheet?.kind === 'reset' && (
                 <>
@@ -456,8 +474,6 @@ export default function FamilyPage() {
                 disabled={busy}
                 className={`h-14 w-full text-heading font-semibold ${sheet?.kind === 'remove' ? 'bg-danger text-accent-ink' : 'text-accent-ink'}`}
               >
-                {sheet?.kind === 'add' && t('addMember')}
-                {sheet?.kind === 'inviteFamily' && t('sendRequest')}
                 {sheet?.kind === 'rename' && t('save')}
                 {sheet?.kind === 'reset' && t('resetPassword')}
                 {sheet?.kind === 'remove' && t('remove')}

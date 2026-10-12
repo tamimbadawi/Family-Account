@@ -102,7 +102,7 @@ export function OurMoneySheet({ open, onOpenChange }: OurMoneySheetProps) {
               wallet.balance >= 0 ? 'text-ink' : 'text-expense'
             }`}
           >
-            {money(wallet.balance, locale)}
+            {money(wallet.balance, locale, { currency: wallet.currency })}
           </span>
           <ChevronRight className="size-4 text-ink-muted rtl:rotate-180 shrink-0" />
         </div>

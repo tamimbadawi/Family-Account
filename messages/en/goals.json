@@ -20,5 +20,20 @@
   "stop": "Stop",
   "stopped": "Goal stopped",
   "restored": "Goal restored",
-  "back": "Back"
+  "back": "Back",
+  "addMoneyTo": "Add to {name}",
+  "fromWallet": "Take the money from",
+  "addToGoal": "Add to goal",
+  "chooseFromFirst": "Choose where the money comes from",
+  "moneyAdded": "Added to {name}",
+  "noOtherWallet": "Money for a goal is moved from one of your wallets, like cash or a bank account. Add a wallet first.",
+  "addWalletFirst": "Add a wallet",
+  "takeMoney": "Take out",
+  "takeMoneyFrom": "Take from {name}",
+  "toWallet": "Move the money to",
+  "takeNote": "You set this money aside for {name}. It is fine to use it if you need it. Your goal will just take a little longer.",
+  "takeFromGoal": "Take from goal",
+  "chooseToFirst": "Choose where the money goes",
+  "moneyTaken": "Taken from {name}",
+  "notEnoughInGoal": "This goal only has {amount}"
 }

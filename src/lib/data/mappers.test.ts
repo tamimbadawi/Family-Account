@@ -39,6 +39,7 @@ describe('mappers', () => {
       id: 'h-1',
       name: 'Family',
       currency: 'EGP',
+      currencies: ['EGP'],
       created_at: '2026-01-01T00:00:00.000Z',
     };
     const domain = toHousehold(row);
@@ -46,6 +47,7 @@ describe('mappers', () => {
       id: 'h-1',
       name: 'Family',
       currency: 'EGP',
+      currencies: ['EGP'],
       createdAt: '2026-01-01T00:00:00.000Z',
     });
     expect(toHouseholdRow(domain)).toEqual(row);
@@ -80,6 +82,7 @@ describe('mappers', () => {
       name_en: 'Cash',
       type: 'cash',
       opening_balance: 5000.5,
+      currency: 'EGP',
       icon: 'banknote',
       color: '#0F766E',
       sort_order: 1,
@@ -90,6 +93,7 @@ describe('mappers', () => {
     const domain = toWallet(row);
     expect(domain.openingBalance).toBe(5000.5);
     expect(domain.nameAr).toBe('كاش');
+    expect(domain.currency).toBe('EGP');
     expect(toAccountRow(domain)).toEqual(row);
   });
 

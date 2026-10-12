@@ -9,14 +9,19 @@ describe('inviteLink', () => {
 });
 
 describe('joinLink', () => {
-  it('carries the one-time token after the #, and joinToken reads it back', () => {
+  it('carries the invite code after the #, and joinToken reads it back', () => {
     const link = joinLink('https://app.example/', 'ar', 'abc123');
-    expect(link).toBe('https://app.example/ar/join#t=abc123');
+    expect(link).toBe('https://app.example/ar/join#code=abc123');
     expect(joinToken(new URL(link).hash)).toBe('abc123');
+  });
+
+  it('reads legacy #t= tokens for backwards compatibility', () => {
+    expect(joinToken('#t=legacy123')).toBe('legacy123');
   });
 
   it('finds no token in a link without one', () => {
     expect(joinToken('')).toBeNull();
+    expect(joinToken('#code=')).toBeNull();
     expect(joinToken('#t=')).toBeNull();
   });
 });

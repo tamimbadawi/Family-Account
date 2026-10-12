@@ -58,5 +58,6 @@
   "swapWallets": "Swap direction",
   "chooseCategoryFirst": "Choose a category",
   "chooseSubOrSave": "Choose Sub / Save",
-  "backTo": "Back to {name}"
+  "backTo": "Back to {name}",
+  "savingsGoal": "Savings goal"
 }

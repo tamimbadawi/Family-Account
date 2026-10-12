@@ -114,7 +114,7 @@ export function EntryRow({ entry, onClick }: EntryRowProps) {
 
       <div className={`shrink-0 text-body font-bold tabular-nums ${amountClass}`}>
         {sign}
-        {money(entry.amount, locale)}
+        {money(entry.amount, locale, { currency: entry.accountCurrency ?? undefined })}
       </div>
     </div>
   );

@@ -4,12 +4,14 @@ import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { EntryType } from '@/lib/data/types';
 import { formatExpression, hasOperator, previewValue } from '@/lib/format/expression';
+import { currencySymbol } from '@/lib/format';
 
 export interface AmountDisplayProps {
   value: string;
   type?: EntryType;
   placeholder?: string;
   className?: string;
+  currency?: string;
 }
 
 // Format value with thousands separators while preserving typing state (dot, trailing zeros)
@@ -39,11 +41,11 @@ export function AmountDisplay({
   type = 'expense',
   placeholder = '0',
   className = '',
+  currency: currencyProp,
 }: AmountDisplayProps) {
   const locale = useLocale();
   const t = useTranslations('entry');
-  const isAr = locale.startsWith('ar');
-  const currency = isAr ? 'ج.م' : 'EGP';
+  const currency = currencySymbol(currencyProp, locale);
 
   let colorClass = 'text-expense';
   if (type === 'income') colorClass = 'text-income';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { currencyChoices, currencySymbol, isCurrencyCode } from './currency';
+import { currencyChoices, currencySymbol, getDefaultCurrency, isCurrencyCode, setDefaultCurrency } from './currency';
 import { money } from './index';
 
 describe('currency', () => {
@@ -24,5 +24,12 @@ describe('currency', () => {
     expect(money(1250, 'en')).toBe('1,250 EGP');
     expect(money(1250, 'en', { currency: 'USD' })).toBe('1,250 USD');
     expect(money(-5, 'ar', { currency: 'USD' })).toBe('-5 $');
+  });
+  it('updates default currency with setDefaultCurrency', () => {
+    setDefaultCurrency('SAR');
+    expect(getDefaultCurrency()).toBe('SAR');
+    expect(currencySymbol(undefined, 'ar')).toBe('ر.س');
+    setDefaultCurrency('EGP');
+    expect(getDefaultCurrency()).toBe('EGP');
   });
 });

@@ -22,6 +22,7 @@ export interface CategoryDonutProps {
   selectedId?: string | null;
   height?: number;
   className?: string;
+  currency?: string;
 }
 
 export function CategoryDonut({
@@ -31,12 +32,13 @@ export function CategoryDonut({
   selectedId,
   height = 112,
   className = '',
+  currency,
 }: CategoryDonutProps) {
   const locale = useLocale();
   const t = useTranslations('reports');
   const isClient = useIsClient();
 
-  const center = React.useMemo(() => formatCenterTotal(total, locale), [total, locale]);
+  const center = React.useMemo(() => formatCenterTotal(total, locale, { currency }), [total, locale, currency]);
 
   const chartData = React.useMemo(() => {
     return data.map((item, index) => ({
@@ -132,15 +134,27 @@ export function CategoryDonut({
         </PieChart>
       </ResponsiveContainer>
 
-      {/* Center Total: Stacked number and unit with generous clearance */}
-      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-1">
-        <span className="text-[17px] font-bold tabular-nums text-ink leading-tight">
+      {/* Center Total: Stacked number and unit inside SVG */}
+      <svg className="pointer-events-none absolute inset-0 size-full" aria-hidden="true">
+        <text
+          x="50%"
+          y="46%"
+          textAnchor="middle"
+          dominantBaseline="middle"
+          className="fill-ink text-[17px] font-bold tabular-nums"
+        >
           {center.value}
-        </span>
-        <span className="text-[11px] font-medium text-ink-muted leading-tight mt-0.5">
+        </text>
+        <text
+          x="50%"
+          y="62%"
+          textAnchor="middle"
+          dominantBaseline="middle"
+          className="fill-ink-muted text-caption font-medium"
+        >
           {center.unit}
-        </span>
-      </div>
+        </text>
+      </svg>
     </div>
   );
 }

@@ -868,6 +868,53 @@ describe('MockRepository with fake-indexeddb', () => {
       expect(afterRestore.some((g) => g.id === goal.id && !g.isArchived)).toBe(true);
     });
   });
+
+  describe('household currencies (M3)', () => {
+    it('sets valid 1 or 2 currencies for household', async () => {
+      let household = await repo.getHousehold();
+      expect(household?.currencies).toEqual(['EGP']);
+
+      await repo.setHouseholdCurrencies(['EGP', 'USD']);
+      household = await repo.getHousehold();
+      expect(household?.currencies).toEqual(['EGP', 'USD']);
+      expect(household?.currency).toBe('EGP');
+
+      // Change order / main currency (as long as wallets still covered)
+      await repo.setHouseholdCurrencies(['USD', 'EGP']);
+      household = await repo.getHousehold();
+      expect(household?.currencies).toEqual(['USD', 'EGP']);
+      expect(household?.currency).toBe('USD');
+    });
+
+    it('rejects empty, duplicate, invalid codes, or more than 2 currencies', async () => {
+      await expect(repo.setHouseholdCurrencies([])).rejects.toThrow('Choose one or two currencies');
+      await expect(repo.setHouseholdCurrencies(['EGP', 'USD', 'EUR'])).rejects.toThrow('Choose one or two currencies');
+      await expect(repo.setHouseholdCurrencies(['EGP', 'EGP'])).rejects.toThrow('Choose one or two currencies');
+      await expect(repo.setHouseholdCurrencies(['EG'])).rejects.toThrow('Choose one or two currencies');
+      await expect(repo.setHouseholdCurrencies(['123'])).rejects.toThrow('Choose one or two currencies');
+    });
+
+    it('refuses to remove a currency that a wallet still uses', async () => {
+      // Seeded wallets are all in EGP
+      await expect(repo.setHouseholdCurrencies(['USD'])).rejects.toThrow(
+        'A wallet still uses a currency you removed'
+      );
+
+      // Adding USD and creating a USD wallet
+      await repo.setHouseholdCurrencies(['EGP', 'USD']);
+      const usdWallet = await repo.addWallet({
+        nameEn: 'USD Account',
+        type: 'bank',
+        currency: 'USD',
+      });
+      expect(usdWallet.currency).toBe('USD');
+
+      // Trying to set only EGP should fail because USD wallet exists
+      await expect(repo.setHouseholdCurrencies(['EGP'])).rejects.toThrow(
+        'A wallet still uses a currency you removed'
+      );
+    });
+  });
 });
 
 

@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Calendar, ChevronLeft, ChevronRight, PenLine } from 'lucide-react';
-import { useRepository, useWallets } from '@/lib/data/provider';
+import { useRepository, useSavingsGoals, useWallets } from '@/lib/data/provider';
 import { useSaveError } from '@/components/ui/use-save-error';
 import type { Wallet } from '@/lib/data/types';
 import { CategoryIcon } from '@/components/ui/category-icon';
@@ -45,6 +45,8 @@ export function WalletSelect({ value, onChange, exclude, label }: WalletSelectPr
   const banks = wallets.filter((w) => w.type === 'bank');
   const others = wallets.filter((w) => w.type !== 'bank');
   const nameOf = (w: Wallet) => pickName({ name_ar: w.nameAr, name_en: w.nameEn }, locale);
+  // A wallet that holds a savings goal says so, so moving money into a goal is easy to spot
+  const goalWalletIds = new Set((useSavingsGoals(false) ?? []).map((g) => g.walletId));
 
   const [isOpen, setIsOpen] = React.useState(false);
   const [step, setStep] = React.useState<'kind' | 'bank'>('kind');
@@ -78,7 +80,10 @@ export function WalletSelect({ value, onChange, exclude, label }: WalletSelectPr
       className={`${OPTION} ${w.id === value ? 'bg-accent text-accent-ink' : 'bg-surface-2 text-ink'}`}
     >
       <CategoryIcon name={w.icon} className={`size-5 shrink-0 ${w.id === value ? 'text-accent-ink' : 'text-accent'}`} />
-      <span className="truncate">{nameOf(w)}</span>
+      <span className="min-w-0 flex-1 truncate text-start">{nameOf(w)}</span>
+      {goalWalletIds.has(w.id) && (
+        <span className={`shrink-0 text-caption font-medium ${w.id === value ? 'text-accent-ink' : 'text-ink-muted'}`}>{t('savingsGoal')}</span>
+      )}
     </button>
   );
 

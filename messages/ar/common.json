@@ -13,9 +13,14 @@
   "today": "النهارده",
   "yesterday": "امبارح",
   "pickDate": "اختار يوم",
-  "currency": "ج.م",
   "loading": "جاري التحميل…",
   "share": "مشاركة",
   "noConnection": "مفيش إنترنت — جرّب تاني",
-  "saveFailed": "ماتحفظش. جرّب تاني."
+  "saveFailed": "ماتحفظش. جرّب تاني.",
+  "currencyPicker": {
+    "title": "اختار العملة",
+    "search": "ابحث عن عملة",
+    "clear": "مسح البحث",
+    "empty": "مفيش عملة بالاسم ده"
+  }
 }

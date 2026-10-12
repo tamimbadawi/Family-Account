@@ -4,7 +4,7 @@
 // Implements the Repository interface for Phase A
 // =========================================================
 
-import { localISODate } from '../format';
+import { localISODate, setDefaultCurrency } from '../format';
 import type { Table } from 'dexie';
 import { db as defaultDb, FamilyAccountsDB } from '../offline/db';
 import {
@@ -371,6 +371,37 @@ export class MockRepository implements Repository {
     return row ? toHousehold(row) : null;
   }
 
+  async setHouseholdCurrencies(currencies: string[]): Promise<void> {
+    await this.ensureSeeded();
+    const hid = await this.householdId();
+    const clean = currencies.map((c) => c.trim().toUpperCase());
+
+    const isValid =
+      clean.length >= 1 &&
+      clean.length <= 2 &&
+      clean.every((c) => /^[A-Z]{3}$/.test(c)) &&
+      (clean.length === 1 || clean[0] !== clean[1]);
+
+    if (!isValid) {
+      throw new Error('Choose one or two currencies');
+    }
+
+    const wallets = await this.db.accounts.where('household_id').equals(hid).toArray();
+    const conflict = wallets.some((w) => {
+      const cur = w.currency ?? 'EGP';
+      return !clean.includes(cur);
+    });
+    if (conflict) {
+      throw new Error('A wallet still uses a currency you removed');
+    }
+
+    await this.db.households.update(hid, {
+      currencies: clean,
+      currency: clean[0],
+    });
+    setDefaultCurrency(clean[0]);
+  }
+
   async getMembers(): Promise<Member[]> {
     const rows = await this.db.household_members.toArray();
     return rows.map(toMember);
@@ -398,14 +429,18 @@ export class MockRepository implements Repository {
     const id = input.id ?? crypto.randomUUID();
     const maxOrderRow = await this.db.accounts.orderBy('sort_order').last();
     const sortOrder = input.sortOrder ?? (maxOrderRow ? maxOrderRow.sort_order + 1 : 0);
+    const hid = await this.householdId(input.householdId);
+    const household = await this.db.households.get(hid);
+    const currency = input.currency ?? household?.currencies?.[0] ?? household?.currency ?? 'EGP';
 
     const row: AccountRow = {
       id,
-      household_id: await this.householdId(input.householdId),
+      household_id: hid,
       name_ar: input.nameAr ?? null,
       name_en: input.nameEn ?? null,
       type: input.type,
       opening_balance: roundMoney(input.openingBalance ?? 0),
+      currency,
       icon: input.icon ?? null,
       color: input.color ?? null,
       sort_order: sortOrder,
@@ -424,6 +459,16 @@ export class MockRepository implements Repository {
       throw new Error(`Wallet not found: ${id}`);
     }
 
+    if (updates.currency !== undefined && updates.currency !== (row.currency ?? 'EGP')) {
+      const hasTx =
+        (await this.db.transactions
+          .filter((t) => (t.account_id === id || t.to_account_id === id) && t.deleted_at === null)
+          .count()) > 0;
+      if (hasTx) {
+        throw new Error("A wallet's currency cannot change once it has entries");
+      }
+    }
+
     const updatedRow: AccountRow = {
       ...row,
       name_ar: updates.nameAr !== undefined ? updates.nameAr : row.name_ar,
@@ -433,6 +478,7 @@ export class MockRepository implements Repository {
         updates.openingBalance !== undefined
           ? roundMoney(updates.openingBalance)
           : row.opening_balance,
+      currency: updates.currency ?? row.currency ?? 'EGP',
       icon: updates.icon !== undefined ? updates.icon : row.icon,
       color: updates.color !== undefined ? updates.color : row.color,
       sort_order: updates.sortOrder !== undefined ? updates.sortOrder : row.sort_order,
@@ -1083,6 +1129,7 @@ export class MockRepository implements Repository {
 
       return {
         ...entry,
+        accountCurrency: acc?.currency ?? null,
         accountNameAr: acc?.name_ar ?? null,
         accountNameEn: acc?.name_en ?? null,
         toAccountNameAr: toAcc?.name_ar ?? null,
