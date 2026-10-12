@@ -21,6 +21,18 @@ let family: RealFamily | null = null;
 let loading: Promise<void> | null = null;
 const listeners = new Set<() => void>();
 
+/**
+ * Purge all in-memory family state.  Must be called on sign-out BEFORE any
+ * navigation so that useSyncExternalStore subscribers receive a null snapshot
+ * and no stale member roster leaks into the next session's heap.
+ */
+export function resetFamilyCache(): void {
+  family = null;
+  loading = null;
+  listeners.clear();
+}
+
+
 function loadFamily() {
   if (loading) return;
   loading = (async () => {

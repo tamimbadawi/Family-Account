@@ -11,7 +11,7 @@ _Completed by the agent in step B6. Template below._
 | Vercel | (same, via GitHub) | Hosting, daily keep-alive cron |
 
 ## Where secrets live
-- GitHub → repo Settings → Secrets: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_DB_URL`
+- GitHub → repo Settings → Secrets: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_DB_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `BACKUP_PASSPHRASE`
 - Vercel → Project → Environment Variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_DATA_MODE=live`, `CRON_SECRET`
 
 ## If something goes wrong

@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { useRepository } from '@/lib/data/provider';
 import { localISODate } from '@/lib/format';
-import { useFamilyMembers } from '@/lib/auth/use-family-members';
+import { useFamilyMembers, resetFamilyCache } from '@/lib/auth/use-family-members';
 import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
 import { entriesToCsv } from '@/lib/reports/export';
 import { SupportDrawer } from '@/components/settings/SupportDrawer';
@@ -70,9 +70,15 @@ export default function SettingsPage() {
       return;
     }
     await getSupabaseBrowserClient().auth.signOut();
+    // Clear in-memory family singleton before any navigation so no stale
+    // member data leaks into the next session via useSyncExternalStore.
+    resetFamilyCache();
     // Nothing of the family stays on the phone after signing out
     await repo.clearCache?.().catch((err) => console.warn('[sync] clear failed', err));
-    router.replace('/login');
+    // Hard reload instead of soft navigation: flushes the JS heap so the
+    // module-level `family` singleton can't survive across sessions.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.href = '/login';
   };
 
   return (

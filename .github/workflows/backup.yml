@@ -86,7 +86,8 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ] || [ -z "$SUPABASE_URL" ]; then
-            echo "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set yet — skipping purge."
+            echo "::warning::SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is not set — orphan receipt purge was SKIPPED. Add both secrets in repo Settings → Secrets to enable automatic storage cleanup."
+            exit 1
           else
             node scripts/purge-orphan-receipts.mjs
           fi
