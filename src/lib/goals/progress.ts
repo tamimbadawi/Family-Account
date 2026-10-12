@@ -45,25 +45,14 @@ export function calculateGoalProgress(targetAmount: number, currentAmount: numbe
 }
 
 /**
- * Formats a target date (YYYY-MM-DD) for display (e.g., "Dec 2026" or "ديسمبر 2026").
- * Always formats digits in Western / Latin system.
+ * Formats a target date (YYYY-MM-DD) for display as dd/mm/yyyy, the same in both languages
+ * (a date saved as YYYY-MM shows as mm/yyyy). Western digits always.
  */
 export function formatGoalTargetDate(dateStr: string | null | undefined, locale: string): string | null {
   if (!dateStr) return null;
   const match = dateStr.match(/^(\d{4})-(\d{2})(?:-(\d{2}))?$/);
   if (!match) return null;
 
-  const year = Number(match[1]);
-  const month = Number(match[2]) - 1;
-  const day = match[3] ? Number(match[3]) : 1;
-
-  const d = new Date(Date.UTC(year, month, day));
-  const intlLocale = locale.startsWith('ar') ? 'ar-EG' : 'en-EG';
-
-  return new Intl.DateTimeFormat(intlLocale, {
-    month: 'short',
-    year: 'numeric',
-    numberingSystem: 'latn',
-    timeZone: 'UTC',
-  }).format(d);
+  void locale;
+  return match[3] ? `${match[3]}/${match[2]}/${match[1]}` : `${match[2]}/${match[1]}`;
 }

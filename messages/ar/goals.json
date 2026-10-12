@@ -35,5 +35,6 @@
   "takeFromGoal": "سحب من الهدف",
   "chooseToFirst": "اختار الفلوس هتروح فين",
   "moneyTaken": "اتسحبت من {name}",
-  "notEnoughInGoal": "الهدف فيه {amount} بس"
+  "notEnoughInGoal": "الهدف فيه {amount} بس",
+  "noDate": "من غير تاريخ"
 }

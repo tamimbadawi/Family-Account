@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { AmountDisplay } from '@/components/entry/AmountDisplay';
 import { AmountPad } from '@/components/entry/AmountPad';
+import { FutureDateField } from '@/components/entry/DetailsRow';
 import { Input } from '@/components/ui/input';
 
 const GOAL_ICONS = [
@@ -439,11 +440,11 @@ export default function SavingsGoalsPage() {
               <label className="text-caption font-semibold text-ink-muted">
                 {t('targetDate')} ({t('optional')})
               </label>
-              <Input
-                type="date"
+              <FutureDateField
                 value={targetDate}
-                onChange={(e) => setTargetDate(e.target.value)}
-                className="h-12 rounded-2xl bg-surface-2 text-body"
+                onChange={setTargetDate}
+                label={t('targetDate')}
+                noneLabel={t('noDate')}
               />
             </div>
             </div>

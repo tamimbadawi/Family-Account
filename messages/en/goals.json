@@ -35,5 +35,6 @@
   "takeFromGoal": "Take from goal",
   "chooseToFirst": "Choose where the money goes",
   "moneyTaken": "Taken from {name}",
-  "notEnoughInGoal": "This goal only has {amount}"
+  "notEnoughInGoal": "This goal only has {amount}",
+  "noDate": "No date"
 }

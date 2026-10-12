@@ -267,25 +267,93 @@ export function DateChip({ value, onChange }: { value: string; onChange: (date: 
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
-/** Month grid (weeks start on Saturday, as in Egypt). Days after today can't be picked. */
+/** dd/mm/yyyy, Western digits, from a YYYY-MM-DD date. */
+export function formatDmy(date: string): string {
+  const [y, m, d] = date.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+/**
+ * A day in the future (a savings goal's target date), shown as dd/mm/yyyy. Uses the app's own calendar:
+ * the phone's date field does not open inside a sheet and shows the date the American way.
+ */
+export function FutureDateField({
+  value,
+  onChange,
+  label,
+  noneLabel,
+}: {
+  value: string;
+  onChange: (date: string) => void;
+  label: string;
+  noneLabel: string;
+}) {
+  const locale = useLocale();
+  const [isOpen, setIsOpen] = React.useState(false);
+  const today = localDate(0);
+  const intlLocale = locale.startsWith('ar') ? 'ar-EG' : 'en-EG';
+  const pick = (date: string) => {
+    onChange(date);
+    setIsOpen(false);
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        aria-label={label}
+        className="flex h-12 w-full items-center gap-2 rounded-2xl bg-surface-2 px-3 text-body text-ink cursor-pointer"
+      >
+        <Calendar className="size-5 shrink-0 text-accent" />
+        <span dir="ltr" className={`truncate tabular-nums ${value ? '' : 'text-ink-muted'}`}>
+          {value ? formatDmy(value) : noneLabel}
+        </span>
+      </button>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent showCloseButton={false} onFocusOutside={keepFocus} onCloseAutoFocus={keepFocus} className="max-w-[calc(100%-1.5rem)] gap-3 p-4">
+          <DialogTitle>{label}</DialogTitle>
+          <MonthCalendar value={value} today={today} locale={intlLocale} onPick={pick} future />
+          {value && (
+            <button
+              type="button"
+              onClick={() => pick('')}
+              className="h-12 w-full rounded-2xl bg-surface-2 text-body font-semibold text-ink active:scale-95 cursor-pointer"
+            >
+              {noneLabel}
+            </button>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+/**
+ * Month grid (weeks start on Saturday, as in Egypt). Days after today can't be picked;
+ * with `future` it is the other way round (a target date): days before today can't be picked.
+ */
 function MonthCalendar({
   value,
   today,
   locale,
   onPick,
+  future = false,
 }: {
   value: string;
   today: string;
   locale: string;
   onPick: (date: string) => void;
+  future?: boolean;
 }) {
   const t = useTranslations('entry');
-  const [month, setMonth] = React.useState(value.slice(0, 7));
+  const [month, setMonth] = React.useState((value || today).slice(0, 7));
   const [year, m] = month.split('-').map(Number);
   const first = new Date(year, m - 1, 1);
   const daysInMonth = new Date(year, m, 0).getDate();
   const lead = (first.getDay() + 1) % 7; // Saturday = 0
-  const isCurrentMonth = month >= today.slice(0, 7);
+  const atNewestMonth = !future && month >= today.slice(0, 7);
+  const atOldestMonth = future && month <= today.slice(0, 7);
 
   const weekdays = Array.from({ length: 7 }, (_, i) =>
     new Intl.DateTimeFormat(locale, { weekday: locale.startsWith('ar') ? 'narrow' : 'short' }).format(
@@ -299,8 +367,9 @@ function MonthCalendar({
         <button
           type="button"
           aria-label={t('prevMonth')}
+          disabled={atOldestMonth}
           onClick={() => setMonth(shiftMonth(month, -1))}
-          className="flex size-12 items-center justify-center rounded-full bg-surface-2 text-ink active:scale-95 cursor-pointer"
+          className="flex size-12 items-center justify-center rounded-full bg-surface-2 text-ink active:scale-95 cursor-pointer disabled:opacity-30"
         >
           <ChevronLeft className="size-5 rtl:rotate-180" />
         </button>
@@ -308,7 +377,7 @@ function MonthCalendar({
         <button
           type="button"
           aria-label={t('nextMonth')}
-          disabled={isCurrentMonth}
+          disabled={atNewestMonth}
           onClick={() => setMonth(shiftMonth(month, 1))}
           className="flex size-12 items-center justify-center rounded-full bg-surface-2 text-ink active:scale-95 cursor-pointer disabled:opacity-30"
         >
@@ -331,7 +400,7 @@ function MonthCalendar({
             <button
               key={date}
               type="button"
-              disabled={date > today}
+              disabled={future ? date < today : date > today}
               onClick={() => onPick(date)}
               className={`mx-auto flex size-11 items-center justify-center rounded-full text-body tabular-nums transition-transform active:scale-95 cursor-pointer disabled:cursor-default disabled:opacity-30 ${
                 isSelected

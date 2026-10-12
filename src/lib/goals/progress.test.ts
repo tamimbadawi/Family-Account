@@ -54,12 +54,12 @@ describe('calculateGoalProgress', () => {
 describe('formatGoalTargetDate', () => {
   it('formats dates in English with Western digits', () => {
     const str = formatGoalTargetDate('2026-12-31', 'en');
-    expect(str).toBe('Dec 2026');
+    expect(str).toBe('31/12/2026');
   });
 
   it('formats dates in Arabic with Western digits', () => {
     const str = formatGoalTargetDate('2026-12-31', 'ar');
-    expect(str).toContain('2026');
+    expect(str).toBe('31/12/2026');
     expect(str).not.toMatch(/[٠-٩]/); // Western digits only
   });
 
