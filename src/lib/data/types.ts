@@ -96,6 +96,8 @@ export interface Entry {
   itemId: string | null;
   note: string | null;
   photoPath?: string | null; // receipt photo: '<household_id>/<entry_id>.jpg' (or .webp)
+  recurringRuleId?: string | null;
+  recurringMonth?: string | null;
   createdBy: string | null;
   updatedBy: string | null;
   createdAt: string;
@@ -120,6 +122,43 @@ export interface EnrichedEntry extends Entry {
   categoryColor?: string | null;
   createdByName?: string | null;
   updatedByName?: string | null;
+}
+
+/**
+ * A monthly recurring rule for rent, salaries, school fees and instalments.
+ */
+export interface RecurringRule {
+  id: string;
+  householdId: string;
+  type: EntryType;
+  amount: number;
+  dayOfMonth: number; // 1-31
+  startMonth: string; // 'YYYY-MM'
+  accountId: string;
+  toAccountId: string | null;
+  itemId: string | null;
+  note: string | null;
+  isArchived: boolean;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EnrichedRecurringRule extends RecurringRule {
+  accountNameAr?: string | null;
+  accountNameEn?: string | null;
+  toAccountNameAr?: string | null;
+  toAccountNameEn?: string | null;
+  itemNameAr?: string | null;
+  itemNameEn?: string | null;
+  subcategoryId?: string | null;
+  subcategoryNameAr?: string | null;
+  subcategoryNameEn?: string | null;
+  categoryId?: string | null;
+  categoryNameAr?: string | null;
+  categoryNameEn?: string | null;
+  categoryIcon?: string | null;
+  categoryColor?: string | null;
 }
 
 /**
@@ -292,11 +331,30 @@ export interface TransactionRow {
   photo_path?: string | null;
   /** Live mode: one of the starter sample entries (0014). */
   is_sample?: boolean;
+  recurring_rule_id?: string | null;
+  recurring_month?: string | null;
   created_by: string | null;
   updated_by: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+}
+
+export interface RecurringRuleRow {
+  id: string;
+  household_id: string;
+  type: EntryType;
+  amount: number;
+  day_of_month: number;
+  start_month: string;
+  account_id: string;
+  to_account_id: string | null;
+  item_id: string | null;
+  note: string | null;
+  is_archived: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface BudgetRow {

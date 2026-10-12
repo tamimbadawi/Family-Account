@@ -29,6 +29,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 
 import { TypeToggle } from './TypeToggle';
 import { AmountDisplay } from './AmountDisplay';
@@ -151,6 +152,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
   const [isNoteOpen, setIsNoteOpen] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [repeatsMonthly, setRepeatsMonthly] = React.useState(false);
 
   // When type changes, clear incompatible item (expense <-> income or transfer)
   const handleTypeChange = (newType: EntryType) => {
@@ -240,7 +242,30 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
       if (mode === 'add') {
         // Same id on every retry of this entry, so a save that reached the server is never duplicated
         pendingIdRef.current ??= crypto.randomUUID();
-        const created = await repo.addEntry({ ...payload, id: pendingIdRef.current });
+        const startMonth = occurredOn.slice(0, 7);
+        const dayOfMonth = Number(occurredOn.split('-')[2]);
+        let ruleId: string | null = null;
+
+        if (repeatsMonthly) {
+          const rule = await repo.createRecurringRule({
+            type,
+            amount: numericAmount,
+            dayOfMonth,
+            startMonth,
+            accountId: selectedWalletId!,
+            toAccountId: isTransfer ? selectedToWalletId : null,
+            itemId,
+            note: note.trim() || null,
+          });
+          ruleId = rule.id;
+        }
+
+        const created = await repo.addEntry({
+          ...payload,
+          id: pendingIdRef.current,
+          recurringRuleId: ruleId,
+          recurringMonth: ruleId ? startMonth : null,
+        });
         if (photo) await repo.setEntryPhoto(created.id, photo);
 
         setIsSuccess(true);
@@ -251,6 +276,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
               label: tCommon('undo'),
               onClick: async () => {
                 await repo.softDeleteEntry(created.id);
+                if (ruleId) await repo.archiveRecurringRule(ruleId, true);
                 toast.info(t('deleted'));
               },
             },
@@ -326,7 +352,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
   };
 
   return (
-    <div className="flex flex-col gap-3 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] select-none">
+    <div className="flex flex-col gap-2 [@media(min-height:740px)]:gap-3 px-5 pb-2 [@media(min-height:740px)]:pb-[max(1rem,env(safe-area-inset-bottom))] select-none">
       {/* One sheet that fits an iPhone screen: type, amount, category, pad, details, save */}
       <TypeToggle value={type} onChange={handleTypeChange} />
 
@@ -379,6 +405,18 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
         )}
       </div>
 
+      {mode === 'add' && !isNoteOpen && (
+        <label className="flex h-11 items-center justify-between rounded-2xl bg-surface-2 px-3.5 cursor-pointer select-none">
+          <span className="text-body font-semibold text-ink">{t('repeatsMonthly')}</span>
+          <Switch
+            checked={repeatsMonthly}
+            onCheckedChange={setRepeatsMonthly}
+            size="sm"
+            aria-label={t('repeatsMonthly')}
+          />
+        </label>
+      )}
+
       <div className="flex gap-2">
         {/* Edit mode: Delete next to Save so the sheet still fits */}
         {mode === 'edit' && (
@@ -386,7 +424,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
             type="button"
             onClick={handleDelete}
             aria-label={tCommon('delete')}
-            className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-danger/10 text-danger transition-transform active:scale-95 cursor-pointer"
+            className="flex size-12 [@media(min-height:740px)]:size-14 shrink-0 items-center justify-center rounded-2xl bg-danger/10 text-danger transition-transform active:scale-95 cursor-pointer"
           >
             <Trash2 className="size-6" />
           </button>
@@ -396,7 +434,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, onClose }: EntrySheet
         <Button
           onClick={handleSave}
           disabled={!canSave}
-          className="relative h-14 flex-1 rounded-2xl text-heading font-semibold text-accent-ink overflow-hidden cursor-pointer"
+          className="relative h-12 [@media(min-height:740px)]:h-14 flex-1 rounded-2xl text-heading font-semibold text-accent-ink overflow-hidden cursor-pointer"
         >
           <AnimatePresence mode="wait">
             {isSuccess ? (
@@ -486,7 +524,7 @@ export function EntrySheet() {
         {/* Only this inner box may scroll: vaul hangs a 200%-tall strip under the sheet, which made the sheet itself
             scrollable, so tapping a lower chip slid the type toggle and amount out of view */}
         <div className="min-h-0 overflow-y-auto">
-          <DrawerHeader className="px-4 pt-1 pb-2">
+          <DrawerHeader className="px-4 pt-0.5 pb-1 [@media(min-height:740px)]:pt-1 [@media(min-height:740px)]:pb-2">
             <DrawerTitle className="text-title font-bold text-ink">
               {mode === 'edit' ? t('editTitle') : t('addTitle')}
             </DrawerTitle>

@@ -15,6 +15,7 @@ import type {
   MetaRow,
   OutboxRow,
   PhotoRow,
+  RecurringRuleRow,
   SubcategoryRow,
   TransactionRow,
 } from '../data/types';
@@ -39,6 +40,7 @@ export class FamilyAccountsDB extends Dexie {
   meta!: Table<MetaRow, string>;
   photos!: Table<PhotoRow, string>;
   budgets!: Table<BudgetRow, string>;
+  recurring_rules!: Table<RecurringRuleRow, string>;
 
   constructor(dbName: string = getDbName()) {
     super(dbName);
@@ -64,6 +66,13 @@ export class FamilyAccountsDB extends Dexie {
     // v3 · monthly budgets per category or group.
     this.version(3).stores({
       budgets: 'id, household_id, category_id, subcategory_id, is_archived',
+    });
+
+    // v4 · recurring entries for monthly bills, salaries, rent (R3).
+    this.version(4).stores({
+      recurring_rules: 'id, household_id, is_archived, updated_at',
+      transactions:
+        'id, household_id, occurred_on, account_id, to_account_id, item_id, type, deleted_at, updated_at, recurring_rule_id, recurring_month, [household_id+occurred_on], [household_id+recurring_rule_id+recurring_month]',
     });
   }
 }

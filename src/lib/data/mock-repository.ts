@@ -15,6 +15,7 @@ import {
   toHousehold,
   toItem,
   toMember,
+  toRecurringRule,
   toSubcategory,
   toWallet,
 } from './mappers';
@@ -35,6 +36,7 @@ import type {
   CreateCategoryInput,
   CreateEntryInput,
   CreateItemInput,
+  CreateRecurringRuleInput,
   CreateSubcategoryInput,
   CreateWalletInput,
   ListEntriesParams,
@@ -56,6 +58,7 @@ import type {
   CategoryRow,
   CategoryTotal,
   EnrichedEntry,
+  EnrichedRecurringRule,
   Entry,
   Household,
   HouseholdMemberRow,
@@ -66,6 +69,8 @@ import type {
   PivotEntry,
   PivotPeriod,
   RecentItem,
+  RecurringRule,
+  RecurringRuleRow,
   Subcategory,
   SubcategoryRow,
   SyncStatus,
@@ -73,6 +78,7 @@ import type {
   Wallet,
   WalletBalance,
 } from './types';
+import { entryDateForMonth, getDueMonths } from '../recurring/date';
 
 /** Tables the app writes to, with their Dexie row types. */
 export interface WritableRows {
@@ -82,6 +88,7 @@ export interface WritableRows {
   items: ItemRow;
   transactions: TransactionRow;
   budgets: BudgetRow;
+  recurring_rules: RecurringRuleRow;
 }
 export type WritableTable = keyof WritableRows;
 export type WritableRow<K extends WritableTable> = WritableRows[K];
@@ -164,10 +171,12 @@ export class MockRepository implements Repository {
           await this.renameArabicSampleMembers();
           await this.backfillMissingCreators();
           await this.seedSampleBudgets();
+          await this.processDueRecurringRules();
           return;
         }
 
         await this.seed();
+        await this.processDueRecurringRules();
       } catch (err) {
         MockRepository.seedPromises.delete(this.db);
         this.seedPromise = null;
@@ -193,6 +202,7 @@ export class MockRepository implements Repository {
         this.db.items,
         this.db.transactions,
         this.db.photos,
+        this.db.recurring_rules,
         this.db.meta,
       ],
       async () => {
@@ -206,6 +216,7 @@ export class MockRepository implements Repository {
           this.db.items.clear(),
           this.db.transactions.clear(),
           this.db.photos.clear(),
+          this.db.recurring_rules.clear(),
         ]);
 
         // Insert household and members
@@ -643,6 +654,152 @@ export class MockRepository implements Repository {
     await this.patch('budgets', id, { is_archived: archive, updated_at: new Date().toISOString() });
   }
 
+  // ---------- Recurring Rules ----------
+
+  private async enrichRecurringRules(rows: RecurringRuleRow[]): Promise<EnrichedRecurringRule[]> {
+    const [accounts, items, subcategories, categories] = await Promise.all([
+      this.db.accounts.toArray(),
+      this.db.items.toArray(),
+      this.db.subcategories.toArray(),
+      this.db.categories.toArray(),
+    ]);
+
+    const accountMap = new Map<string, AccountRow>(accounts.map((a) => [a.id, a]));
+    const itemMap = new Map<string, ItemRow>(items.map((i) => [i.id, i]));
+    const subMap = new Map<string, SubcategoryRow>(subcategories.map((s) => [s.id, s]));
+    const catMap = new Map<string, CategoryRow>(categories.map((c) => [c.id, c]));
+
+    return rows.map((row) => {
+      const rule = toRecurringRule(row);
+      const acc = accountMap.get(row.account_id);
+      const toAcc = row.to_account_id ? accountMap.get(row.to_account_id) : undefined;
+      const item = row.item_id ? itemMap.get(row.item_id) : undefined;
+      const sub = item ? subMap.get(item.subcategory_id) : undefined;
+      const cat = sub ? catMap.get(sub.category_id) : undefined;
+
+      return {
+        ...rule,
+        accountNameAr: acc?.name_ar ?? null,
+        accountNameEn: acc?.name_en ?? null,
+        toAccountNameAr: toAcc?.name_ar ?? null,
+        toAccountNameEn: toAcc?.name_en ?? null,
+        itemNameAr: item?.name_ar ?? null,
+        itemNameEn: item?.name_en ?? null,
+        subcategoryId: sub?.id ?? null,
+        subcategoryNameAr: sub?.name_ar ?? null,
+        subcategoryNameEn: sub?.name_en ?? null,
+        categoryId: cat?.id ?? null,
+        categoryNameAr: cat?.name_ar ?? null,
+        categoryNameEn: cat?.name_en ?? null,
+        categoryIcon: cat?.icon ?? null,
+        categoryColor: cat?.color ?? null,
+      };
+    });
+  }
+
+  async getRecurringRules(includeArchived = false): Promise<EnrichedRecurringRule[]> {
+    await this.ensureSeeded();
+    let rows = await this.db.recurring_rules.toArray();
+    if (!includeArchived) {
+      rows = rows.filter((r) => !r.is_archived);
+    }
+    rows.sort((a, b) => a.created_at.localeCompare(b.created_at));
+    return this.enrichRecurringRules(rows);
+  }
+
+  async getRecurringRule(id: string): Promise<RecurringRule | null> {
+    await this.ensureSeeded();
+    const row = await this.db.recurring_rules.get(id);
+    return row ? toRecurringRule(row) : null;
+  }
+
+  async createRecurringRule(input: CreateRecurringRuleInput): Promise<RecurringRule> {
+    await this.ensureSeeded();
+    const id = input.id ?? crypto.randomUUID();
+    const amount = roundMoney(input.amount);
+    if (!(amount > 0)) {
+      throw new Error('Amount must be greater than zero');
+    }
+    const dayOfMonth = Math.min(31, Math.max(1, Math.round(input.dayOfMonth)));
+    const now = new Date().toISOString();
+
+    const row: RecurringRuleRow = {
+      id,
+      household_id: await this.householdId(input.householdId),
+      type: input.type,
+      amount,
+      day_of_month: dayOfMonth,
+      start_month: input.startMonth,
+      account_id: input.accountId,
+      to_account_id: input.type === 'transfer' ? input.toAccountId ?? null : null,
+      item_id: input.type === 'transfer' ? null : input.itemId ?? null,
+      note: input.note ?? null,
+      is_archived: false,
+      created_by: input.createdBy ?? this.currentUserId,
+      created_at: now,
+      updated_at: now,
+    };
+
+    return toRecurringRule(await this.persist('recurring_rules', row));
+  }
+
+  async archiveRecurringRule(id: string, archive = true): Promise<void> {
+    await this.ensureSeeded();
+    await this.patch('recurring_rules', id, { is_archived: archive, updated_at: new Date().toISOString() });
+  }
+
+  async processDueRecurringRules(currentDate?: string): Promise<number> {
+    const today = currentDate ?? localISODate();
+    const rules = await this.db.recurring_rules.filter((r) => !r.is_archived).toArray();
+    let createdCount = 0;
+
+    for (const rule of rules) {
+      const dueMonths = getDueMonths(
+        {
+          startMonth: rule.start_month,
+          dayOfMonth: rule.day_of_month,
+          isArchived: rule.is_archived,
+        },
+        today
+      );
+
+      for (const month of dueMonths) {
+        // Enforce unique (household_id, recurring_rule_id, recurring_month): check if an entry exists
+        const existing = await this.db.transactions
+          .filter((t) => t.recurring_rule_id === rule.id && t.recurring_month === month)
+          .first();
+
+        if (existing) continue;
+
+        const occurredOn = entryDateForMonth(month, rule.day_of_month);
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+        const row: TransactionRow = {
+          id,
+          household_id: rule.household_id,
+          type: rule.type,
+          amount: rule.amount,
+          occurred_on: occurredOn,
+          account_id: rule.account_id,
+          to_account_id: rule.to_account_id,
+          item_id: rule.item_id,
+          note: rule.note,
+          recurring_rule_id: rule.id,
+          recurring_month: month,
+          created_by: rule.created_by,
+          updated_by: rule.created_by,
+          created_at: now,
+          updated_at: now,
+          deleted_at: null,
+        };
+        await this.persist('transactions', row);
+        createdCount++;
+      }
+    }
+
+    return createdCount;
+  }
+
   // ---------- Subcategories ----------
 
   async getSubcategories(categoryId?: string, includeArchived = false): Promise<Subcategory[]> {
@@ -943,6 +1100,8 @@ export class MockRepository implements Repository {
       to_account_id: input.type === 'transfer' ? input.toAccountId! : null,
       item_id: input.type === 'transfer' ? null : input.itemId!,
       note: input.note ?? null,
+      recurring_rule_id: input.recurringRuleId ?? null,
+      recurring_month: input.recurringMonth ?? null,
       created_by: input.createdBy ?? this.currentUserId,
       updated_by: input.createdBy ?? this.currentUserId,
       created_at: now,

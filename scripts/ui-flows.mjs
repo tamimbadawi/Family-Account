@@ -918,6 +918,48 @@ const FLOWS = {
     const toastElem = page.locator('[data-sonner-toast]').first();
     await assertUsable(page, toastElem, 'Feedback toast on save');
   },
+  async recurring_entries(page, { locale }) {
+    const ar = locale === 'ar';
+    // 1. Start from Home to initialize page and locale
+    await page.goto(`${BASE}/${locale}`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(1000);
+
+    // 2. Open Add entry sheet from Home
+    await openSheet(page, ar);
+
+    // 3. Type amount and select category
+    await typeAmount(page, ['3', '5', '0', '0']);
+    await tap(page, ar ? 'الطعام' : 'Food');
+    await tap(page, ar ? 'البقالة' : 'Groceries');
+    await tap(page, ar ? 'سوبرماركت' : 'Supermarket');
+
+    // 4. Toggle "Repeats every month"
+    const repeatSwitch = page.getByRole('switch', { name: ar ? 'يتكرر كل شهر' : 'Repeats every month' }).first();
+    await assertUsable(page, repeatSwitch, 'Repeats every month switch');
+    await repeatSwitch.click();
+    await sleep(300);
+
+    // 5. Save entry
+    const save = await saveButton(page);
+    await assertUsable(page, save, 'Save button');
+    await save.click();
+    await sleep(1500);
+
+    // 6. Visit Settings > Recurring entries to verify new rule is listed
+    await page.goto(`${BASE}/${locale}/settings/recurring`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(1000);
+    const heading = page.getByRole('heading', { name: ar ? 'المعاملات المتكررة' : 'Recurring entries' }).first();
+    await assertUsable(page, heading, 'Recurring entries page heading');
+
+    const stopBtn = page.getByRole('button', { name: ar ? 'إيقاف' : 'Stop' }).first();
+    await assertUsable(page, stopBtn, 'Stop recurring rule button');
+    await stopBtn.click();
+    await sleep(800);
+
+    // Verify Undo toast appears
+    const toastElem = page.locator('[data-sonner-toast]').first();
+    await assertUsable(page, toastElem, 'Undo toast on stopping rule');
+  },
 };
 
 const MULTI_LOCALE_FLOW_NAMES = [
@@ -932,6 +974,7 @@ const MULTI_LOCALE_FLOW_NAMES = [
   'budgets',
   'history_search',
   'budget_alerts',
+  'recurring_entries',
 ];
 const LOCALES = ['en', 'ar'];
 
