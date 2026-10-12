@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { useAndroidBackToClose } from "@/lib/android-back"
 import { Drawer as DrawerPrimitive } from "vaul"
 
 function Drawer({
@@ -9,28 +10,7 @@ function Drawer({
   onOpenChange,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
-  React.useEffect(() => {
-    if (!open) return;
-    if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
-    if (!/android/i.test(navigator.userAgent)) return;
-
-    let popped = false;
-    window.history.pushState({ drawer: true }, '');
-
-    const handlePopState = () => {
-      popped = true;
-      onOpenChange?.(false);
-    };
-
-    window.addEventListener('popstate', handlePopState);
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      if (!popped && window.history.state?.drawer) {
-        window.history.back();
-      }
-    };
-  }, [open, onOpenChange]);
+  useAndroidBackToClose(open, () => onOpenChange?.(false))
 
   return <DrawerPrimitive.Root data-slot="drawer" open={open} onOpenChange={onOpenChange} {...props} />
 }

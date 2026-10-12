@@ -6,6 +6,7 @@ import { Dialog as DialogPrimitive } from 'radix-ui';
 import { Camera, Loader2, RefreshCw, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { compressPhoto } from '@/lib/photos/compress';
+import { useAndroidBackToClose } from '@/lib/android-back';
 
 const CHIP =
   'relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-surface-2 text-accent transition-transform active:scale-95 cursor-pointer';
@@ -74,28 +75,7 @@ export function ReceiptPhoto({ photo, onChange }: ReceiptPhotoProps) {
   const [isBusy, setIsBusy] = React.useState(false);
   const [isViewerOpen, setIsViewerOpen] = React.useState(false);
 
-  React.useEffect(() => {
-    if (!isViewerOpen) return;
-    if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
-    if (!/android/i.test(navigator.userAgent)) return;
-
-    let popped = false;
-    window.history.pushState({ photoViewer: true }, '');
-
-    const handlePopState = () => {
-      popped = true;
-      setIsViewerOpen(false);
-    };
-
-    window.addEventListener('popstate', handlePopState);
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      if (!popped && window.history.state?.photoViewer) {
-        window.history.back();
-      }
-    };
-  }, [isViewerOpen]);
+  useAndroidBackToClose(isViewerOpen, () => setIsViewerOpen(false));
 
   const handleFile = async (file: File) => {
     setIsBusy(true);
