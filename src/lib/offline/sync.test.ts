@@ -1,14 +1,14 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { FamilyAccountsDB } from './db';
-import { FULL_PULL_EVERY_MS, needsFullPull, nextCursor, pull, sinceFor, type PullSource, type SyncedTable } from './sync';
+import { FULL_PULL_EVERY_MS, MissingTableError, needsFullPull, nextCursor, pull, sinceFor, type PullSource, type SyncedTable } from './sync';
 
 const H1 = 'h1';
 const H2 = 'h2';
 
 type Row = Record<string, unknown> & { id: string; updated_at: string; household_id?: string };
 
-function fakeSource(tables: Partial<Record<SyncedTable, Row[]>>, household = H1) {
+function fakeSource(tables: Partial<Record<SyncedTable, Row[]>>, household = H1, missing: SyncedTable[] = []) {
   const calls: { table: SyncedTable; since: string | null }[] = [];
   const source: PullSource = {
     async households() {
@@ -19,6 +19,7 @@ function fakeSource(tables: Partial<Record<SyncedTable, Row[]>>, household = H1)
     },
     async fetchPage(table, hid, since, from, to) {
       calls.push({ table, since });
+      if (missing.includes(table)) throw new MissingTableError(table);
       return (tables[table] ?? [])
         .filter((r) => (r.household_id ?? hid) === hid && (!since || r.updated_at > since))
         .sort((a, b) => a.updated_at.localeCompare(b.updated_at))
@@ -124,5 +125,28 @@ describe('pull()', () => {
     );
     await pull(db, fakeSource({ transactions: many }).source);
     expect(await db.transactions.count()).toBe(1205);
+  });
+
+  it('skips a table the server does not have yet and still downloads the rest', async () => {
+    const goal: Row = { id: 'g1', household_id: H1, updated_at: '2026-10-07T09:00:00Z' };
+    const data = { transactions: [entry('t1', '2026-10-07T10:00:00Z')], savings_goals: [goal] };
+    expect(await pull(db, fakeSource(data, H1, ['savings_goals']).source, new Date('2026-10-07T12:00:00Z'))).toBe(H1);
+    expect(await db.transactions.count()).toBe(1);
+    expect(await db.savings_goals.count()).toBe(0);
+
+    // Once the table exists, the next (incremental) pull brings all of it down
+    const later = fakeSource(data);
+    await pull(db, later.source, new Date('2026-10-07T12:30:00Z'));
+    expect(later.calls.find((c) => c.table === 'savings_goals')?.since).toBeNull();
+    expect(await db.savings_goals.count()).toBe(1);
+  });
+
+  it('still fails the pull on any other error', async () => {
+    const { source } = fakeSource({});
+    source.fetchPage = async () => {
+      throw new Error('permission denied');
+    };
+    await expect(pull(db, source)).rejects.toThrow('permission denied');
+    expect(await db.households.count()).toBe(0);
   });
 });

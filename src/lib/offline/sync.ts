@@ -20,9 +20,23 @@ const PAGE = 1000; // PostgREST returns at most 1000 rows per request
 
 type Row = Record<string, unknown> & { id?: string; updated_at?: string };
 
+/**
+ * The server does not have this table (yet): the app went live before its migration was applied.
+ * pull() skips the table and still brings the rest of the household down.
+ */
+export class MissingTableError extends Error {
+  constructor(readonly table: string) {
+    super(`Table ${table} is missing on the server`);
+    this.name = 'MissingTableError';
+  }
+}
+
 /** The smallest surface of the Supabase client the pull needs (easy to fake in tests). */
 export interface PullSource {
-  /** Rows of `table` for the household, ordered by updated_at then id; `since` = strictly after. */
+  /**
+   * Rows of `table` for the household, ordered by updated_at then id; `since` = strictly after.
+   * Throws MissingTableError when the server has no such table.
+   */
   fetchPage(table: SyncedTable, householdId: string, since: string | null, from: number, to: number): Promise<Row[]>;
   households(): Promise<Row[]>;
   members(householdId: string): Promise<Row[]>;
@@ -101,7 +115,13 @@ export async function pull(db: FamilyAccountsDB, source: PullSource, now = new D
   const fetched = await Promise.all(
     SYNCED_TABLES.map(async (table) => {
       const cursor = full ? null : await meta<string>(db, `cursor:${table}`);
-      return [table, await fetchAll(source, table, householdId, sinceFor(cursor)), cursor] as const;
+      try {
+        return [table, await fetchAll(source, table, householdId, sinceFor(cursor)), cursor] as const;
+      } catch (err) {
+        if (!(err instanceof MissingTableError)) throw err;
+        console.warn(`[sync] ${err.message}; skipped`);
+        return [table, null, cursor] as const;
+      }
     })
   );
 
@@ -111,6 +131,7 @@ export async function pull(db: FamilyAccountsDB, source: PullSource, now = new D
     await db.household_members.clear();
     await db.household_members.bulkPut(members as never[]);
     for (const [table, rows, cursor] of fetched) {
+      if (!rows) continue; // missing on the server: keep what is here and the cursor, so the next pull retries
       const store = db[table] as unknown as { clear(): Promise<void>; bulkPut(rows: Row[]): Promise<unknown> };
       if (full) await store.clear();
       if (rows.length) await store.bulkPut(rows);

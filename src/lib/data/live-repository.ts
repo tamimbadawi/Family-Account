@@ -13,7 +13,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseBrowserClient } from '../supabase/client';
 import type { Database } from '../supabase/database.types';
 import { db as defaultDb, type FamilyAccountsDB } from '../offline/db';
-import { clearLocalCopy, pull, type PullSource, type SyncedTable } from '../offline/sync';
+import { clearLocalCopy, MissingTableError, pull, type PullSource, type SyncedTable } from '../offline/sync';
 import { MockRepository, type WritableRow, type WritableTable } from './mock-repository';
 import { OfflineError } from './errors';
 import { toEntry, toHousehold } from './mappers';
@@ -21,6 +21,7 @@ import type { SyncStatus, TransactionRow } from './types';
 
 const REQUEST_TIMEOUT_MS = 15_000;
 const RECEIPTS_BUCKET = 'receipts';
+const MISSING_TABLE_CODES = ['PGRST205', '42P01'];
 
 // The server sets these itself: timestamps from its own clock (the pull cursor relies on it),
 // who created/edited an entry from the signed-in user.
@@ -72,7 +73,10 @@ function supabaseSource(client: Client): PullSource {
     async fetchPage(table: SyncedTable, householdId, since, from, to) {
       let q = client.from(table).select('*').eq('household_id', householdId);
       if (since) q = q.gt('updated_at', since);
-      return rows(await q.order('updated_at').order('id').range(from, to).abortSignal(timeout()));
+      const res = await q.order('updated_at').order('id').range(from, to).abortSignal(timeout());
+      // PGRST205: not in the API's schema cache; 42P01: not in the database
+      if (res.error && MISSING_TABLE_CODES.includes(res.error.code)) throw new MissingTableError(table);
+      return rows(res);
     },
   };
 }
