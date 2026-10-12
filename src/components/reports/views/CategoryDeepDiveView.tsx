@@ -29,6 +29,8 @@ import {
 } from '@/components/ui/drawer';
 import { money } from '@/lib/format';
 import { MonthSwitcher } from '../MonthSwitcher';
+import { useRouter } from '@/i18n/navigation';
+import { historyHref } from '@/lib/history/link';
 
 export function CategoryDeepDiveView() {
   const locale = useLocale();
@@ -38,6 +40,14 @@ export function CategoryDeepDiveView() {
   const [month, setMonth] = React.useState(() => new Date().toISOString().slice(0, 7));
   const [selectedCatId, setSelectedCatId] = React.useState<string | null>(null);
   const [showAllSheet, setShowAllSheet] = React.useState(false);
+  const router = useRouter();
+  // Tapping a total opens its entries in History (ids 'uncategorized' / 'other' are the leftovers bucket)
+  const openEntries = (m: string, subcategoryId?: string, itemId?: string) => {
+    if (!activeCatId) return;
+    const sub = subcategoryId && subcategoryId !== 'uncategorized' ? subcategoryId : undefined;
+    const item = sub && itemId && itemId !== 'other' ? itemId : undefined;
+    router.push(historyHref({ type: 'expense', month: m, categoryId: activeCatId, subcategoryId: sub, itemId: item }));
+  };
 
   const entries = useEntries();
   const categories = useCategories();
@@ -112,14 +122,14 @@ export function CategoryDeepDiveView() {
             </span>
           </div>
 
-          <div className="text-end">
-            <span className="text-body font-bold tabular-nums text-expense">
+          <button type="button" onClick={() => openEntries(month)} className="min-h-12 rounded-xl text-end cursor-pointer active:bg-surface-2 transition-colors">
+            <span className="block text-body font-bold tabular-nums text-expense">
               {money(result.currentMonthTotal, locale, { fractionDigits: 0 })}
             </span>
             <span className="text-caption text-ink-muted block">
               {t('library.thisMonth')}
             </span>
-          </div>
+          </button>
         </div>
 
         <div className="h-24 w-full">
@@ -173,6 +183,11 @@ export function CategoryDeepDiveView() {
                 fill={result.color || 'var(--accent)'}
                 radius={[4, 4, 0, 0]}
                 maxBarSize={20}
+                cursor="pointer"
+                onClick={(d) => {
+                  const m = (d as { payload?: { month?: string } }).payload?.month;
+                  if (m) openEntries(m);
+                }}
               />
             </BarChart>
           </ResponsiveContainer>
@@ -195,7 +210,9 @@ export function CategoryDeepDiveView() {
             {visibleSubcategories.map((sub) => (
               <div
                 key={sub.id}
-                onClick={() => setShowAllSheet(true)}
+                role="button"
+                tabIndex={0}
+                onClick={() => openEntries(month, sub.id)}
                 className="flex items-center justify-between py-2 cursor-pointer hover:bg-surface-2/40 transition-colors"
               >
                 <div>
@@ -241,27 +258,33 @@ export function CategoryDeepDiveView() {
           <div className="flex-1 overflow-y-auto px-5 py-3 divide-y divide-line [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden space-y-3">
             {result.subcategories.map((sub) => (
               <div key={sub.id} className="pt-3 first:pt-0 space-y-1.5">
-                <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => openEntries(month, sub.id)}
+                  className="flex min-h-12 w-full items-center justify-between text-start cursor-pointer rounded-xl active:bg-surface-2 transition-colors"
+                >
                   <span className="text-body font-bold text-ink">
                     {sub.name}
                   </span>
                   <span className="text-body font-bold tabular-nums text-expense">
                     {money(sub.amount, locale, { fractionDigits: 0 })}
                   </span>
-                </div>
+                </button>
 
                 {sub.items.length > 0 && (
                   <div className="ps-2.5 space-y-1 border-s-2 border-line">
                     {sub.items.map((it) => (
-                      <div
+                      <button
+                        type="button"
                         key={it.id}
-                        className="flex items-center justify-between text-body text-ink"
+                        onClick={() => openEntries(month, sub.id, it.id)}
+                        className="flex min-h-12 w-full items-center justify-between text-start text-body text-ink cursor-pointer rounded-xl active:bg-surface-2 transition-colors"
                       >
                         <span className="text-ink-muted">{it.name}</span>
                         <span className="tabular-nums font-semibold text-ink">
                           {money(it.amount, locale, { fractionDigits: 0 })}
                         </span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 )}

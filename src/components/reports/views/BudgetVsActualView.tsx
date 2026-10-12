@@ -11,6 +11,8 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MonthSwitcher } from '@/components/reports/MonthSwitcher';
 import { BudgetProgressRow, useBudgetNames } from '@/components/budgets/BudgetProgressRow';
+import { useRouter } from '@/i18n/navigation';
+import { historyHref } from '@/lib/history/link';
 
 const BAR = { ok: 'bg-income', near: 'bg-warning', over: 'bg-expense' } as const;
 
@@ -19,6 +21,7 @@ export function BudgetVsActualView() {
   const t = useTranslations('budgets');
   const [month, setMonth] = React.useState(() => localISODate().slice(0, 7));
   const progress = useBudgetProgress(month);
+  const router = useRouter();
   const names = useBudgetNames();
   const fmt = (n: number) => money(n, locale, { fractionDigits: 0 });
 
@@ -80,7 +83,16 @@ export function BudgetVsActualView() {
       {/* One row per budget, fullest first */}
       <Card className="rounded-card bg-surface shadow-card border border-line/60 divide-y divide-line/30 overflow-hidden p-0 gap-0">
         {progress.map((p) => (
-          <BudgetProgressRow key={p.budget.id} progress={p} names={names} />
+          <BudgetProgressRow
+            key={p.budget.id}
+            progress={p}
+            names={names}
+            onClick={() =>
+              router.push(
+                historyHref({ type: 'expense', month, categoryId: p.budget.categoryId, subcategoryId: p.budget.subcategoryId })
+              )
+            }
+          />
         ))}
       </Card>
     </div>

@@ -15,6 +15,8 @@ import { balanceOverTimeReport } from '@/lib/reports/wallet-reports';
 import { formatMonth, getLastNMonths } from '@/lib/reports/months';
 import { Card } from '@/components/ui/card';
 import { money, pickName } from '@/lib/format';
+import { Link } from '@/i18n/navigation';
+import { historyHref } from '@/lib/history/link';
 
 export function BalanceOverTimeView() {
   const locale = useLocale();
@@ -244,9 +246,10 @@ export function BalanceOverTimeView() {
             '';
 
           return (
-            <div
+            <Link
               key={w.id}
-              className={`flex items-center justify-between py-1.5 px-3 select-none transition-opacity ${
+              href={historyHref({ walletId: w.id })}
+              className={`flex min-h-12 items-center justify-between py-1.5 px-3 select-none transition-opacity active:bg-surface-2 ${
                 isVisible ? 'opacity-100' : 'opacity-40'
               }`}
             >
@@ -262,7 +265,7 @@ export function BalanceOverTimeView() {
               <span className="text-body font-semibold tabular-nums text-ink">
                 {money(w.finalBalance, locale)}
               </span>
-            </div>
+            </Link>
           );
         })}
       </Card>

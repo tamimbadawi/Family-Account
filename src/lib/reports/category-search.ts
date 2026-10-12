@@ -5,6 +5,8 @@ export interface CategorySearchHit {
   level: 'category' | 'subcategory' | 'item';
   id: string;
   categoryId: string;
+  /** Set for a group or an item. */
+  subcategoryId: string | null;
   nameAr: string | null;
   nameEn: string | null;
   /** The levels above it ("Food › Groceries"), in each language; empty for a category. */
@@ -45,7 +47,7 @@ export function searchCategoryTotals(
 
   for (const e of entries) {
     if (e.type !== kind || !e.itemId || !e.categoryId || !e.subcategoryId) continue;
-    const base = { categoryId: e.categoryId, icon: e.categoryIcon ?? null, color: e.categoryColor ?? null };
+    const base = { categoryId: e.categoryId, subcategoryId: null as string | null, icon: e.categoryIcon ?? null, color: e.categoryColor ?? null };
     const catAr = e.categoryNameAr ?? null;
     const catEn = e.categoryNameEn ?? null;
     const subAr = e.subcategoryNameAr ?? null;
@@ -56,7 +58,7 @@ export function searchCategoryTotals(
     if (matches(q, subAr, subEn)) {
       add(
         `s:${e.subcategoryId}`,
-        () => ({ ...base, level: 'subcategory', id: e.subcategoryId!, nameAr: subAr, nameEn: subEn, pathAr: [catAr ?? ''], pathEn: [catEn ?? ''] }),
+        () => ({ ...base, subcategoryId: e.subcategoryId!, level: 'subcategory', id: e.subcategoryId!, nameAr: subAr, nameEn: subEn, pathAr: [catAr ?? ''], pathEn: [catEn ?? ''] }),
         e.amount
       );
     }
@@ -65,6 +67,7 @@ export function searchCategoryTotals(
         `i:${e.itemId}`,
         () => ({
           ...base,
+          subcategoryId: e.subcategoryId!,
           level: 'item',
           id: e.itemId!,
           nameAr: e.itemNameAr ?? null,

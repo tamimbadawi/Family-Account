@@ -15,10 +15,13 @@ import { useMonthSummary } from '@/lib/data/provider';
 import type { CategoryTotal } from '@/lib/data/types';
 import { useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/card';
+import { useRouter } from '@/i18n/navigation';
+import { historyHref } from '@/lib/history/link';
 
 function ReportsContent() {
   const locale = useLocale();
   const t = useTranslations('reports');
+  const router = useRouter();
   const isRtl = locale.startsWith('ar');
 
   const searchParams = useSearchParams();
@@ -148,6 +151,7 @@ function ReportsContent() {
                     spent={summary.expense}
                     income={summary.income}
                     net={summary.net}
+                    month={selectedMonth}
                   />
                 ) : (
                   <div className="h-16 rounded-card bg-surface p-3 shadow-card animate-pulse space-y-2">
@@ -163,6 +167,7 @@ function ReportsContent() {
                     data={donutData}
                     total={donutTotal || summary?.expense || 0}
                     height={112}
+                    onSelect={(id) => router.push(historyHref({ type: 'expense', month: selectedMonth, categoryId: id }))}
                   />
                 </Card>
 

@@ -4,11 +4,13 @@ import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Target, Trophy } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
-import { useSavingsGoals, useWallets } from '@/lib/data/provider';
+import { useEntries, useSavingsGoals, useWallets } from '@/lib/data/provider';
 import { Card } from '@/components/ui/card';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { money, pickName } from '@/lib/format';
 import { formatGoalTargetDate } from '@/lib/goals/progress';
+import { entriesFor } from '@/lib/reports/drill';
+import { useEntriesDrill } from '../useEntriesDrill';
 
 /** Reports → Savings goals: how far each goal has come, and the total put aside. */
 export function SavingsGoalsView() {
@@ -17,6 +19,8 @@ export function SavingsGoalsView() {
   const tGoals = useTranslations('goals');
   const goals = useSavingsGoals(false);
   const wallets = useWallets();
+  const entries = useEntries();
+  const drill = useEntriesDrill();
 
   const currencyOf = React.useCallback(
     (walletId: string) => wallets?.find((w) => w.id === walletId)?.currency,
@@ -71,7 +75,16 @@ export function SavingsGoalsView() {
         const currency = currencyOf(goal.walletId);
         const date = formatGoalTargetDate(goal.targetDate, locale);
         return (
-          <Card key={goal.id} className="rounded-card bg-surface p-3.5 shadow-card border border-line/60 gap-2.5">
+          <Card
+            key={goal.id}
+            role="button"
+            tabIndex={0}
+            onClick={() =>
+              drill.show(pickName({ name_ar: goal.nameAr, name_en: goal.nameEn }, locale), entriesFor(entries, { walletId: goal.walletId }), {
+                total: goal.currentAmount,
+              })
+            }
+            className="cursor-pointer rounded-card bg-surface p-3.5 shadow-card border border-line/60 gap-2.5 active:bg-surface-2 transition-colors">
             <div className="flex items-center gap-3">
               <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-income-soft text-income">
                 <CategoryIcon name={goal.icon ?? 'sparkles'} className="size-5" />
@@ -123,6 +136,7 @@ export function SavingsGoalsView() {
       >
         {t('library.manageGoals')}
       </Link>
+      {drill.sheet}
     </div>
   );
 }

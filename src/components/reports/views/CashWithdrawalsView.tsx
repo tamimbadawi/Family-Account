@@ -8,6 +8,7 @@ import { cashWithdrawalsReport } from '@/lib/reports/wallet-reports';
 import { MonthSwitcher } from '../MonthSwitcher';
 import { Card } from '@/components/ui/card';
 import { formatDay, money } from '@/lib/format';
+import { useEntrySheet } from '@/components/entry/EntrySheetContext';
 
 export function CashWithdrawalsView() {
   const locale = useLocale();
@@ -19,6 +20,11 @@ export function CashWithdrawalsView() {
 
   const wallets = useWallets();
   const entries = useEntries();
+  const { openEdit } = useEntrySheet();
+  const openById = (id: string) => {
+    const entry = entries?.find((e) => e.id === id);
+    if (entry) openEdit(entry);
+  };
 
   const report = React.useMemo(() => {
     return cashWithdrawalsReport(wallets ?? [], entries ?? [], month);
@@ -87,7 +93,7 @@ export function CashWithdrawalsView() {
               '';
 
             return (
-              <div key={w.id} className="p-3.5 space-y-1 select-none">
+              <button type="button" key={w.id} onClick={() => openById(w.id)} className="block w-full text-start cursor-pointer active:bg-surface-2 transition-colors p-3.5 space-y-1 select-none">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-body font-semibold text-ink">
                     <span>{fromName}</span>
@@ -108,7 +114,7 @@ export function CashWithdrawalsView() {
                     </strong>
                   </div>
                 </div>
-              </div>
+              </button>
             );
           })}
         </Card>

@@ -12,6 +12,7 @@ Changes that are finished and checked, waiting to go live. Nothing here is live 
 
 | PR | What it changes |
 |---|---|
+| [#109](https://github.com/tamimbadawi/Family-Account/pull/109) | Tap any total to see the entries behind it: Reports categories (incl. search results), Overview totals and donut, every report (goals, people, wallets, bills, budgets, income, months), Home top categories. History opens already filtered, with a Back button |
 
 ## Deployed
 

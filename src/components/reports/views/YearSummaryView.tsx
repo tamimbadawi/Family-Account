@@ -15,6 +15,8 @@ import { useEntries } from '@/lib/data/provider';
 import { calculateYearSummary } from '@/lib/reports/year-summary';
 import { Card } from '@/components/ui/card';
 import { money } from '@/lib/format';
+import { Link, useRouter } from '@/i18n/navigation';
+import { historyHref } from '@/lib/history/link';
 
 export function YearSummaryView() {
   const locale = useLocale();
@@ -23,6 +25,12 @@ export function YearSummaryView() {
   const [year, setYear] = React.useState(() => new Date().getFullYear());
 
   const entries = useEntries();
+  const router = useRouter();
+  const yearHref = (type?: 'expense' | 'income') => historyHref({ type, period: 'year', date: `${year}-01-01` });
+  const openBarMonth = (type: 'expense' | 'income') => (d: unknown) => {
+    const m = (d as { payload?: { month?: string } }).payload?.month;
+    if (m) router.push(historyHref({ type, month: m }));
+  };
 
   const result = React.useMemo(() => {
     if (!entries) return null;
@@ -140,8 +148,8 @@ export function YearSummaryView() {
                   return null;
                 }}
               />
-              <Bar dataKey="expense" fill="var(--expense)" radius={[4, 4, 0, 0]} maxBarSize={18} />
-              <Bar dataKey="income" fill="var(--income)" radius={[4, 4, 0, 0]} maxBarSize={18} />
+              <Bar dataKey="expense" fill="var(--expense)" radius={[4, 4, 0, 0]} maxBarSize={18} cursor="pointer" onClick={openBarMonth('expense')} />
+              <Bar dataKey="income" fill="var(--income)" radius={[4, 4, 0, 0]} maxBarSize={18} cursor="pointer" onClick={openBarMonth('income')} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -150,25 +158,25 @@ export function YearSummaryView() {
       {/* Totals Summary Card */}
       <Card className="rounded-card bg-surface p-3.5 shadow-card border border-line/60">
         <div className="grid grid-cols-2 gap-3">
-          <div>
+          <Link href={yearHref('income')} className="block min-h-12 rounded-xl active:bg-surface-2 transition-colors">
             <span className="text-caption text-ink-muted block">
               {t('library.totalIncome')}
             </span>
             <span className="text-body font-bold tabular-nums text-income">
               {money(result.totalIncome, locale, { fractionDigits: 0 })}
             </span>
-          </div>
+          </Link>
 
-          <div className="text-end">
+          <Link href={yearHref('expense')} className="block min-h-12 rounded-xl active:bg-surface-2 transition-colors text-end">
             <span className="text-caption text-ink-muted block">
               {t('library.totalExpense')}
             </span>
             <span className="text-body font-bold tabular-nums text-expense">
               {money(result.totalExpense, locale, { fractionDigits: 0 })}
             </span>
-          </div>
+          </Link>
 
-          <div className="pt-2 border-t border-line/40">
+          <Link href={yearHref()} className="block min-h-12 rounded-xl active:bg-surface-2 transition-colors pt-2 border-t border-line/40">
             <span className="text-caption text-ink-muted block">
               {t('library.totalSaved')}
             </span>
@@ -179,16 +187,16 @@ export function YearSummaryView() {
             >
               {money(result.totalSaved, locale, { fractionDigits: 0 })}
             </span>
-          </div>
+          </Link>
 
-          <div className="pt-2 border-t border-line/40 text-end">
+          <Link href={yearHref('expense')} className="block min-h-12 rounded-xl active:bg-surface-2 transition-colors pt-2 border-t border-line/40 text-end">
             <span className="text-caption text-ink-muted block">
               {t('library.monthlyAverage')}
             </span>
             <span className="text-body font-bold tabular-nums text-ink">
               {money(result.monthlyAverageExpense, locale, { fractionDigits: 0 })}
             </span>
-          </div>
+          </Link>
         </div>
       </Card>
     </div>

@@ -14,6 +14,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
+import { useEntrySheet } from '@/components/entry/EntrySheetContext';
 
 export function TransfersLogView() {
   const locale = useLocale();
@@ -23,6 +24,11 @@ export function TransfersLogView() {
 
   const wallets = useWallets();
   const entries = useEntries();
+  const { openEdit } = useEntrySheet();
+  const openById = (id: string) => {
+    const entry = entries?.find((e) => e.id === id);
+    if (entry) openEdit(entry);
+  };
 
   const report = React.useMemo(() => {
     return transfersLogReport(wallets ?? [], entries ?? [], {
@@ -43,7 +49,7 @@ export function TransfersLogView() {
       '';
 
     return (
-      <div key={item.id} className="py-2.5 px-3.5 space-y-0.5 select-none">
+      <button type="button" key={item.id} onClick={() => openById(item.id)} className="block w-full text-start cursor-pointer active:bg-surface-2 transition-colors py-2.5 px-3.5 space-y-0.5 select-none">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-body font-semibold text-ink">
             <span>{fromName}</span>
@@ -63,7 +69,7 @@ export function TransfersLogView() {
             </span>
           )}
         </div>
-      </div>
+      </button>
     );
   };
 

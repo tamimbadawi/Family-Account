@@ -23,6 +23,7 @@ import { OurMoneyRow } from '@/components/wallets/OurMoneySheet';
 import { SampleDataBadge } from '@/components/layout/SampleDataBadge';
 import { money, pickName } from '@/lib/format';
 import { useSignedInName } from '@/lib/auth/use-signed-in-name';
+import { historyHref } from '@/lib/history/link';
 
 export default function HomePage() {
   const tHome = useTranslations('home');
@@ -185,9 +186,10 @@ export default function HomePage() {
               );
 
               return (
-                <div
+                <Link
                   key={cat.id}
-                  className="flex flex-col items-center justify-center gap-1 rounded-2xl bg-surface py-1.5 px-2 text-center shadow-card select-none"
+                  href={historyHref({ type: 'expense', categoryId: cat.id })}
+                  className="flex flex-col items-center justify-center gap-1 rounded-2xl bg-surface py-1.5 px-2 text-center shadow-card select-none active:scale-[0.97] transition-transform"
                 >
                   <div
                     style={
@@ -208,7 +210,7 @@ export default function HomePage() {
                   <span className="text-caption font-bold tabular-nums text-expense">
                     {money(cat.total, locale, { compact: true })}
                   </span>
-                </div>
+                </Link>
               );
             })}
           </div>
