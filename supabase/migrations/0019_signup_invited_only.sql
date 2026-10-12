@@ -39,3 +39,17 @@ begin
 end $$;
 
 revoke execute on function public.create_family(text, text, text, text[]) from public, anon;
+
+-- ---------- The sign-up function asks: does this email have a live invite? ----------
+-- Service role only, like the operator functions: no table grant on family_invites is added.
+create or replace function public.signup_invite(p_email text)
+returns uuid language sql stable security definer set search_path = ''
+as $$
+  select i.id from public.family_invites i
+  where i.email = lower(trim(p_email)) and i.status = 'pending'
+    and i.created_at >= now() - interval '24 hours'
+  order by i.created_at limit 1;
+$$;
+
+revoke execute on function public.signup_invite(text) from public, anon, authenticated;
+grant  execute on function public.signup_invite(text) to service_role;

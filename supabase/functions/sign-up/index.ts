@@ -1,6 +1,6 @@
 // sign-up · lets an invited person create their own account from the sign-in page. Open to anyone
 // (nobody is signed in yet), so the invite is the check: the email must have a family invite that is
-// still waiting and was sent in the last 24 hours (family_invites, 0012 + 0017). Anyone else is refused.
+// still waiting and was sent in the last 24 hours (signup_invite, 0019). Anyone else is refused.
 //
 // The login is made here with the service role, already confirmed, so no confirmation email is sent and
 // the person goes straight in. It carries app_metadata.family_admin, which create_family requires
@@ -10,7 +10,6 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const normalizeEmail = (e: string) => e.trim().toLowerCase();
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const INVITE_HOURS = 24;
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -39,20 +38,12 @@ Deno.serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const since = new Date(Date.now() - INVITE_HOURS * 3600 * 1000).toISOString();
-  const { data: invites, error: inviteError } = await admin
-    .from('family_invites')
-    .select('id')
-    .eq('email', email)
-    .eq('status', 'pending')
-    .gte('created_at', since)
-    .order('created_at')
-    .limit(1);
+  const { data: inviteId, error: inviteError } = await admin.rpc('signup_invite', { p_email: email });
   if (inviteError) {
     console.error('[sign-up] invite lookup failed', inviteError.code);
     return reply(500, { error: 'failed' });
   }
-  if (!invites || invites.length === 0) return reply(403, { error: 'not_invited' });
+  if (!inviteId) return reply(403, { error: 'not_invited' });
 
   const { data: created, error } = await admin.auth.admin.createUser({
     email,
@@ -71,7 +62,7 @@ Deno.serve(async (req) => {
     return reply(500, { error: 'failed' });
   }
 
-  const { error: decideError } = await admin.rpc('decide_family_invite', { p_invite_id: invites[0].id, p_status: 'approved' });
+  const { error: decideError } = await admin.rpc('decide_family_invite', { p_invite_id: inviteId, p_status: 'approved' });
   if (decideError) console.error('[sign-up] decide_family_invite failed', decideError.code);
   return reply(200, { ok: true });
 });
