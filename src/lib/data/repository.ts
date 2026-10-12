@@ -14,6 +14,7 @@ import type {
   CategoryTotal,
   EnrichedEntry,
   EnrichedRecurringRule,
+  EnrichedSavingsGoal,
   Entry,
   EntryType,
   Household,
@@ -24,12 +25,36 @@ import type {
   PivotPeriod,
   RecentItem,
   RecurringRule,
+  SavingsGoal,
   Subcategory,
   SyncStatus,
   Wallet,
   WalletBalance,
   WalletType,
 } from './types';
+
+export interface CreateSavingsGoalInput {
+  id?: string;
+  householdId?: string;
+  nameEn: string;
+  nameAr?: string | null;
+  targetAmount: number;
+  targetDate?: string | null;
+  icon?: string | null;
+  color?: string | null;
+  walletId: string;
+  createdBy?: string | null;
+}
+
+export interface UpdateSavingsGoalInput {
+  nameEn?: string;
+  nameAr?: string | null;
+  targetAmount?: number;
+  targetDate?: string | null;
+  icon?: string | null;
+  color?: string | null;
+  walletId?: string;
+}
 
 export interface ListEntriesParams {
   month?: string; // 'YYYY-MM'
@@ -228,6 +253,13 @@ export interface Repository {
   archiveRecurringRule(id: string, archive?: boolean): Promise<void>;
   /** Generates any due monthly entries not yet created. Returns count of created entries. */
   processDueRecurringRules(currentDate?: string): Promise<number>;
+
+  // Savings Goals (R4)
+  getSavingsGoals(includeArchived?: boolean): Promise<EnrichedSavingsGoal[]>;
+  getSavingsGoal(id: string): Promise<EnrichedSavingsGoal | null>;
+  createSavingsGoal(input: CreateSavingsGoalInput): Promise<SavingsGoal>;
+  updateSavingsGoal(id: string, updates: UpdateSavingsGoalInput): Promise<SavingsGoal>;
+  archiveSavingsGoal(id: string, archive?: boolean): Promise<void>;
 
   // Entries (Transactions)
   listEntries(params?: ListEntriesParams): Promise<EnrichedEntry[]>;

@@ -162,6 +162,36 @@ export interface EnrichedRecurringRule extends RecurringRule {
 }
 
 /**
+ * A savings goal with target amount, optional target date and icon,
+ * funded via transfers into its linked wallet.
+ */
+export interface SavingsGoal {
+  id: string;
+  householdId: string;
+  nameEn: string;
+  nameAr: string | null;
+  targetAmount: number;
+  targetDate: string | null;
+  icon: string | null;
+  color: string | null;
+  walletId: string;
+  isArchived: boolean;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EnrichedSavingsGoal extends SavingsGoal {
+  walletNameEn: string | null;
+  walletNameAr: string | null;
+  currentAmount: number;
+  percent: number;
+  barPercent: number;
+  remaining: number;
+  isReached: boolean;
+}
+
+/**
  * A monthly spending limit on one expense category, or on one group (subcategory) inside it.
  * `subcategoryId` null = the whole category. Removing a budget archives it (nothing is hard-deleted).
  */
@@ -365,6 +395,22 @@ export interface BudgetRow {
   amount: number;
   is_starter?: boolean;
   is_archived: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SavingsGoalRow {
+  id: string;
+  household_id: string;
+  name_en: string;
+  name_ar: string | null;
+  target_amount: number;
+  target_date: string | null;
+  icon: string | null;
+  color: string | null;
+  wallet_id: string;
+  is_archived: boolean;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
 }

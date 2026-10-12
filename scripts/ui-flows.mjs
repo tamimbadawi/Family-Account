@@ -960,6 +960,58 @@ const FLOWS = {
     const toastElem = page.locator('[data-sonner-toast]').first();
     await assertUsable(page, toastElem, 'Undo toast on stopping rule');
   },
+  async savings_goals(page, { locale }) {
+    const ar = locale === 'ar';
+    // 1. Start from Home to initialize page and locale
+    await page.goto(`${BASE}/${locale}`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(1000);
+
+    // 2. Visit Settings > Goals
+    await page.goto(`${BASE}/${locale}/settings/goals`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(1000);
+    const heading = page.getByRole('heading', { name: ar ? 'أهداف الادخار' : 'Savings goals' }).first();
+    await assertUsable(page, heading, 'Savings goals page heading');
+
+    // 2. Click "+ New goal" button to open dialog
+    const newGoalBtn = page.getByRole('button', { name: ar ? 'هدف جديد' : 'New goal' }).first();
+    await assertUsable(page, newGoalBtn, 'New goal button');
+    await newGoalBtn.click();
+    await sleep(600);
+
+    // 3. Fill in goal name
+    const nameInput = page.getByPlaceholder(ar ? 'مثال: رحلة العائلة' : 'e.g. Family Trip').first();
+    await assertUsable(page, nameInput, 'Goal name input');
+    await nameInput.fill(ar ? 'عمرة العائلة' : 'Family Trip');
+
+    // 4. Fill in target amount
+    const amountInput = page.getByPlaceholder('50,000').first();
+    await assertUsable(page, amountInput, 'Target amount input');
+    await amountInput.fill('30000');
+
+    // 5. Submit form
+    const saveGoalBtn = page.getByRole('button', { name: ar ? 'إضافة هدف' : 'Add goal' }).first();
+    await assertUsable(page, saveGoalBtn, 'Add goal submit button');
+    await saveGoalBtn.click();
+    await sleep(1500);
+
+    // 6. Verify goal card appears
+    const goalCardTitle = page.getByRole('heading', { name: ar ? 'عمرة العائلة' : 'Family Trip' }).first();
+    await assertUsable(page, goalCardTitle, 'Goal card title');
+
+    // 7. Verify progress bar is visible
+    const progress = page.locator('[role="progressbar"]').first();
+    await assertUsable(page, progress, 'Goal progress bar');
+
+    // 8. Stop the goal
+    const stopBtn = page.getByRole('button', { name: ar ? /إيقاف/ : /Stop/ }).first();
+    await assertUsable(page, stopBtn, 'Stop goal button');
+    await stopBtn.click();
+    await sleep(800);
+
+    // 9. Verify Undo toast
+    const toastElem = page.locator('[data-sonner-toast]').first();
+    await assertUsable(page, toastElem, 'Undo toast on stopping goal');
+  },
 };
 
 const MULTI_LOCALE_FLOW_NAMES = [
@@ -975,6 +1027,7 @@ const MULTI_LOCALE_FLOW_NAMES = [
   'history_search',
   'budget_alerts',
   'recurring_entries',
+  'savings_goals',
 ];
 const LOCALES = ['en', 'ar'];
 

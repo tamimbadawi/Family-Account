@@ -11,7 +11,7 @@
 
 import type { FamilyAccountsDB } from './db';
 
-export const SYNCED_TABLES = ['accounts', 'categories', 'subcategories', 'items', 'transactions', 'budgets', 'recurring_rules'] as const;
+export const SYNCED_TABLES = ['accounts', 'categories', 'subcategories', 'items', 'transactions', 'budgets', 'recurring_rules', 'savings_goals'] as const;
 export type SyncedTable = (typeof SYNCED_TABLES)[number];
 
 export const OVERLAP_MS = 5 * 60 * 1000;

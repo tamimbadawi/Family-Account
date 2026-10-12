@@ -26,7 +26,7 @@ export function Header() {
   }
 
   return (
-    <header className="shrink-0 flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-2 select-none">
+    <header className="shrink-0 flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),0.5rem)] pb-1 [@media(min-height:701px)]:pt-[max(env(safe-area-inset-top),1rem)] [@media(min-height:701px)]:pb-2 select-none">
       <h1 className="text-title font-bold text-ink">{title}</h1>
       <div className="flex items-center gap-2">
         {/* Home shows it on the greeting line, where the long app name leaves room */}

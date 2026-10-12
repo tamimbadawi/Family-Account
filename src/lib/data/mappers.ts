@@ -18,6 +18,8 @@ import type {
   Member,
   RecurringRule,
   RecurringRuleRow,
+  SavingsGoal,
+  SavingsGoalRow,
   Subcategory,
   SubcategoryRow,
   TransactionRow,
@@ -326,5 +328,43 @@ export function toBudgetRow(b: Budget): BudgetRow {
     is_archived: b.isArchived,
     created_at: b.createdAt,
     updated_at: b.updatedAt,
+  };
+}
+
+// ---------- Savings Goal ----------
+
+export function toSavingsGoal(row: SavingsGoalRow): SavingsGoal {
+  return {
+    id: row.id,
+    householdId: row.household_id,
+    nameEn: row.name_en,
+    nameAr: row.name_ar,
+    targetAmount: roundMoney(Number(row.target_amount)),
+    targetDate: row.target_date,
+    icon: row.icon,
+    color: row.color,
+    walletId: row.wallet_id,
+    isArchived: row.is_archived,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function toSavingsGoalRow(g: SavingsGoal): SavingsGoalRow {
+  return {
+    id: g.id,
+    household_id: g.householdId,
+    name_en: g.nameEn,
+    name_ar: g.nameAr,
+    target_amount: roundMoney(g.targetAmount),
+    target_date: g.targetDate,
+    icon: g.icon,
+    color: g.color,
+    wallet_id: g.walletId,
+    is_archived: g.isArchived,
+    created_by: g.createdBy,
+    created_at: g.createdAt,
+    updated_at: g.updatedAt,
   };
 }

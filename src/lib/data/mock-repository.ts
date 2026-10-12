@@ -16,6 +16,7 @@ import {
   toItem,
   toMember,
   toRecurringRule,
+  toSavingsGoal,
   toSubcategory,
   toWallet,
 } from './mappers';
@@ -37,6 +38,7 @@ import type {
   CreateEntryInput,
   CreateItemInput,
   CreateRecurringRuleInput,
+  CreateSavingsGoalInput,
   CreateSubcategoryInput,
   CreateWalletInput,
   ListEntriesParams,
@@ -45,6 +47,7 @@ import type {
   UpdateCategoryInput,
   UpdateEntryInput,
   UpdateItemInput,
+  UpdateSavingsGoalInput,
   UpdateSubcategoryInput,
   UpdateWalletInput,
 } from './repository';
@@ -59,6 +62,7 @@ import type {
   CategoryTotal,
   EnrichedEntry,
   EnrichedRecurringRule,
+  EnrichedSavingsGoal,
   Entry,
   Household,
   HouseholdMemberRow,
@@ -71,6 +75,8 @@ import type {
   RecentItem,
   RecurringRule,
   RecurringRuleRow,
+  SavingsGoal,
+  SavingsGoalRow,
   Subcategory,
   SubcategoryRow,
   SyncStatus,
@@ -79,6 +85,7 @@ import type {
   WalletBalance,
 } from './types';
 import { entryDateForMonth, getDueMonths } from '../recurring/date';
+import { calculateGoalProgress } from '../goals/progress';
 
 /** Tables the app writes to, with their Dexie row types. */
 export interface WritableRows {
@@ -89,6 +96,7 @@ export interface WritableRows {
   transactions: TransactionRow;
   budgets: BudgetRow;
   recurring_rules: RecurringRuleRow;
+  savings_goals: SavingsGoalRow;
 }
 export type WritableTable = keyof WritableRows;
 export type WritableRow<K extends WritableTable> = WritableRows[K];
@@ -798,6 +806,100 @@ export class MockRepository implements Repository {
     }
 
     return createdCount;
+  }
+
+  // ---------- Savings Goals (R4) ----------
+
+  private async enrichSavingsGoals(rows: SavingsGoalRow[]): Promise<EnrichedSavingsGoal[]> {
+    const wallets = await this.db.accounts.toArray();
+    const walletMap = new Map(wallets.map((w) => [w.id, w]));
+    const balances = await this.getWalletBalances();
+    const balanceMap = new Map(balances.map((b) => [b.id, b.balance]));
+
+    return rows.map((row) => {
+      const wallet = walletMap.get(row.wallet_id);
+      const currentAmount = balanceMap.get(row.wallet_id) ?? 0;
+      const progress = calculateGoalProgress(row.target_amount, currentAmount);
+
+      return {
+        ...toSavingsGoal(row),
+        walletNameEn: wallet?.name_en ?? null,
+        walletNameAr: wallet?.name_ar ?? null,
+        currentAmount,
+        percent: progress.percent,
+        barPercent: progress.barPercent,
+        remaining: progress.remaining,
+        isReached: progress.isReached,
+      };
+    });
+  }
+
+  async getSavingsGoals(includeArchived = false): Promise<EnrichedSavingsGoal[]> {
+    await this.ensureSeeded();
+    let rows = await this.db.savings_goals.toArray();
+    if (!includeArchived) {
+      rows = rows.filter((r) => !r.is_archived);
+    }
+    rows.sort((a, b) => a.created_at.localeCompare(b.created_at));
+    return this.enrichSavingsGoals(rows);
+  }
+
+  async getSavingsGoal(id: string): Promise<EnrichedSavingsGoal | null> {
+    await this.ensureSeeded();
+    const row = await this.db.savings_goals.get(id);
+    if (!row) return null;
+    const [enriched] = await this.enrichSavingsGoals([row]);
+    return enriched ?? null;
+  }
+
+  async createSavingsGoal(input: CreateSavingsGoalInput): Promise<SavingsGoal> {
+    await this.ensureSeeded();
+    const id = input.id ?? crypto.randomUUID();
+    const targetAmount = roundMoney(input.targetAmount);
+    if (!(targetAmount > 0)) {
+      throw new Error('Target amount must be greater than zero');
+    }
+    const now = new Date().toISOString();
+
+    const row: SavingsGoalRow = {
+      id,
+      household_id: await this.householdId(input.householdId),
+      name_en: input.nameEn,
+      name_ar: input.nameAr ?? null,
+      target_amount: targetAmount,
+      target_date: input.targetDate ?? null,
+      icon: input.icon ?? null,
+      color: input.color ?? null,
+      wallet_id: input.walletId,
+      is_archived: false,
+      created_by: input.createdBy ?? this.currentUserId,
+      created_at: now,
+      updated_at: now,
+    };
+
+    return toSavingsGoal(await this.persist('savings_goals', row));
+  }
+
+  async updateSavingsGoal(id: string, updates: UpdateSavingsGoalInput): Promise<SavingsGoal> {
+    await this.ensureSeeded();
+    const patchObj: Partial<SavingsGoalRow> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (updates.nameEn !== undefined) patchObj.name_en = updates.nameEn;
+    if (updates.nameAr !== undefined) patchObj.name_ar = updates.nameAr;
+    if (updates.targetAmount !== undefined) patchObj.target_amount = roundMoney(updates.targetAmount);
+    if (updates.targetDate !== undefined) patchObj.target_date = updates.targetDate;
+    if (updates.icon !== undefined) patchObj.icon = updates.icon;
+    if (updates.color !== undefined) patchObj.color = updates.color;
+    if (updates.walletId !== undefined) patchObj.wallet_id = updates.walletId;
+
+    const updated = await this.patch('savings_goals', id, patchObj);
+    return toSavingsGoal(updated);
+  }
+
+  async archiveSavingsGoal(id: string, archive = true): Promise<void> {
+    await this.ensureSeeded();
+    await this.patch('savings_goals', id, { is_archived: archive, updated_at: new Date().toISOString() });
   }
 
   // ---------- Subcategories ----------
