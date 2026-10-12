@@ -19,18 +19,21 @@ export function TabBar() {
       isActive: pathname === '/' || pathname === '',
     },
     {
+      tour: 'tab-history',
       href: '/history',
       label: t('history'),
       icon: History,
       isActive: pathname.startsWith('/history'),
     },
     {
+      tour: 'tab-reports',
       href: '/reports',
       label: t('reports'),
       icon: PieChart,
       isActive: pathname.startsWith('/reports'),
     },
     {
+      tour: 'tab-settings',
       href: '/settings',
       label: t('settings'),
       icon: Settings,
@@ -55,6 +58,7 @@ export function TabBar() {
                 <div className="flex flex-1 items-center justify-center">
                   <button
                     type="button"
+                    data-tour="tab-add"
                     aria-label={t('addEntry')}
                     onClick={() => openAdd()}
                     className="flex size-12 items-center justify-center rounded-full bg-accent text-accent-ink shadow-card transition-transform active:scale-95 cursor-pointer"
@@ -64,6 +68,7 @@ export function TabBar() {
                 </div>
               )}
               <Link
+                data-tour={'tour' in tab ? tab.tour : undefined}
                 href={tab.href}
                 className={`flex min-h-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1 transition-colors ${
                   active ? 'text-accent font-semibold' : 'text-ink-muted hover:text-ink'

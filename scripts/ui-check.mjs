@@ -180,6 +180,8 @@ async function runJob({ route, profile, theme }) {
         document.addEventListener('DOMContentLoaded', () => {
           document.head?.appendChild(style);
         });
+        // The welcome guide starts by itself on a first visit; keep it off the screens being checked
+        try { localStorage.setItem('fa_tour_seen', '1'); } catch {}
       });
       const consoleErrors = [];
       page.on('pageerror', (e) => consoleErrors.push(e.message.slice(0, 120)));

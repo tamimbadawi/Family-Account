@@ -398,7 +398,9 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
   return (
     <div className="flex flex-col gap-2 [@media(min-height:740px)]:gap-3 px-5 pb-2 [@media(min-height:740px)]:pb-[max(1rem,env(safe-area-inset-bottom))] select-none">
       {/* One sheet that fits an iPhone screen: type, amount, category, pad, details, save */}
-      <TypeToggle value={isGoal ? 'goal' : type} onChange={handleTypeChange} showGoal={mode === 'add'} />
+      <div data-tour="entry-type" className="rounded-2xl">
+        <TypeToggle value={isGoal ? 'goal' : type} onChange={handleTypeChange} showGoal={mode === 'add'} />
+      </div>
 
       {/* Amount, with the chosen main category (and group) beside it */}
       <div className="flex items-center gap-2">
@@ -446,6 +448,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
           <WalletSelect label={t('to')} value={selectedToWalletId} onChange={pickToWallet} />
         </div>
       ) : (
+        <div data-tour="entry-category" className="rounded-2xl">
         <CategoryRow
           kind={type === 'income' ? 'income' : 'expense'}
           selected={selectedItem}
@@ -454,12 +457,15 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
           onPathChange={handlePathChange}
           breadcrumbSlot={breadcrumbSlot}
         />
+        </div>
       )}
 
-      <AmountPad value={amountStr} onChange={setAmountStr} />
+      <div data-tour="entry-amount" className="rounded-2xl">
+        <AmountPad value={amountStr} onChange={setAmountStr} />
+      </div>
 
       {/* Wallet · date · note on one line */}
-      <div className="flex items-center gap-2">
+      <div data-tour="entry-details" className="flex items-center gap-2 rounded-2xl">
         {isNoteOpen ? (
           <NoteChip value={note} onChange={setNote} isOpen onOpenChange={setIsNoteOpen} />
         ) : (
@@ -482,7 +488,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
         !isNoteOpen && <RecurrencePicker value={recurrence} onChange={setRecurrence} startDate={occurredOn} />
       )}
 
-      <div className="flex gap-2">
+      <div data-tour="entry-save" className="flex gap-2 rounded-2xl">
         {/* Edit mode: Delete next to Save so the sheet still fits */}
         {mode === 'edit' && (
           <button
@@ -574,8 +580,9 @@ function useRestoreSheetAfterKeyboard(sheetRef: React.RefObject<HTMLDivElement |
   }, [sheetRef, isOpen]);
 }
 
+// Tapping Undo on a toast, or Next in a guide, must not close the sheet
 function keepOpenForToasts(e: { target: EventTarget | null; preventDefault: () => void }) {
-  if (e.target instanceof Element && e.target.closest('[data-sonner-toaster]')) e.preventDefault();
+  if (e.target instanceof Element && e.target.closest('[data-sonner-toaster], [data-tour-overlay]')) e.preventDefault();
 }
 
 export function EntrySheet() {

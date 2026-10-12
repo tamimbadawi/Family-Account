@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { usePathname } from '@/i18n/navigation';
 import { WalletShortcut } from './WalletShortcut';
 import { SampleDataBadge } from './SampleDataBadge';
+import { HelpButton } from '@/components/tour/HelpButton';
 
 export function Header() {
   const tNav = useTranslations('nav');
@@ -31,6 +32,7 @@ export function Header() {
       <div className="flex items-center gap-2">
         {/* Home shows it on the greeting line, where the long app name leaves room */}
         {pathname !== '/' && <SampleDataBadge />}
+        <HelpButton />
         <WalletShortcut />
       </div>
     </header>

@@ -1,0 +1,131 @@
+{
+  "helpButton": "Help",
+  "helpTitle": "Help",
+  "helpIntro": "Pick a short guide. It shows you each part of the screen, one at a time.",
+  "progress": "Step {step} of {count}",
+  "close": "Close the guide",
+  "start": "Show me",
+  "next": "Next",
+  "back": "Back",
+  "done": "Got it",
+  "guides": {
+    "welcome": {
+      "title": "A quick look around",
+      "hint": "What is on the first screen"
+    },
+    "addEntry": {
+      "title": "Adding money in or out",
+      "hint": "Write down something you paid or got"
+    },
+    "history": {
+      "title": "Finding an old entry",
+      "hint": "Search, change or delete"
+    },
+    "reports": {
+      "title": "Reading your reports",
+      "hint": "Where your money went"
+    },
+    "settings": {
+      "title": "Settings",
+      "hint": "Categories, wallets and more"
+    }
+  },
+  "welcome": {
+    "hello": {
+      "title": "Welcome!",
+      "body": "This short guide shows you around. It takes one minute, and you can close it at any time with ✕."
+    },
+    "spent": {
+      "title": "This month",
+      "body": "How much you spent this month. Tap it to see where the money went."
+    },
+    "money": {
+      "title": "Our money",
+      "body": "The money you have now, in cash and in the bank. Tap it to see each one."
+    },
+    "add": {
+      "title": "The + button",
+      "body": "Tap + every time you pay for something or get money. This is the button you will use most."
+    },
+    "history": {
+      "title": "History",
+      "body": "Every entry you wrote down. Find one here to change or delete it."
+    },
+    "reports": {
+      "title": "Reports",
+      "body": "Simple charts of where your money goes, month by month."
+    },
+    "help": {
+      "title": "Help is always here",
+      "body": "Tap ? on any screen to see this guide again, or a guide for that screen."
+    }
+  },
+  "addEntry": {
+    "plus": {
+      "title": "Start with +",
+      "body": "Tap + at the bottom of any screen. Let's open it together."
+    },
+    "type": {
+      "title": "Money out or in?",
+      "body": "Money out is for things you paid. Money in is for money you got. Move is for money going from one wallet to another."
+    },
+    "amount": {
+      "title": "Type the amount",
+      "body": "Use these big number keys. You can even add up a receipt, like 120 + 85."
+    },
+    "category": {
+      "title": "What was it for?",
+      "body": "Tap here and choose what the money was for, like Food or Bills."
+    },
+    "details": {
+      "title": "Wallet and day",
+      "body": "Which wallet paid, and on which day. Today is already chosen. You can add a short note too."
+    },
+    "save": {
+      "title": "Save",
+      "body": "Tap Save and you are done. If you made a mistake, tap Undo on the message that appears."
+    }
+  },
+  "history": {
+    "search": {
+      "title": "Search",
+      "body": "Type a word or an amount to find an entry quickly."
+    },
+    "period": {
+      "title": "Which month",
+      "body": "Go back and forth in time. Tap the middle to show a day, a week, a month or a year."
+    },
+    "filter": {
+      "title": "Show only some entries",
+      "body": "Show only money out or money in, or only one category or wallet."
+    },
+    "list": {
+      "title": "Tap an entry to change it",
+      "body": "Tap any entry to fix it or delete it. Deleted entries can be brought back from Settings for 30 days."
+    }
+  },
+  "reports": {
+    "tabs": {
+      "title": "Three ways to look",
+      "body": "Overview is the short summary. All reports has a list of ready reports. Breakdown is a detailed table."
+    },
+    "overview": {
+      "title": "Where your money went",
+      "body": "Tap any part of the chart or a category to see the entries in it. Swipe sideways for the last 6 months."
+    }
+  },
+  "settings": {
+    "lists": {
+      "title": "Your lists",
+      "body": "Change categories, wallets, budgets, monthly entries and savings goals here."
+    },
+    "more": {
+      "title": "More settings",
+      "body": "Switch between English and Arabic, and download a copy of your entries."
+    },
+    "support": {
+      "title": "Need a hand?",
+      "body": "Write to us here, with a screenshot if you like, and we will help."
+    }
+  }
+}

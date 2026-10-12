@@ -116,7 +116,7 @@ export default function SettingsPage() {
   return (
     <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-6 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden space-y-2.5 [@media(max-height:700px)]:space-y-1.5 [@media(max-height:700px)]:pb-1 [@media(max-height:700px)]:pt-0 select-none">
       {/* Primary Inset Group */}
-      <div className="bg-surface rounded-card border border-line/40 shadow-card divide-y divide-line/30">
+      <div data-tour="settings-lists" className="bg-surface rounded-card border border-line/40 shadow-card divide-y divide-line/30">
         {/* Categories */}
         <Link
           href="/settings/categories"
@@ -218,7 +218,7 @@ export default function SettingsPage() {
       <div className="bg-surface rounded-card border border-line/40 shadow-card divide-y divide-line/30">
         {/* More settings: one row that opens to show language, currencies, download and install,
             so Settings stays calm and still fits the screen without scrolling */}
-        <div>
+        <div data-tour="settings-more">
           <button
             type="button"
             onClick={() => setIsMoreOpen((open) => !open)}
@@ -314,6 +314,7 @@ export default function SettingsPage() {
         {/* Contact support */}
         <button
           type="button"
+          data-tour="settings-support"
           onClick={() => setIsSupportOpen(true)}
           className="w-full flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
         >

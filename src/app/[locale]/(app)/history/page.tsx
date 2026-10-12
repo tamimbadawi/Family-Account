@@ -128,7 +128,7 @@ function HistoryContent() {
     <div className="flex flex-col h-full min-h-0">
       {/* Controls: search bar, period, type dropdown + Filter, active filters */}
       <div className="px-5 pt-1 pb-3 space-y-3 shrink-0">
-        <div className="relative flex h-12 w-full items-center rounded-2xl bg-surface px-3 shadow-card border border-line/40">
+        <div data-tour="history-search" className="relative flex h-12 w-full items-center rounded-2xl bg-surface px-3 shadow-card border border-line/40">
           <Search className="size-5 shrink-0 text-ink-muted ms-1 me-2" aria-hidden />
           <input
             type="text"
@@ -149,9 +149,11 @@ function HistoryContent() {
           )}
         </div>
 
-        <PeriodSwitcher period={period} anchor={anchor} onChange={changePeriod} />
+        <div data-tour="history-period" className="rounded-2xl">
+          <PeriodSwitcher period={period} anchor={anchor} onChange={changePeriod} />
+        </div>
 
-        <div className="flex gap-2">
+        <div data-tour="history-filter" className="flex gap-2 rounded-2xl">
           <TypeMenu value={filters.type} onChange={(type) => setFilters((f) => ({ ...f, type }))} />
           <button
             type="button"
@@ -197,7 +199,7 @@ function HistoryContent() {
       />
 
       {/* Main content: list of day groups or empty / loading state */}
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div data-tour="history-list" className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {focus && !isSearchActive && <ItemHistoryCard filters={filters} period={period} anchor={anchor} onAnchorChange={setAnchor} />}
 
         {isLoading && (

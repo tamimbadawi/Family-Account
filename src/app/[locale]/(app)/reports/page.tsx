@@ -85,7 +85,7 @@ function ReportsContent() {
     <div className="flex h-full flex-col justify-between select-none">
       <div className="space-y-1.5">
         {/* 1. Tabs Segmented Control: Overview / All reports / Breakdown */}
-        <div className="flex rounded-full bg-surface-2 p-1 text-caption font-semibold">
+        <div data-tour="reports-tabs" className="flex rounded-full bg-surface-2 p-1 text-caption font-semibold">
           <button
             type="button"
             onClick={() => setActiveTab('overview')}
@@ -128,6 +128,7 @@ function ReportsContent() {
         ) : (
           /* Overview Content: 2-Page View */
           <div
+            data-tour="reports-body"
             className="relative overflow-hidden -mx-1 px-1 -my-0.5 py-0.5"
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
