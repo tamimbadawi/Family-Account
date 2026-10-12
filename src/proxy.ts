@@ -6,7 +6,7 @@ import { routing } from './i18n/routing';
 const handleI18nRouting = createMiddleware(routing);
 
 // Pages anyone may open without signing in
-const PUBLIC_PAGES = ['/login', '/install', '/styleguide', '/~offline'];
+const PUBLIC_PAGES = ['/login', '/join', '/install', '/styleguide', '/~offline'];
 
 function pathWithoutLocale(pathname: string): string {
   const [, maybeLocale, ...rest] = pathname.split('/');

@@ -16,7 +16,7 @@ export interface FamilyList {
 
 type Action =
   | { action: 'list' }
-  | { action: 'add_member'; email: string; displayName: string; password: string }
+  | { action: 'add_member'; email: string; displayName: string; password?: string }
   | { action: 'reset_password'; userId: string; password: string }
   | { action: 'remove_member'; userId: string }
   | { action: 'transfer_owner'; userId: string };

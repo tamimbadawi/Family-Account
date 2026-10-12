@@ -80,7 +80,10 @@ Deno.serve(async (req) => {
     case 'add_member': {
       const email = normalizeEmail(body.email ?? '');
       const displayName = (body.displayName ?? '').trim();
-      const password = body.password ?? '';
+      // No password from the admin: the person gets a one-time personal link instead, and this
+      // random password is never shown to anyone (they choose their own on first sign-in)
+      const byLink = !body.password;
+      const password = body.password || `${crypto.randomUUID()}${crypto.randomUUID()}`;
       if (!NAME_RE.test(displayName)) return reply(400, { error: 'bad_name' });
       if (!EMAIL_RE.test(email)) return reply(400, { error: 'bad_email' });
       if (password.length < 6) return reply(400, { error: 'short_password' });
@@ -107,7 +110,14 @@ Deno.serve(async (req) => {
         await admin.auth.admin.deleteUser(created.user.id);
         return reply(500, { error: 'add_failed' });
       }
-      return reply(200, { ok: true });
+      if (!byLink) return reply(200, { ok: true });
+      // The token works once; the app puts it in the link the admin sends (/join#t=...)
+      const { data: link, error: linkError } = await admin.auth.admin.generateLink({ type: 'magiclink', email });
+      if (linkError || !link.properties?.hashed_token) {
+        await admin.auth.admin.deleteUser(created.user.id);
+        return reply(500, { error: 'add_failed' });
+      }
+      return reply(200, { ok: true, token: link.properties.hashed_token });
     }
     case 'reset_password': {
       if (!target || !(await inHousehold(target))) return reply(404, { error: 'not_member' });

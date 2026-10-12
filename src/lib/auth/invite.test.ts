@@ -1,10 +1,23 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { inviteLink, sendInvite } from './invite';
+import { inviteLink, joinLink, joinToken, sendInvite } from './invite';
 
 describe('inviteLink', () => {
   it('points at the sign-in page in the given language', () => {
     expect(inviteLink('https://app.example', 'ar')).toBe('https://app.example/ar/login');
     expect(inviteLink('https://app.example/', 'en')).toBe('https://app.example/en/login');
+  });
+});
+
+describe('joinLink', () => {
+  it('carries the one-time token after the #, and joinToken reads it back', () => {
+    const link = joinLink('https://app.example/', 'ar', 'abc123');
+    expect(link).toBe('https://app.example/ar/join#t=abc123');
+    expect(joinToken(new URL(link).hash)).toBe('abc123');
+  });
+
+  it('finds no token in a link without one', () => {
+    expect(joinToken('')).toBeNull();
+    expect(joinToken('#t=')).toBeNull();
   });
 });
 
