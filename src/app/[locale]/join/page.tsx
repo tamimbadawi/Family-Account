@@ -60,7 +60,7 @@ export default function JoinPage() {
     const { mode: m, code } = parseHash(window.location.hash);
     inviteCodeRef.current = code;
 
-    if (m === 'none' || (!code && m !== 'none')) {
+    if (m === 'none' || !code) {
       // Resolved synchronously: no code or bad hash
       Promise.resolve().then(() => {
         setMode('none');
@@ -86,8 +86,15 @@ export default function JoinPage() {
         setMode(m);
       })
       .catch(() => {
+        // The server answers an expired or wrong code with an error, so it lands here
         setMode('none');
-        setError(tAuth('joinExpired'));
+        setError(
+          !navigator.onLine
+            ? tAuth('noConnection')
+            : m === 'new_family'
+              ? tAuth('startFamilyExpired')
+              : tAuth('joinExpired')
+        );
       });
   }, [tAuth]);
 

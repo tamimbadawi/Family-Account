@@ -11,7 +11,6 @@ import { useSaveError } from '@/components/ui/use-save-error';
 import type { EnrichedEntry } from '@/lib/data/types';
 import { formatDay, money, pickName } from '@/lib/format';
 import { CategoryIcon } from '@/components/ui/category-icon';
-import { Skeleton } from '@/components/ui/skeleton';
 
 export default function RecentlyDeletedPage() {
   const locale = useLocale();
@@ -75,26 +74,6 @@ export default function RecentlyDeletedPage() {
 
       {/* Main content */}
       <div className="flex-1 px-5 py-4 pb-24">
-        {isLoading && (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between p-3.5 bg-surface rounded-card border border-line/40"
-              >
-                <div className="flex items-center gap-3">
-                  <Skeleton className="size-11 rounded-full" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-3 w-20" />
-                  </div>
-                </div>
-                <Skeleton className="h-9 w-20 rounded-xl" />
-              </div>
-            ))}
-          </div>
-        )}
-
         {isEmpty && (
           <div className="flex flex-col items-center justify-center py-20 text-center select-none">
             <div className="flex size-16 items-center justify-center rounded-full bg-surface-2 text-ink-muted mb-3">

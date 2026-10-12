@@ -261,7 +261,7 @@ export default function FamilyPage() {
         <WalletShortcut />
       </div>
 
-      <div className="flex-1 space-y-3 px-5 py-3 pb-20">
+      <div className="flex-1 space-y-4 px-5 py-4 pb-24">
         <p className="text-body text-ink-muted">{isOwner ? t('ownerHint') : t('memberHint')}</p>
 
         {live && !list && loadFailed ? (
@@ -336,7 +336,7 @@ export default function FamilyPage() {
 
           {canEditCurrencies ? (
             <div className="space-y-2.5">
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="space-y-2.5">
                 <div className="space-y-1">
                   <label htmlFor="main-currency" className="text-caption font-medium text-ink-muted">
                     {t('mainCurrency')}
