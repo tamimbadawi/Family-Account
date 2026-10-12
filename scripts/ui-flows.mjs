@@ -887,6 +887,40 @@ const FLOWS = {
     await sleep(600);
     await assertUsable(page, page.getByRole('button', { name: ar ? /^المواصلات/ : /^Transport/ }).first(), 'budget back after Undo');
   },
+  async history_search(page, { locale }) {
+    const ar = locale === 'ar';
+    await page.goto(`${BASE}/${locale}/history`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(1000);
+
+    const searchInput = page.getByPlaceholder(ar ? /ابحث/ : /Search/);
+    await assertUsable(page, searchInput, 'Search input');
+
+    // 1. Type a search query that matches something
+    await searchInput.fill(ar ? 'سوبر ماركت' : 'Supermarket');
+    await sleep(600);
+
+    // 2. Clear using input clear button (X)
+    const clearInputBtn = page.getByRole('button', { name: ar ? 'مسح البحث' : 'Clear search' }).first();
+    await assertUsable(page, clearInputBtn, 'Clear search button in input');
+    await clearInputBtn.click();
+    await sleep(500);
+
+    // 3. Type a query that matches nothing
+    await searchInput.fill('xyznonexistent999');
+    await sleep(600);
+    const emptyTitle = page.getByText(ar ? 'لم نجد أي نتائج' : 'No matching entries').first();
+    await assertUsable(page, emptyTitle, 'Empty search results title');
+
+    // 4. Clear using the empty state button
+    const clearActionBtn = page.getByRole('button', { name: ar ? 'مسح البحث' : 'Clear search' }).last();
+    await assertUsable(page, clearActionBtn, 'Clear search action in empty state');
+    await clearActionBtn.click();
+    await sleep(500);
+
+    // 5. Type Arabic-Indic digits
+    await searchInput.fill('٢٥٠');
+    await sleep(600);
+  },
 };
 
 const MULTI_LOCALE_FLOW_NAMES = [
@@ -899,6 +933,7 @@ const MULTI_LOCALE_FLOW_NAMES = [
   'update_balance',
   'download_data',
   'budgets',
+  'history_search',
 ];
 const LOCALES = ['en', 'ar'];
 

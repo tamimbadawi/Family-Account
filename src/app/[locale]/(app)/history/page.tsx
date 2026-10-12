@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Calendar, Plus, SlidersHorizontal, X } from 'lucide-react';
+import { Calendar, Plus, Search, SlidersHorizontal, X } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import type { EnrichedEntry } from '@/lib/data/types';
 import {
@@ -20,6 +20,7 @@ import { TypeMenu } from '@/components/history/TypeMenu';
 import { useEntryAuthor, useFamilyMembers } from '@/lib/auth/use-family-members';
 import { FilterSheet } from '@/components/history/FilterSheet';
 import { ItemHistoryCard } from '@/components/history/ItemHistoryCard';
+import { searchHistory } from '@/lib/history/search';
 import {
   activeFilterCount,
   applyFilters,
@@ -38,6 +39,9 @@ function HistoryContent() {
   const { openAdd, openEdit } = useEntrySheet();
   const searchParams = useSearchParams();
   const walletParam = searchParams.get('wallet') || undefined;
+
+  // Search query within the current view
+  const [searchQuery, setSearchQuery] = React.useState('');
 
   // Filters; a wallet opened from "Our money" (?wallet=) starts the list on that wallet
   const [filters, setFilters] = React.useState<HistoryFilters>({ ...EMPTY_FILTERS, walletIds: walletParam ? [walletParam] : [] });
@@ -58,7 +62,8 @@ function HistoryContent() {
   };
 
   const authorOf = useEntryAuthor();
-  const entries = applyFilters(useEntries(toListParams(filters, range)), filters, authorOf);
+  const rawEntries = applyFilters(useEntries(toListParams(filters, range)), filters, authorOf);
+  const entries = React.useMemo(() => searchHistory(rawEntries, searchQuery), [rawEntries, searchQuery]);
 
   // Names for the active-filter chips
   const wallets = useWallets(true);
@@ -114,14 +119,36 @@ function HistoryContent() {
     }));
   }, [entries]);
 
-  const isLoading = entries === undefined;
+  const isSearchActive = Boolean(searchQuery.trim());
+  const isLoading = rawEntries === undefined;
   const isEmpty = entries !== undefined && entries.length === 0;
   const isFiltered = filterCount > 0 || filters.type !== 'all';
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* Controls: month, type dropdown + Filter, active filters */}
+      {/* Controls: search bar, period, type dropdown + Filter, active filters */}
       <div className="px-5 pt-1 pb-3 space-y-3 shrink-0">
+        <div className="relative flex h-12 w-full items-center rounded-2xl bg-surface px-3 shadow-card border border-line/40">
+          <Search className="size-5 shrink-0 text-ink-muted ms-1 me-2" aria-hidden />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('searchPlaceholder')}
+            className="flex-1 bg-transparent text-body text-ink placeholder:text-ink-muted focus:outline-none min-w-0"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              aria-label={t('clearSearch')}
+              className="flex min-w-12 min-h-12 items-center justify-center rounded-full text-ink-muted hover:text-ink active:scale-95 cursor-pointer transition-transform"
+            >
+              <X className="size-5" />
+            </button>
+          )}
+        </div>
+
         <PeriodSwitcher period={period} anchor={anchor} onChange={changePeriod} />
 
         <div className="flex gap-2">
@@ -171,7 +198,7 @@ function HistoryContent() {
 
       {/* Main content: list of day groups or empty / loading state */}
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {focus && <ItemHistoryCard filters={filters} period={period} anchor={anchor} onAnchorChange={setAnchor} />}
+        {focus && !isSearchActive && <ItemHistoryCard filters={filters} period={period} anchor={anchor} onAnchorChange={setAnchor} />}
 
         {isLoading && (
           <div className="px-5 py-3 space-y-4">
@@ -209,15 +236,38 @@ function HistoryContent() {
           </div>
         )}
 
+        {/* Search active and nothing matches */}
+        {isEmpty && isSearchActive && (
+          <div className="flex flex-col items-center justify-center px-6 py-12 text-center select-none">
+            <div className="flex size-16 items-center justify-center rounded-full bg-surface-2 text-ink-muted mb-4 shadow-sm">
+              <Search className="size-8 stroke-[1.5]" />
+            </div>
+            <h3 className="text-heading font-bold text-ink mb-1">
+              {t('emptySearchTitle')}
+            </h3>
+            <p className="text-body text-ink-muted max-w-xs mb-6">
+              {t('emptySearchHint')}
+            </p>
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="flex items-center gap-2 px-6 h-12 rounded-2xl bg-surface-2 text-ink font-semibold shadow-sm transition-transform active:scale-95 cursor-pointer"
+            >
+              <X className="size-5" />
+              <span>{t('clearSearchAction')}</span>
+            </button>
+          </div>
+        )}
+
         {/* Filtered and nothing matches: a short note, so it stays on screen under the history card */}
-        {isEmpty && isFiltered && (
+        {isEmpty && !isSearchActive && isFiltered && (
           <div className="px-6 py-8 text-center select-none">
             <h3 className="text-heading font-bold text-ink mb-1">{t(`emptyFiltered.${period}`)}</h3>
             <p className="text-body text-ink-muted">{t('emptyFilteredHint')}</p>
           </div>
         )}
 
-        {isEmpty && !isFiltered && (
+        {isEmpty && !isSearchActive && !isFiltered && (
           <div className="flex flex-col items-center justify-center px-6 py-16 text-center select-none">
             <div className="flex size-20 items-center justify-center rounded-full bg-surface-2 text-ink-muted mb-4 shadow-sm">
               <Calendar className="size-10 stroke-[1.5]" />

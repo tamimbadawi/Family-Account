@@ -89,5 +89,10 @@
     "year": "Nothing matches this year"
   },
   "done": "Done",
-  "chosenCount": "{count} chosen"
+  "chosenCount": "{count} chosen",
+  "searchPlaceholder": "Search by name, note, or amount…",
+  "clearSearch": "Clear search",
+  "emptySearchTitle": "No matching entries",
+  "emptySearchHint": "Try searching for another word or amount.",
+  "clearSearchAction": "Clear search"
 }
