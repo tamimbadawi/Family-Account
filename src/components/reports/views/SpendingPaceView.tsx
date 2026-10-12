@@ -8,6 +8,8 @@ import { spendingPace, type SpendingPace } from '@/lib/reports/planning';
 import { Card } from '@/components/ui/card';
 import { localISODate, money } from '@/lib/format';
 import type { PivotEntry } from '@/lib/data/types';
+import { Link } from '@/i18n/navigation';
+import { historyHref } from '@/lib/history/link';
 
 export function SpendingPaceView() {
   const locale = useLocale();
@@ -101,12 +103,14 @@ export function SpendingPaceView() {
       {/* Comparison Stats Cards */}
       <div className="grid grid-cols-2 gap-2">
         <Card className="rounded-card bg-surface p-3 shadow-card border border-line/60">
-          <span className="text-caption text-ink-muted block">
-            {t('library.spentSoFar')}
-          </span>
-          <span className="text-body font-bold tabular-nums text-expense block mt-0.5">
-            {money(paceData.spentSoFar, locale, { fractionDigits: 0 })}
-          </span>
+          <Link href={historyHref({ type: 'expense', month: today.slice(0, 7) })} className="block rounded-xl active:bg-surface-2 transition-colors">
+            <span className="text-caption text-ink-muted block">
+              {t('library.spentSoFar')}
+            </span>
+            <span className="text-body font-bold tabular-nums text-expense block mt-0.5">
+              {money(paceData.spentSoFar, locale, { fractionDigits: 0 })}
+            </span>
+          </Link>
           {/* Progress bar */}
           <div className="mt-2 h-1.5 w-full bg-surface-2 rounded-full overflow-hidden">
             <div

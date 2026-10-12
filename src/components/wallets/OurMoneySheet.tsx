@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { historyHref } from '@/lib/history/link';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   Banknote,
@@ -64,7 +65,7 @@ export function OurMoneySheet({ open, onOpenChange }: OurMoneySheetProps) {
 
   const handleWalletClick = (wallet: WalletBalance) => {
     onOpenChange(false);
-    router.push(`/history?wallet=${wallet.id}`);
+    router.push(historyHref({ walletId: wallet.id }));
   };
 
   const renderWalletRow = (wallet: WalletBalance) => {

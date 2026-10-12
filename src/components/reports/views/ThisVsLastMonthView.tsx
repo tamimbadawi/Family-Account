@@ -10,6 +10,8 @@ import { Card } from '@/components/ui/card';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { money } from '@/lib/format';
 import { MonthSwitcher } from '../MonthSwitcher';
+import { Link } from '@/i18n/navigation';
+import { historyHref } from '@/lib/history/link';
 
 export function ThisVsLastMonthView() {
   const locale = useLocale();
@@ -47,7 +49,7 @@ export function ThisVsLastMonthView() {
   const hasMore = result.categories.length > maxRows;
 
   const renderCategoryRow = (cat: CategoryComparison) => (
-    <div key={cat.id} className="flex items-center justify-between gap-3 py-2">
+    <Link key={cat.id} href={historyHref({ type: 'expense', month, categoryId: cat.id })} className="flex min-h-12 items-center justify-between gap-3 py-2 active:bg-surface-2 transition-colors">
       {/* Icon + Name */}
       <div className="flex items-center gap-2.5 min-w-0">
         <div
@@ -93,7 +95,7 @@ export function ThisVsLastMonthView() {
           </span>
         </div>
       </div>
-    </div>
+    </Link>
   );
 
   return (
@@ -104,14 +106,14 @@ export function ThisVsLastMonthView() {
       {/* Hero Comparison Card */}
       <Card className="rounded-card bg-surface p-3.5 shadow-card border border-line/60">
         <div className="flex items-center justify-between gap-2">
-          <div>
+          <Link href={historyHref({ type: 'expense', month })} className="block rounded-xl active:bg-surface-2 transition-colors">
             <span className="text-caption text-ink-muted block">
               {t('library.thisMonth')}
             </span>
             <span className="text-display font-bold tabular-nums text-ink leading-tight">
               {money(result.thisMonthTotal, locale, { fractionDigits: 0 })}
             </span>
-          </div>
+          </Link>
 
           <div className="text-end">
             <span className="text-caption text-ink-muted block">

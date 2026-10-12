@@ -75,6 +75,7 @@ export function CellEntriesSheet({
               <EntryRow
                 key={entry.id}
                 entry={entry}
+                showDate
                 onClick={() => handleEntryClick(entry)}
               />
             ))

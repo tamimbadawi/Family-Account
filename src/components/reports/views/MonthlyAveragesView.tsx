@@ -9,6 +9,8 @@ import { CategoryIcon } from '@/components/ui/category-icon';
 import { Card } from '@/components/ui/card';
 import { money, pickName } from '@/lib/format';
 import type { PivotEntry } from '@/lib/data/types';
+import { useEntriesDrill } from '../useEntriesDrill';
+import { entriesFor } from '@/lib/reports/drill';
 
 export function MonthlyAveragesView() {
   const locale = useLocale();
@@ -16,6 +18,7 @@ export function MonthlyAveragesView() {
   const [periodMonthsCount, setPeriodMonthsCount] = React.useState<number>(6);
 
   const entries = useEntries();
+  const drill = useEntriesDrill();
   const categories = useCategories();
 
   const currentMonth = React.useMemo(() => new Date().toISOString().slice(0, 7), []);
@@ -112,7 +115,10 @@ export function MonthlyAveragesView() {
           return (
             <Card
               key={cat.id}
-              className="rounded-card bg-surface p-3.5 shadow-card border border-line/60 space-y-2.5"
+              role="button"
+              tabIndex={0}
+              onClick={() => drill.show(name, entriesFor(entries, { type: 'expense', categoryId: cat.id, months }))}
+              className="rounded-card bg-surface p-3.5 shadow-card border border-line/60 space-y-2.5 cursor-pointer active:bg-surface-2 transition-colors"
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -163,6 +169,7 @@ export function MonthlyAveragesView() {
           );
         })}
       </div>
+      {drill.sheet}
     </div>
   );
 }

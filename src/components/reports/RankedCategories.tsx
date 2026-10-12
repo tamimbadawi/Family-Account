@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ChevronRight, Layers, Search, X } from 'lucide-react';
+import { ChevronRight, Layers, ListChecks, Search, X } from 'lucide-react';
 import { useCategoryTotals, useEntries } from '@/lib/data/provider';
 import type { CategoryKind, CategoryLevel, CategoryTotal } from '@/lib/data/types';
 import { CategoryIcon } from '@/components/ui/category-icon';
@@ -12,7 +12,9 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
-import { money, pickName } from '@/lib/format';
+import { joinPath, money, pickName } from '@/lib/format';
+import { useRouter } from '@/i18n/navigation';
+import { historyHref } from '@/lib/history/link';
 import { searchCategoryTotals, type CategorySearchHit } from '@/lib/reports/category-search';
 import { DONUT_PALETTE } from './CategoryDonut';
 
@@ -31,6 +33,7 @@ export function RankedCategories({
 }: RankedCategoriesProps) {
   const locale = useLocale();
   const t = useTranslations('reports');
+  const router = useRouter();
 
   // Sheet state
   const [sheetOpen, setSheetOpen] = React.useState(false);
@@ -114,7 +117,12 @@ export function RankedCategories({
         subcategoryId: hit.id,
         subcategoryName: name,
       });
-    } else return;
+    } else {
+      router.push(
+        historyHref({ type: kind, month, categoryId: hit.categoryId, subcategoryId: hit.subcategoryId, itemId: hit.id })
+      );
+      return;
+    }
     setQuery('');
   };
 
@@ -136,8 +144,21 @@ export function RankedCategories({
         subcategoryId: item.id,
         subcategoryName: itemName,
       }));
+    } else {
+      // An item: open its entries for this month in History
+      router.push(
+        historyHref({ type: kind, month, categoryId: drill.categoryId, subcategoryId: drill.subcategoryId, itemId: item.id })
+      );
     }
   };
+
+  // "Show the entries" at the top of each level: everything behind the totals listed below
+  const levelEntriesHref = historyHref({
+    type: kind,
+    month,
+    categoryId: drill.level === 'category' ? undefined : drill.categoryId,
+    subcategoryId: drill.level === 'item' ? drill.subcategoryId : undefined,
+  });
 
   return (
     <div className={`select-none ${className}`}>
@@ -337,31 +358,24 @@ export function RankedCategories({
               ) : (
                 hits.map((hit, index) => {
                   const name = pickName({ name_ar: hit.nameAr, name_en: hit.nameEn }, locale) || hit.id;
-                  const path = hit.pathEn
-                    .map((en, i) => pickName({ name_ar: hit.pathAr[i] || null, name_en: en || null }, locale))
-                    .filter(Boolean)
-                    .join(' › ');
+                  const path = joinPath(
+                    hit.pathEn.map((en, i) => pickName({ name_ar: hit.pathAr[i] || null, name_en: en || null }, locale)),
+                    locale
+                  );
                   const color = hit.color || DONUT_PALETTE[index % DONUT_PALETTE.length];
-                  const isClickable = hit.level !== 'item';
                   return (
                     <div
                       key={`${hit.level}-${hit.id}`}
-                      role={isClickable ? 'button' : undefined}
-                      tabIndex={isClickable ? 0 : undefined}
-                      onClick={isClickable ? () => handleHitClick(hit) : undefined}
-                      onKeyDown={
-                        isClickable
-                          ? (e) => {
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleHitClick(hit)}
+                      onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 e.preventDefault();
                                 handleHitClick(hit);
                               }
-                            }
-                          : undefined
-                      }
-                      className={`flex min-h-[56px] items-center justify-between gap-3 py-3 transition-colors ${
-                        isClickable ? 'cursor-pointer hover:bg-surface-2/40 -mx-2 px-2 rounded-xl active:scale-[0.99]' : ''
-                      }`}
+                            }}
+                      className="flex min-h-[56px] items-center justify-between gap-3 py-3 transition-colors cursor-pointer hover:bg-surface-2/40 -mx-2 px-2 rounded-xl active:scale-[0.99]"
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div
@@ -382,13 +396,30 @@ export function RankedCategories({
                         <span className={`text-body font-bold tabular-nums ${kind === 'income' ? 'text-income' : 'text-expense'}`}>
                           {money(hit.total, locale)}
                         </span>
-                        {isClickable && <ChevronRight className="size-4 text-ink-faint rtl:rotate-180" />}
+                        <ChevronRight className="size-4 text-ink-faint rtl:rotate-180" />
                       </div>
                     </div>
                   );
                 })
               )
-            ) : !sheetTotals ? (
+            ) : (
+              <>
+              {sheetTotals && sheetTotals.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => router.push(levelEntriesHref)}
+                  className="flex min-h-[56px] w-full items-center justify-between gap-3 py-3 -mx-2 px-2 rounded-xl text-start cursor-pointer hover:bg-surface-2/40 active:scale-[0.99] transition-colors"
+                >
+                  <span className="flex items-center gap-3 min-w-0">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent/12 text-accent">
+                      <ListChecks className="size-5" />
+                    </span>
+                    <span className="text-body font-semibold text-accent">{t('showEntries')}</span>
+                  </span>
+                  <ChevronRight className="size-4 text-accent rtl:rotate-180" />
+                </button>
+              )}
+              {!sheetTotals ? (
               <div className="space-y-3 py-4 animate-pulse">
                 <div className="h-14 rounded-xl bg-surface-2" />
                 <div className="h-14 rounded-xl bg-surface-2" />
@@ -409,29 +440,20 @@ export function RankedCategories({
                   drill.categoryColor ||
                   DONUT_PALETTE[index % DONUT_PALETTE.length];
                 const iconName = item.icon || drill.categoryIcon;
-                const isClickable = drill.level !== 'item';
 
                 return (
                   <div
                     key={item.id}
-                    role={isClickable ? 'button' : undefined}
-                    tabIndex={isClickable ? 0 : undefined}
-                    onClick={isClickable ? () => handleSheetRowClick(item) : undefined}
-                    onKeyDown={
-                      isClickable
-                        ? (e) => {
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleSheetRowClick(item)}
+                    onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
                               handleSheetRowClick(item);
                             }
-                          }
-                        : undefined
-                    }
-                    className={`flex min-h-[56px] items-center justify-between gap-3 py-3 transition-colors ${
-                      isClickable
-                        ? 'cursor-pointer hover:bg-surface-2/40 -mx-2 px-2 rounded-xl active:scale-[0.99]'
-                        : ''
-                    }`}
+                          }}
+                    className="flex min-h-[56px] items-center justify-between gap-3 py-3 transition-colors cursor-pointer hover:bg-surface-2/40 -mx-2 px-2 rounded-xl active:scale-[0.99]"
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <div
@@ -469,13 +491,13 @@ export function RankedCategories({
                       <span className="text-body font-bold tabular-nums text-expense">
                         {money(item.total, locale)}
                       </span>
-                      {isClickable && (
-                        <ChevronRight className="size-4 text-ink-faint rtl:rotate-180" />
-                      )}
+                      <ChevronRight className="size-4 text-ink-faint rtl:rotate-180" />
                     </div>
                   </div>
                 );
               })
+            )}
+              </>
             )}
           </div>
         </DrawerContent>

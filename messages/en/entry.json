@@ -62,5 +62,6 @@
   "savingsGoal": "Savings goal",
   "goal": "Goal",
   "toGoal": "To goal",
-  "createGoalFirst": "Create a savings goal first"
+  "createGoalFirst": "Create a savings goal first",
+  "fromTo": "{from} → {to}"
 }

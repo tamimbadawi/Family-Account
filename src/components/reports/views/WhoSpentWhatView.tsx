@@ -10,6 +10,8 @@ import { Card } from '@/components/ui/card';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { money, pickName } from '@/lib/format';
 import type { PivotEntry } from '@/lib/data/types';
+import { Link } from '@/i18n/navigation';
+import { historyHref } from '@/lib/history/link';
 
 export function WhoSpentWhatView() {
   const locale = useLocale();
@@ -95,7 +97,10 @@ export function WhoSpentWhatView() {
                 className="rounded-card bg-surface p-4 shadow-card border border-line/60 space-y-3"
               >
                 {/* Person Header */}
-                <div className="flex items-center justify-between gap-3">
+                <Link
+                  href={historyHref({ type: 'expense', month, memberId: person.id === 'unknown' ? null : person.id })}
+                  className="flex min-h-12 items-center justify-between gap-3 rounded-xl active:bg-surface-2 transition-colors"
+                >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
                       <User className="size-5" />
@@ -115,7 +120,7 @@ export function WhoSpentWhatView() {
                       {money(person.total, locale, { fractionDigits: 0 })}
                     </span>
                   </div>
-                </div>
+                </Link>
 
                 {/* Progress bar */}
                 <div className="h-2 w-full bg-surface-2 rounded-full overflow-hidden">
@@ -137,7 +142,11 @@ export function WhoSpentWhatView() {
                       ) || cat.id;
 
                       return (
-                        <div key={cat.id} className="flex items-center justify-between gap-2 py-1">
+                        <Link
+                          key={cat.id}
+                          href={historyHref({ type: 'expense', month, categoryId: cat.id, memberId: person.id === 'unknown' ? null : person.id })}
+                          className="flex min-h-12 items-center justify-between gap-2 py-1 rounded-xl active:bg-surface-2 transition-colors"
+                        >
                           <div className="flex items-center gap-2 min-w-0">
                             <div
                               style={
@@ -159,7 +168,7 @@ export function WhoSpentWhatView() {
                           <span className="text-caption font-bold tabular-nums text-ink shrink-0">
                             {money(cat.total, locale, { fractionDigits: 0 })}
                           </span>
-                        </div>
+                        </Link>
                       );
                     })}
                   </div>

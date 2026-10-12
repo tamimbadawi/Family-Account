@@ -9,6 +9,7 @@ import { calculateIncomeSources } from '@/lib/reports/income-sources';
 import { resolvePresetPeriod, type PresetPeriod } from '@/lib/reports/presets';
 import { Card } from '@/components/ui/card';
 import { formatCenterTotal, money } from '@/lib/format';
+import { useEntriesDrill } from '../useEntriesDrill';
 
 export function IncomeSourcesView() {
   const locale = useLocale();
@@ -16,6 +17,7 @@ export function IncomeSourcesView() {
   const [periodPreset, setPeriodPreset] = React.useState<PresetPeriod>('this-month');
 
   const entries = useEntries();
+  const drill = useEntriesDrill();
 
   const period = React.useMemo(() => {
     return resolvePresetPeriod(periodPreset);
@@ -32,6 +34,17 @@ export function IncomeSourcesView() {
   );
 
   if (!result) return null;
+
+  // The income entries behind a source (grouped the same way as calculateIncomeSources), or all of them
+  const incomeIn = (key?: string) =>
+    (entries ?? []).filter(
+      (e) =>
+        !e.deletedAt &&
+        e.type === 'income' &&
+        e.occurredOn >= period.from &&
+        e.occurredOn <= period.to &&
+        (key === undefined || (e.itemId || e.accountId || 'other') === key)
+    );
 
   return (
     <div className="space-y-2 select-none">
@@ -66,9 +79,13 @@ export function IncomeSourcesView() {
           <span className="text-body font-semibold text-ink">
             {t('library.incomeDistribution')}
           </span>
-          <span className="text-body font-bold tabular-nums text-income">
+          <button
+            type="button"
+            onClick={() => drill.show(t('library.incomeDistribution'), incomeIn())}
+            className="min-h-12 rounded-xl px-1 text-body font-bold tabular-nums text-income cursor-pointer active:bg-surface-2 transition-colors"
+          >
             {money(result.totalIncome, locale, { fractionDigits: 0 })}
-          </span>
+          </button>
         </div>
 
         {result.sources.length === 0 ? (
@@ -131,7 +148,7 @@ export function IncomeSourcesView() {
       {/* Sources List Card */}
       <Card className="rounded-card bg-surface p-3 shadow-card border border-line/60 divide-y divide-line/40">
         {result.sources.map((s) => (
-          <div key={s.id} className="flex items-center justify-between py-2">
+          <button type="button" key={s.id} onClick={() => drill.show(s.name, incomeIn(s.id))} className="flex min-h-12 w-full items-center justify-between py-2 text-start cursor-pointer active:bg-surface-2 transition-colors">
             <div className="flex items-center gap-2.5 min-w-0">
               <span
                 style={{ backgroundColor: s.color }}
@@ -150,9 +167,10 @@ export function IncomeSourcesView() {
             <span className="text-body font-bold tabular-nums text-income shrink-0">
               {money(s.amount, locale, { fractionDigits: 0 })}
             </span>
-          </div>
+          </button>
         ))}
       </Card>
+      {drill.sheet}
     </div>
   );
 }

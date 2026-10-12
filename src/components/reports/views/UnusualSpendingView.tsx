@@ -10,6 +10,8 @@ import { Card } from '@/components/ui/card';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { money, pickName } from '@/lib/format';
 import type { PivotEntry } from '@/lib/data/types';
+import { useRouter } from '@/i18n/navigation';
+import { historyHref } from '@/lib/history/link';
 
 export function UnusualSpendingView() {
   const locale = useLocale();
@@ -17,6 +19,7 @@ export function UnusualSpendingView() {
   const [month, setMonth] = React.useState(() => new Date().toISOString().slice(0, 7));
 
   const entries = useEntries();
+  const router = useRouter();
   const categories = useCategories();
 
   const pivotEntries: PivotEntry[] = React.useMemo(() => {
@@ -86,7 +89,10 @@ export function UnusualSpendingView() {
             return (
               <Card
                 key={cat.id}
-                className="rounded-card bg-surface p-4 shadow-card border border-line/60 space-y-3"
+                role="button"
+                tabIndex={0}
+                onClick={() => router.push(historyHref({ type: 'expense', month, categoryId: cat.id }))}
+                className="rounded-card bg-surface p-4 shadow-card border border-line/60 space-y-3 cursor-pointer active:bg-surface-2 transition-colors"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-2.5 min-w-0">

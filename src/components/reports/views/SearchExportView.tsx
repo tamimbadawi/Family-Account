@@ -8,6 +8,7 @@ import { searchEntries, type SearchQuery } from '@/lib/reports/planning';
 import { Card } from '@/components/ui/card';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { localISODate, money, pickName } from '@/lib/format';
+import { useEntrySheet } from '@/components/entry/EntrySheetContext';
 
 export function SearchExportView() {
   const locale = useLocale();
@@ -16,6 +17,7 @@ export function SearchExportView() {
   const [selectedType, setSelectedType] = React.useState<'all' | 'expense' | 'income' | 'transfer'>('all');
 
   const entries = useEntries();
+  const { openEdit } = useEntrySheet();
 
   const query: SearchQuery = React.useMemo(() => ({
     text: searchText.trim() || undefined,
@@ -148,7 +150,7 @@ export function SearchExportView() {
               const icon = entry.categoryIcon ?? 'Receipt';
 
               return (
-                <div key={entry.id} className="flex items-center justify-between gap-3 py-2.5">
+                <button type="button" key={entry.id} onClick={() => openEdit(entry)} className="flex w-full text-start cursor-pointer active:bg-surface-2 transition-colors items-center justify-between gap-3 py-2.5">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div
                       style={
@@ -187,7 +189,7 @@ export function SearchExportView() {
                       {money(entry.amount, locale, { fractionDigits: 0 })}
                     </span>
                   </div>
-                </div>
+                </button>
               );
             })
           )}

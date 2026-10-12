@@ -172,5 +172,6 @@
   },
   "searchCategories": "Search a category or item…",
   "clearSearch": "Clear search",
-  "noSearchMatches": "Nothing with that name this month"
+  "noSearchMatches": "Nothing with that name this month",
+  "showEntries": "Show the entries"
 }

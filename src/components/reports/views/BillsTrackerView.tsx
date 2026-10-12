@@ -10,6 +10,8 @@ import { MonthSwitcher } from '../MonthSwitcher';
 import { Card } from '@/components/ui/card';
 import { money, pickName } from '@/lib/format';
 import type { PivotEntry } from '@/lib/data/types';
+import { useEntriesDrill } from '../useEntriesDrill';
+import { entriesFor } from '@/lib/reports/drill';
 
 export function BillsTrackerView() {
   const locale = useLocale();
@@ -17,6 +19,7 @@ export function BillsTrackerView() {
   const [endMonth, setEndMonth] = React.useState(() => new Date().toISOString().slice(0, 7));
 
   const entries = useEntries();
+  const drill = useEntriesDrill();
   const months = React.useMemo(() => getLastNMonths(endMonth, 6), [endMonth]);
 
   const pivotEntries: PivotEntry[] = React.useMemo(() => {
@@ -90,8 +93,12 @@ export function BillsTrackerView() {
                 key={row.id}
                 className="rounded-card bg-surface p-4 shadow-card border border-line/60 space-y-3"
               >
-                {/* Header: Name + Latest Value + Jump Alert */}
-                <div className="flex items-start justify-between gap-2">
+                {/* Header: Name + Latest Value + Jump Alert; tap for all its entries in these 6 months */}
+                <button
+                  type="button"
+                  onClick={() => drill.show(name, entriesFor(entries, { type: 'expense', itemId: row.id, months }))}
+                  className="flex w-full items-start justify-between gap-2 text-start rounded-xl cursor-pointer active:bg-surface-2 transition-colors"
+                >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="text-body font-semibold text-ink truncate">
@@ -117,7 +124,7 @@ export function BillsTrackerView() {
                       {formatMonth(months[latestIndex], locale)}
                     </span>
                   </div>
-                </div>
+                </button>
 
                 {/* 6-Month Mini Bar Strip */}
                 <div className="pt-1 border-t border-line/40">
@@ -129,7 +136,13 @@ export function BillsTrackerView() {
                       const isLatest = i === latestIndex;
 
                       return (
-                        <div key={m} className="flex flex-col items-center gap-1 h-full justify-end">
+                        <button
+                          type="button"
+                          key={m}
+                          onClick={() => drill.show(name, entriesFor(entries, { type: 'expense', itemId: row.id, months: [m] }), { subtitle: formatMonth(m, locale) })}
+                          aria-label={`${formatMonth(m, locale)} ${money(val, locale)}`}
+                          className="flex flex-col items-center gap-1 h-full justify-end cursor-pointer"
+                        >
                           <div
                             style={{ height: `${heightPercent}%` }}
                             className={`w-full rounded-md transition-all ${
@@ -143,7 +156,7 @@ export function BillsTrackerView() {
                           <span className="text-caption tabular-nums text-ink-muted leading-none">
                             {m.slice(5)}
                           </span>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -153,6 +166,7 @@ export function BillsTrackerView() {
           })}
         </div>
       )}
+      {drill.sheet}
     </div>
   );
 }

@@ -11,6 +11,8 @@ import { Card } from '@/components/ui/card';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { money } from '@/lib/format';
 import { MonthSwitcher } from '../MonthSwitcher';
+import { Link } from '@/i18n/navigation';
+import { historyHref } from '@/lib/history/link';
 
 // Weekdays starting Saturday (Egypt week)
 const WEEKDAYS_EN = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -45,12 +47,12 @@ export function SpendingCalendarView() {
       <Card className="rounded-card bg-surface p-3 shadow-card border border-line/60 space-y-2">
         {/* Total & Peak Info */}
         <div className="flex items-center justify-between text-caption px-1">
-          <div>
-            <span className="text-ink-muted">{t('spent')}: </span>
+          <Link href={historyHref({ type: 'expense', month })} className="flex min-h-12 items-center rounded-xl active:bg-surface-2 transition-colors">
+            <span className="text-ink-muted">{t('spent')}:&nbsp;</span>
             <span className="font-bold tabular-nums text-expense">
               {money(result.monthTotal, locale, { fractionDigits: 0 })}
             </span>
-          </div>
+          </Link>
           {result.highestDay && result.highestDay.amount > 0 && (
             <div>
               <span className="text-ink-muted">{t('library.highestDay')}: </span>

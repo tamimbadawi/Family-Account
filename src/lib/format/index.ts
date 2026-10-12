@@ -245,3 +245,11 @@ export function localISODate(date: Date = new Date()): string {
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
+
+/**
+ * "Food › Groceries": a category path whose separator points the reading direction. Arabic uses ←, which no
+ * browser mirrors (› / ‹ are mirrored by some engines and not others), so it points the same way everywhere.
+ */
+export function joinPath(parts: (string | null | undefined)[], locale: string): string {
+  return parts.filter(Boolean).join(locale.startsWith('ar') ? ' ← ' : ' › ');
+}

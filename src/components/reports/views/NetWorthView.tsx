@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { historyHref } from '@/lib/history/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
 import { useEntries, useWalletBalances, useWallets } from '@/lib/data/provider';
@@ -75,7 +76,7 @@ export function NetWorthView() {
           return (
             <div
               key={w.id}
-              onClick={() => router.push(`/history?wallet=${w.id}`)}
+              onClick={() => router.push(historyHref({ walletId: w.id }))}
               className="flex items-center justify-between py-1.5 px-3 hover:bg-surface-2/40 active:bg-surface-2/60 transition-colors cursor-pointer select-none"
             >
               <div className="flex items-center gap-2.5 min-w-0">

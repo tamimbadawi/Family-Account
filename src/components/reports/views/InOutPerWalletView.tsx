@@ -16,6 +16,8 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
+import { Link } from '@/i18n/navigation';
+import { historyHref } from '@/lib/history/link';
 
 export function InOutPerWalletView() {
   const locale = useLocale();
@@ -44,7 +46,7 @@ export function InOutPerWalletView() {
     const hasTransfers = w.transfersIn > 0 || w.transfersOut > 0;
 
     return (
-      <div key={w.walletId} className="py-1.5 px-3 select-none space-y-0.5">
+      <Link key={w.walletId} href={historyHref({ month, walletId: w.walletId })} className="block py-1.5 px-3 select-none space-y-0.5 active:bg-surface-2 transition-colors">
         {/* Row Header: Icon + Name + Net Change */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
@@ -99,7 +101,7 @@ export function InOutPerWalletView() {
             </span>
           )}
         </div>
-      </div>
+      </Link>
     );
   };
 
@@ -112,7 +114,7 @@ export function InOutPerWalletView() {
 
       {/* 2. Month Overview Header */}
       <div className="grid grid-cols-3 gap-1.5">
-        <Card className="rounded-card bg-surface p-1.5 shadow-card border border-line/60 text-center">
+        <Link href={historyHref({ month, type: 'income' })} className="flex flex-col rounded-card bg-surface p-1.5 shadow-card border border-line/60 text-center active:bg-surface-2 transition-colors">
           <div className="text-caption text-ink-muted flex items-center justify-center gap-1">
             <ArrowDownLeft className="size-3.5 text-income shrink-0" />
             <span className="whitespace-nowrap">{t('library.moneyIn')}</span>
@@ -120,9 +122,9 @@ export function InOutPerWalletView() {
           <div className="text-body font-bold text-income tabular-nums mt-0.5 whitespace-nowrap">
             +{money(report.totalIn, locale)}
           </div>
-        </Card>
+        </Link>
 
-        <Card className="rounded-card bg-surface p-1.5 shadow-card border border-line/60 text-center">
+        <Link href={historyHref({ month, type: 'expense' })} className="flex flex-col rounded-card bg-surface p-1.5 shadow-card border border-line/60 text-center active:bg-surface-2 transition-colors">
           <div className="text-caption text-ink-muted flex items-center justify-center gap-1">
             <ArrowUpRight className="size-3.5 text-expense shrink-0" />
             <span className="whitespace-nowrap">{t('library.moneyOut')}</span>
@@ -130,9 +132,9 @@ export function InOutPerWalletView() {
           <div className="text-body font-bold text-expense tabular-nums mt-0.5 whitespace-nowrap">
             {money(report.totalOut, locale)}
           </div>
-        </Card>
+        </Link>
 
-        <Card className="rounded-card bg-surface p-1.5 shadow-card border border-line/60 text-center">
+        <Link href={historyHref({ month, type: 'transfer' })} className="flex flex-col rounded-card bg-surface p-1.5 shadow-card border border-line/60 text-center active:bg-surface-2 transition-colors">
           <div className="text-caption text-ink-muted flex items-center justify-center gap-1">
             <ArrowLeftRight className="size-3.5 text-accent shrink-0" />
             <span className="whitespace-nowrap">{t('library.transfersTotal')}</span>
@@ -140,7 +142,7 @@ export function InOutPerWalletView() {
           <div className="text-body font-bold text-ink tabular-nums mt-0.5 whitespace-nowrap">
             {money(report.totalTransfers, locale)}
           </div>
-        </Card>
+        </Link>
       </div>
 
       {/* 3. Wallet Breakdown List */}

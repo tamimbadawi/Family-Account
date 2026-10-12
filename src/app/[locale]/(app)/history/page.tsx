@@ -2,8 +2,10 @@
 
 import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Calendar, Plus, Search, SlidersHorizontal, X } from 'lucide-react';
+import { Calendar, ChevronLeft, Plus, Search, SlidersHorizontal, X } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
+import { parseHistoryLink } from '@/lib/history/link';
 import type { EnrichedEntry } from '@/lib/data/types';
 import {
   useCategories,
@@ -26,7 +28,6 @@ import { SummaryCard } from '@/components/history/SummaryCard';
 import {
   activeFilterCount,
   applyFilters,
-  EMPTY_FILTERS,
   pickKey,
   singlePick,
   toListParams,
@@ -41,23 +42,28 @@ function HistoryContent() {
   const t = useTranslations('history');
   const { openAdd, openEdit } = useEntrySheet();
   const searchParams = useSearchParams();
-  const walletParam = searchParams.get('wallet') || undefined;
+  const router = useRouter();
+  // Opened from a total elsewhere (Reports, goals, wallets…): start on exactly the entries behind it
+  const linkKey = searchParams.toString();
+  const link = React.useMemo(() => parseHistoryLink((k) => new URLSearchParams(linkKey).get(k)), [linkKey]);
 
   // Search query within the current view
-  const [searchQuery, setSearchQuery] = React.useState('');
+  const [searchQuery, setSearchQuery] = React.useState(link.q);
 
-  // Filters; a wallet opened from "Our money" (?wallet=) starts the list on that wallet
-  const [filters, setFilters] = React.useState<HistoryFilters>({ ...EMPTY_FILTERS, walletIds: walletParam ? [walletParam] : [] });
-  const [prevWalletParam, setPrevWalletParam] = React.useState(walletParam);
-  if (walletParam !== prevWalletParam) {
-    setPrevWalletParam(walletParam);
-    setFilters((f) => ({ ...f, walletIds: walletParam ? [walletParam] : [] }));
-  }
+  const [filters, setFilters] = React.useState<HistoryFilters>(link.filters);
   const [filterOpen, setFilterOpen] = React.useState(false);
 
   // Day / week / month / year shown, around an anchor date (starts on this month)
-  const [period, setPeriod] = React.useState<Period>('month');
-  const [anchor, setAnchor] = React.useState(() => toISO(new Date()));
+  const [period, setPeriod] = React.useState<Period>(link.period ?? 'month');
+  const [anchor, setAnchor] = React.useState(() => link.anchor ?? toISO(new Date()));
+  const [prevLinkKey, setPrevLinkKey] = React.useState(linkKey);
+  if (linkKey !== prevLinkKey) {
+    setPrevLinkKey(linkKey);
+    setFilters(link.filters);
+    setSearchQuery(link.q);
+    setPeriod(link.period ?? 'month');
+    setAnchor(link.anchor ?? toISO(new Date()));
+  }
   const range = rangeOf(period, anchor);
   const changePeriod = (p: Period, a: string) => {
     setPeriod(p);
@@ -139,6 +145,16 @@ function HistoryContent() {
     <div className="flex flex-col h-full min-h-0">
       {/* Controls: search bar, period, type dropdown + Filter, active filters */}
       <div className="px-5 pt-1 pb-3 space-y-3 shrink-0">
+        {link.back && (
+          <button
+            type="button"
+            onClick={() => (window.history.length > 1 ? router.back() : router.push('/reports'))}
+            className="-ms-2 -my-1 flex min-h-12 items-center gap-1 rounded-full pe-3 text-body font-semibold text-accent cursor-pointer active:scale-95 transition-transform"
+          >
+            <ChevronLeft className="size-5 rtl:rotate-180" aria-hidden />
+            <span>{t('back')}</span>
+          </button>
+        )}
         <div data-tour="history-search" className="relative flex h-12 w-full items-center rounded-2xl bg-surface px-3 shadow-card border border-line/40">
           <Search className="size-5 shrink-0 text-ink-muted ms-1 me-2" aria-hidden />
           <input

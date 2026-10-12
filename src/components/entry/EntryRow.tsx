@@ -7,13 +7,16 @@ import type { EnrichedEntry } from '@/lib/data/types';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { MemberBadge } from '@/components/ui/member-badge';
 import { money, pickName } from '@/lib/format';
+import { formatDmy } from '@/components/entry/DetailsRow';
 
 export interface EntryRowProps {
   entry: EnrichedEntry;
   onClick?: () => void;
+  /** Lists that aren't grouped under day headers (the drill-down sheets) show the date on the second line. */
+  showDate?: boolean;
 }
 
-export function EntryRow({ entry, onClick }: EntryRowProps) {
+export function EntryRow({ entry, onClick, showDate = false }: EntryRowProps) {
   const locale = useLocale();
   const t = useTranslations('entry');
 
@@ -38,9 +41,11 @@ export function EntryRow({ entry, onClick }: EntryRowProps) {
     locale
   );
 
-  const title = itemName || categoryName || (isTransfer ? `${walletName} → ${toWalletName}` : '');
+  // The arrow points the way the money moves in reading order (← in Arabic)
+  const fromTo = t('fromTo', { from: walletName, to: toWalletName });
+  const title = itemName || categoryName || (isTransfer ? fromTo : '');
   const subtitle = isTransfer
-    ? `${walletName} → ${toWalletName}`
+    ? fromTo
     : categoryName && walletName
     ? `${categoryName} · ${walletName}`
     : categoryName || walletName;
@@ -107,7 +112,14 @@ export function EntryRow({ entry, onClick }: EntryRowProps) {
             )}
           </div>
           <div className="truncate text-caption text-ink-muted leading-tight">
-            {subtitle}
+            {showDate && (
+              <span dir="ltr" className="tabular-nums">
+                {formatDmy(entry.occurredOn)}
+              </span>
+            )}
+            {/* A move's title is already "wallet → wallet": with a date, don't repeat it */}
+            {showDate && subtitle && subtitle !== title && ' · '}
+            {(!showDate || subtitle !== title) && subtitle}
           </div>
         </div>
       </div>
