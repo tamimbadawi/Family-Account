@@ -34,10 +34,23 @@ export interface FamilyRequest {
   fromName: string;
 }
 
+/** A message someone sent from Settings → Contact support (support_messages, 0016), not yet marked done. */
+export interface SupportInboxMessage {
+  id: string;
+  family: string;
+  sender: string;
+  section: string | null;
+  message: string;
+  /** Short-lived links to the photos (about an hour). */
+  photoUrls: string[];
+  createdAt: string;
+}
+
 type Action =
   | { action: 'list' }
   | { action: 'create_family_admin'; familyName: string; email: string; password: string; inviteId?: string }
   | { action: 'decline_invite'; inviteId: string }
+  | { action: 'support_done'; messageId: string }
   | { action: 'set_status'; householdId: string; status: 'active' | 'suspended' }
   | { action: 'reset_admin_password'; householdId: string; password: string };
 

@@ -51,5 +51,10 @@
   "loginTitle": "Family Accounts",
   "loginText": "Your family is ready on the family accounts app. Open this link on your iPhone and sign in with your email {email} and the password {password}. You will choose your own password after that. This login works for 24 hours: if you don't sign in by then, the invite is cancelled.",
   "loginCopied": "Login copied. Paste it in a message.",
-  "waitingExpires": "Waiting for the admin's first sign-in · deleted in {hours, plural, one {# hour} other {# hours}} if unused"
+  "waitingExpires": "Waiting for the admin's first sign-in · deleted in {hours, plural, one {# hour} other {# hours}} if unused",
+  "supportTitle": "Messages",
+  "supportFrom": "{name} ({family})",
+  "supportPhoto": "Photo {n}",
+  "supportMarkDone": "Mark as done",
+  "supportDone": "Message closed"
 }
