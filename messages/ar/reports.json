@@ -169,5 +169,8 @@
     "manageGoals": "افتح أهداف الادخار",
     "savedInGoalsLine": "متحوّش {amount} · {count, plural, one {هدف واحد} two {هدفين} few {# أهداف} other {# هدف}}",
     "noGoalsYet": "ابدأ حوّش لحاجة"
-  }
+  },
+  "searchCategories": "دوّر على قسم أو بند…",
+  "clearSearch": "امسح البحث",
+  "noSearchMatches": "مفيش حاجة بالاسم ده الشهر ده"
 }
