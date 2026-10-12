@@ -46,8 +46,66 @@ export interface SupportInboxMessage {
   createdAt: string;
 }
 
+/** One person in a family, as the operator dashboard sees them (operator_insights, 0025). */
+export interface InsightsMember {
+  name: string;
+  email: string | null;
+  role: 'owner' | 'member';
+  joinedAt: string;
+  lastSignInAt: string | null;
+  /** Real entries this person added (sample entries are never counted). */
+  entries: number;
+  lastEntryAt: string | null;
+}
+
+export interface InsightsFamily {
+  householdId: string;
+  name: string;
+  status: 'active' | 'suspended';
+  createdAt: string;
+  entries: number;
+  entries7d: number;
+  lastEntryAt: string | null;
+  /** The family still shows the sample entries every new family starts with. */
+  hasSample: boolean;
+  members: InsightsMember[];
+}
+
+/** A Contact support message from the last 30 days, open or done (photos only on the open ones, from 'list'). */
+export interface InsightsSupport {
+  id: string;
+  family: string;
+  sender: string | null;
+  email: string | null;
+  section: string | null;
+  message: string;
+  photoCount: number;
+  status: 'new' | 'done';
+  createdAt: string;
+  handledAt: string | null;
+}
+
+/** Usage numbers for the operator dashboard: counts and dates only, never amounts. */
+export interface OperatorInsights {
+  totals: {
+    families: number;
+    people: number;
+    entries: number;
+    entries7d: number;
+    entries30d: number;
+    activeFamilies7d: number;
+    signIns7d: number;
+    supportOpen: number;
+  };
+  /** Entries added per day (Cairo time), the last 30 days, oldest first. */
+  daily: { day: string; entries: number }[];
+  families: InsightsFamily[];
+  supportRecent: InsightsSupport[];
+}
+
 type Action =
   | { action: 'list' }
+  | { action: 'insights' }
   | { action: 'create_family_admin'; familyName: string; email: string; password: string; inviteId?: string }
   | { action: 'decline_invite'; inviteId: string }
   | { action: 'support_done'; messageId: string }
