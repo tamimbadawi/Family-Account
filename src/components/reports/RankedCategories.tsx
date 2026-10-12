@@ -141,7 +141,10 @@ export function RankedCategories({
                     handleOpenSheetForCategory(item);
                   }
                 }}
-                className="flex items-center justify-between gap-2.5 py-1.5 cursor-pointer hover:bg-surface-2/40 -mx-1.5 px-1.5 rounded-xl transition-colors active:scale-[0.99]"
+                className={`flex items-center justify-between gap-2.5 py-1.5 cursor-pointer hover:bg-surface-2/40 -mx-1.5 px-1.5 rounded-xl transition-colors active:scale-[0.99] ${
+                  /* Very small screens show two, so savings goals still fit on the first Reports page */
+                  index === 2 ? '[@media(max-height:599px)]:hidden' : ''
+                }`}
               >
                 {/* Category Icon */}
                 <div

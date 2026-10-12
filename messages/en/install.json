@@ -1,7 +1,7 @@
 {
   "title": "Put the app on your phone",
-  "step1": "Tap the Share button at the bottom",
-  "step2": "Choose “Add to Home Screen”",
+  "step1": "Tap the Share button at the bottom (on newer iPhones, tap ••• first, then Share)",
+  "step2": "Choose “Add to Home Screen” (scroll down if you don’t see it)",
   "step3": "Tap “Add” — that's it!",
   "bannerText": "Add the app to your Home Screen for faster access",
   "bannerAction": "See how",
@@ -9,7 +9,7 @@
   "backToApp": "Back",
   "note": "The app opens just like a native iPhone app without needing to open Safari each time.",
   "androidChromeStep1": "Tap the Chrome menu (⋮) at the top",
-  "androidChromeStep2": "Choose “Install app”",
+  "androidChromeStep2": "Choose “Install app” (or “Add to Home screen”)",
   "androidChromeStep3": "Tap “Install” — that's it!",
   "androidOtherStep1": "Open your browser's menu",
   "androidOtherStep2": "Choose “Install” or “Add to Home screen”",

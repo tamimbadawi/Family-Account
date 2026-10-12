@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
+  ChevronDown,
   ChevronRight,
   Download,
   FolderTree,
@@ -12,6 +13,8 @@ import {
   LogOut,
   PiggyBank,
   Repeat,
+  SlidersHorizontal,
+  Smartphone,
   Target,
   Trash2,
   Users,
@@ -19,6 +22,7 @@ import {
   Coins,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { useRepository } from '@/lib/data/provider';
 import { localISODate } from '@/lib/format';
@@ -26,6 +30,7 @@ import { useFamilyMembers } from '@/lib/auth/use-family-members';
 import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
 import { entriesToCsv } from '@/lib/reports/export';
 import { SupportDrawer } from '@/components/settings/SupportDrawer';
+import { promptInstall, useCanInstall } from '@/lib/standalone';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
@@ -34,13 +39,21 @@ export default function SettingsPage() {
   const router = useRouter();
   const pathname = usePathname();
   const repo = useRepository();
+  const canInstall = useCanInstall();
 
   const [isExporting, setIsExporting] = React.useState(false);
   const [isSupportOpen, setIsSupportOpen] = React.useState(false);
+  const [isMoreOpen, setIsMoreOpen] = React.useState(false);
+  const reduceMotion = useReducedMotion();
 
   const handleLanguageToggle = () => {
     const nextLocale = locale === 'ar' ? 'en' : 'ar';
     router.replace(pathname, { locale: nextLocale });
+  };
+
+  // Android: Chrome's own install popup when it offers one; otherwise (iPhone) the step-by-step guide
+  const handleInstall = async () => {
+    if (!(await promptInstall())) router.push('/install');
   };
 
   const handleDownloadCsv = async () => {
@@ -203,55 +216,99 @@ export default function SettingsPage() {
 
       {/* Preferences & Family Group */}
       <div className="bg-surface rounded-card border border-line/40 shadow-card divide-y divide-line/30">
-        {/* Language and Currencies share one row, so Settings still fits the screen without scrolling */}
-        <div className="grid grid-cols-2 divide-x divide-line/30 rtl:divide-x-reverse">
+        {/* More settings: one row that opens to show language, currencies, download and install,
+            so Settings stays calm and still fits the screen without scrolling */}
+        <div>
           <button
             type="button"
-            onClick={handleLanguageToggle}
-            className="flex min-h-[48px] items-center gap-2.5 px-3.5 py-2.5 [@media(max-height:700px)]:py-0.5 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
+            onClick={() => setIsMoreOpen((open) => !open)}
+            aria-expanded={isMoreOpen}
+            aria-controls="settings-more"
+            className="flex min-h-[48px] w-full items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
           >
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-warning/12 text-warning">
-              <Globe className="size-4.5" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-body font-semibold text-ink leading-tight">{t('language')}</div>
-              <div className="text-caption text-ink-muted leading-tight">{locale === 'ar' ? 'العربية' : 'English'}</div>
-            </div>
-          </button>
-
-          <Link
-            href="/settings/currencies"
-            className="flex min-h-[48px] items-center gap-2.5 px-3.5 py-2.5 [@media(max-height:700px)]:py-0.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
-          >
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-income-soft text-income">
-              <Coins className="size-4.5" />
-            </div>
-            <span className="min-w-0 text-body font-semibold text-ink leading-tight">{t('currencies')}</span>
-          </Link>
-        </div>
-        {/* Download CSV */}
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={handleDownloadCsv}
-          onKeyDown={(e) => e.key === 'Enter' && handleDownloadCsv()}
-          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-0.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-member-3-soft text-member-3">
-              <Download className="size-4.5" />
-            </div>
-            <div className="text-start">
-              <div className="text-body font-semibold text-ink leading-tight">
-                {t('download')}
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-warning/12 text-warning">
+                <SlidersHorizontal className="size-4.5" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-body font-semibold text-ink leading-tight">{t('more')}</div>
+                {!isMoreOpen && (
+                  <div className="truncate text-caption text-ink-muted leading-tight">
+                    {canInstall ? t('moreHintInstall') : t('moreHint')}
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-          {isExporting ? (
-            <span className="text-caption text-ink-muted">...</span>
-          ) : (
-            <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
-          )}
+            <ChevronDown
+              className={`size-5 shrink-0 text-ink-muted transition-transform duration-200 ease-out motion-reduce:transition-none ${isMoreOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
+
+          <AnimatePresence initial={false}>
+            {isMoreOpen && (
+              <motion.div
+                id="settings-more"
+                key="more"
+                initial={reduceMotion ? false : { height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={reduceMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+                transition={{ duration: reduceMotion ? 0 : 0.2, ease: 'easeOut' }}
+                className="overflow-hidden"
+              >
+                <div className="divide-y divide-line/30 border-t border-line/30 bg-surface-2/30">
+                  {/* Language */}
+                  <button type="button" onClick={handleLanguageToggle} className="flex min-h-[48px] w-full items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-warning/12 text-warning">
+                        <Globe className="size-4.5" />
+                      </div>
+                      <span className="text-body font-semibold text-ink">{t('language')}</span>
+                    </div>
+                    <span className="text-caption text-ink-muted">{locale === 'ar' ? 'العربية' : 'English'}</span>
+                  </button>
+
+                  {/* Currencies */}
+                  <Link href="/settings/currencies" className="flex min-h-[48px] w-full items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-income-soft text-income">
+                        <Coins className="size-4.5" />
+                      </div>
+                      <span className="text-body font-semibold text-ink">{t('currencies')}</span>
+                    </div>
+                    <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
+                  </Link>
+
+                  {/* Download my data */}
+                  <button type="button" onClick={handleDownloadCsv} disabled={isExporting} className="flex min-h-[48px] w-full items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-member-3-soft text-member-3">
+                        <Download className="size-4.5" />
+                      </div>
+                      <span className="text-body font-semibold text-ink">{t('download')}</span>
+                    </div>
+                    {isExporting ? (
+                      <span className="text-caption text-ink-muted">...</span>
+                    ) : (
+                      <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
+                    )}
+                  </button>
+
+                  {/* Install app: only while the app is still open in the browser */}
+                  {canInstall && (
+                    <button type="button" onClick={handleInstall} className="flex min-h-[48px] w-full items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer">
+                      <div className="flex items-center gap-3">
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+                          <Smartphone className="size-4.5" />
+                        </div>
+                        <span className="text-body font-semibold text-ink">{t('install')}</span>
+                      </div>
+                      <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Contact support */}
