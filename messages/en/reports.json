@@ -169,5 +169,8 @@
     "manageGoals": "Open savings goals",
     "savedInGoalsLine": "{amount} saved · {count, plural, one {# goal} other {# goals}}",
     "noGoalsYet": "Start saving for something"
-  }
+  },
+  "searchCategories": "Search a category or item…",
+  "clearSearch": "Clear search",
+  "noSearchMatches": "Nothing with that name this month"
 }

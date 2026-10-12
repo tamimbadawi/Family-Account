@@ -94,5 +94,7 @@
   "clearSearch": "Clear search",
   "emptySearchTitle": "No matching entries",
   "emptySearchHint": "Try searching for another word or amount.",
-  "clearSearchAction": "Clear search"
+  "clearSearchAction": "Clear search",
+  "summaryLabel": "Total of what is shown",
+  "seeHistory": "See its history"
 }

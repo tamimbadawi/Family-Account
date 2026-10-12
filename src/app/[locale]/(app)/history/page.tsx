@@ -21,6 +21,8 @@ import { useEntryAuthor, useFamilyMembers } from '@/lib/auth/use-family-members'
 import { FilterSheet } from '@/components/history/FilterSheet';
 import { ItemHistoryCard } from '@/components/history/ItemHistoryCard';
 import { searchHistory } from '@/lib/history/search';
+import { summarize } from '@/lib/history/summary';
+import { SummaryCard } from '@/components/history/SummaryCard';
 import {
   activeFilterCount,
   applyFilters,
@@ -28,6 +30,7 @@ import {
   pickKey,
   singlePick,
   toListParams,
+  type CategoryPick,
   type HistoryFilters,
 } from '@/lib/history/filters';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -123,6 +126,14 @@ function HistoryContent() {
   const isLoading = rawEntries === undefined;
   const isEmpty = entries !== undefined && entries.length === 0;
   const isFiltered = filterCount > 0 || filters.type !== 'all';
+  const showItemCard = Boolean(focus) && !isSearchActive;
+  const summary = React.useMemo(() => summarize(entries), [entries]);
+  const showSummary = !showItemCard && (isSearchActive || isFiltered) && summary.count > 0;
+  // "See its history": narrow to that one item and drop the search, so its history card shows
+  const openItem = (pick: CategoryPick) => {
+    setFilters((f) => ({ ...f, picks: [pick] }));
+    setSearchQuery('');
+  };
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -200,7 +211,8 @@ function HistoryContent() {
 
       {/* Main content: list of day groups or empty / loading state */}
       <div data-tour="history-list" className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {focus && !isSearchActive && <ItemHistoryCard filters={filters} period={period} anchor={anchor} onAnchorChange={setAnchor} />}
+        {showItemCard && <ItemHistoryCard filters={filters} period={period} anchor={anchor} onAnchorChange={setAnchor} />}
+        {showSummary && <SummaryCard summary={summary} period={period} onOpenItem={openItem} />}
 
         {isLoading && (
           <div className="px-5 py-3 space-y-4">
