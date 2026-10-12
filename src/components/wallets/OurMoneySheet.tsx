@@ -201,7 +201,7 @@ export function OurMoneyRow({ className = '', onClick }: OurMoneyRowProps) {
           <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent/12 text-accent">
             <WalletIcon className="size-5" />
           </div>
-          <span className="text-body font-semibold text-ink truncate">
+          <span className="text-body font-semibold text-ink shrink-0">
             {t('ourMoney')}
           </span>
         </div>

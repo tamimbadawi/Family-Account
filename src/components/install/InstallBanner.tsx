@@ -2,16 +2,23 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { Share, X } from 'lucide-react';
+import { Download, Share, X } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
 
 function subscribe(callback: () => void) {
   window.addEventListener('storage', callback);
   return () => window.removeEventListener('storage', callback);
 }
 
-function getSnapshot() {
+const subscribeNever = () => () => {};
+
+function getIosSnapshot() {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
   try {
     const ua = navigator.userAgent || '';
@@ -34,18 +41,57 @@ function getSnapshot() {
   }
 }
 
-function getServerSnapshot() {
+function getIsAndroidSnapshot() {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+  return /android/i.test(navigator.userAgent || '');
+}
+
+function getServerFalse() {
   return false;
 }
 
 export function InstallBanner() {
   const t = useTranslations('install');
-  const isEligible = React.useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const isIosEligible = React.useSyncExternalStore(subscribe, getIosSnapshot, getServerFalse);
+  const isAndroid = React.useSyncExternalStore(subscribeNever, getIsAndroidSnapshot, getServerFalse);
   const [dismissed, setDismissed] = React.useState(false);
+  const [deferredPrompt, setDeferredPrompt] = React.useState<BeforeInstallPromptEvent | null>(null);
 
-  const show = isEligible && !dismissed;
+  React.useEffect(() => {
+    if (!isAndroid) return;
 
-  if (!show) return null;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const isDismissed = localStorage.getItem('dismiss_install_banner') === '1';
+    if (isStandalone || isDismissed) return;
+
+    const handlePrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    };
+
+    const handleInstalled = () => {
+      setDeferredPrompt(null);
+      setDismissed(true);
+      try {
+        localStorage.setItem('dismiss_install_banner', '1');
+      } catch {
+        // ignore
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handlePrompt);
+    window.addEventListener('appinstalled', handleInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handlePrompt);
+      window.removeEventListener('appinstalled', handleInstalled);
+    };
+  }, [isAndroid]);
+
+  const showIos = isIosEligible && !dismissed;
+  const showAndroid = isAndroid && Boolean(deferredPrompt) && !dismissed;
+
+  if (!showIos && !showAndroid) return null;
 
   const handleDismiss = () => {
     try {
@@ -56,24 +102,52 @@ export function InstallBanner() {
     setDismissed(true);
   };
 
+  const handleAndroidInstall = async () => {
+    if (!deferredPrompt) return;
+    try {
+      await deferredPrompt.prompt();
+      const choice = await deferredPrompt.userChoice;
+      if (choice.outcome === 'accepted') {
+        setDismissed(true);
+        localStorage.setItem('dismiss_install_banner', '1');
+      }
+    } catch (err) {
+      console.error('Install prompt failed:', err);
+    } finally {
+      setDeferredPrompt(null);
+    }
+  };
+
   return (
     <div className="relative mb-4 flex items-center justify-between gap-3 rounded-2xl bg-surface p-3.5 shadow-card border border-line">
       <div className="flex items-center gap-3 min-w-0">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
-          <Share className="size-5" />
+          {showAndroid ? <Download className="size-5" /> : <Share className="size-5" />}
         </div>
-        <p className="text-caption font-medium text-ink leading-snug truncate">
+        <p className="text-caption font-medium text-ink leading-snug">
           {t('bannerText')}
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <Button asChild size="sm" variant="secondary" className="h-9 px-3 text-caption font-semibold">
-          <Link href="/install">{t('bannerAction')}</Link>
-        </Button>
+        {showAndroid ? (
+          <Button
+            type="button"
+            onClick={handleAndroidInstall}
+            size="sm"
+            variant="secondary"
+            className="h-9 px-3 text-caption font-semibold cursor-pointer"
+          >
+            {t('bannerInstall')}
+          </Button>
+        ) : (
+          <Button asChild size="sm" variant="secondary" className="h-9 px-3 text-caption font-semibold">
+            <Link href="/install">{t('bannerAction')}</Link>
+          </Button>
+        )}
         <button
           type="button"
           onClick={handleDismiss}
-          className="flex size-8 items-center justify-center rounded-lg text-ink-muted hover:text-ink hover:bg-surface-2 transition-colors"
+          className="flex size-8 items-center justify-center rounded-lg text-ink-muted hover:text-ink hover:bg-surface-2 transition-colors cursor-pointer"
           aria-label="Dismiss"
         >
           <X className="size-4" />
