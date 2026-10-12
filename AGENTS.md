@@ -94,6 +94,12 @@ src/lib/reports     pivot() and report helpers — pure, unit-tested
 4. Put the one-line notes (what changed, anything deferred) in the PR description. There is no Vercel preview URL: only `main` deploys, and the GitHub CI build is the check. **Do not edit `docs/PROGRESS.md`.** Where a workflow says "tick PROGRESS.md" or "commit and push", this rule replaces it.
 5. Report back in one or two lines (step, PR link, open questions), then **continue with the next step in your queue** (`docs/ORCHESTRATION.md` §2). Stop only when your queue is done or every remaining step is BLOCKED.
 
+## 7a. Going live (owner's rule)
+
+Finished pull requests are **not** merged one by one. Add each one to **Waiting** in `docs/DEPLOY.md`
+and stop. Only when the owner says **"deploy"**: merge everything under Waiting (green checks only),
+then move those rows to **Deployed** with the date.
+
 ## 8. Never
 
 - Never work on a step that isn't in your queue, and never on a step assigned to another agent.
