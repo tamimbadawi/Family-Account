@@ -321,7 +321,7 @@ export default function FamilyPage() {
                           : 'text-warning'
                     }`}
                   >
-                    {t(`inviteStatus.${i.status}`)}
+                    {i.hoursLeft ? t('waitingHoursLeft', { hours: i.hoursLeft }) : t(`inviteStatus.${i.status}`)}
                   </span>
                 </div>
               ))}
