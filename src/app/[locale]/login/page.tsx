@@ -87,7 +87,8 @@ export default function LoginPage() {
       </div>
 
       <div className="flex flex-col items-center text-center mt-2">
-        <div className="relative size-24 overflow-hidden rounded-[22px] shadow-card bg-surface">
+        {/* Smaller while signing up: the extra field must still fit a 360x640 phone */}
+        <div className={`relative overflow-hidden rounded-[22px] shadow-card bg-surface ${signingUp ? 'size-16' : 'size-24'}`}>
           <Image
             src="/icons/icon-1024.png"
             alt={tAuth('appName')}

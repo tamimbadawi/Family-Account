@@ -23,10 +23,8 @@ begin
   execute 'set local role authenticated';
 
   -- ---------- Who may create a family ----------
+  -- Since 0018 a person without an invite may create a family: see self_signup_smoke_test.sql
   perform set_config('request.jwt.claim.sub', nobody::text, true);
-  ok := false;
-  begin perform public.create_family('X', 'Nobody', 'en', '{EGP}'); exception when others then ok := true; end;
-  r := r || format(E'\n%s person without an invite cannot create a family', case when ok then 'PASS' else 'FAIL' end);
   ok := false;
   begin perform public.create_household('X', 'Nobody', 'en'); exception when others then ok := true; end;
   r := r || format(E'\n%s the older create_household() is closed to signed-in users', case when ok then 'PASS' else 'FAIL' end);
@@ -213,7 +211,8 @@ begin
   r := r || format(E'\n%s signed-in users cannot read heartbeat', case when ok then 'PASS' else 'FAIL' end);
   perform set_config('request.jwt.claim.sub', b_admin::text, true);
   select count(*) into n from public.accounts where household_id = hb;
-  r := r || format(E'\n%s other families keep working (%s wallets)', case when n = 1 then 'PASS' else 'FAIL' end, n);
+  -- Sample data (0014, 0015) adds wallets beside Cash, so "at least one"
+  r := r || format(E'\n%s other families keep working (%s wallets)', case when n >= 1 then 'PASS' else 'FAIL' end, n);
 
   raise exception 'MULTI-FAMILY SMOKE TEST (intentional, rolled back):%', r;
 end $$;
