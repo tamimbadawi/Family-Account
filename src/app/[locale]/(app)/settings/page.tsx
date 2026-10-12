@@ -27,7 +27,7 @@ import { useFamilyMembers } from '@/lib/auth/use-family-members';
 import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/client';
 import { entriesToCsv } from '@/lib/reports/export';
 import { SupportDrawer } from '@/components/settings/SupportDrawer';
-import { useCanInstall } from '@/lib/standalone';
+import { promptInstall, useCanInstall } from '@/lib/standalone';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
@@ -44,6 +44,11 @@ export default function SettingsPage() {
   const handleLanguageToggle = () => {
     const nextLocale = locale === 'ar' ? 'en' : 'ar';
     router.replace(pathname, { locale: nextLocale });
+  };
+
+  // Android: Chrome's own install popup when it offers one; otherwise (iPhone) the step-by-step guide
+  const handleInstall = async () => {
+    if (!(await promptInstall())) router.push('/install');
   };
 
   const handleDownloadCsv = async () => {
@@ -258,15 +263,16 @@ export default function SettingsPage() {
           </div>
 
           {canInstall && (
-            <Link
-              href="/install"
-              className="flex min-h-[48px] items-center gap-2.5 px-3.5 py-2.5 [@media(max-height:700px)]:py-0.5 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
+            <button
+              type="button"
+              onClick={handleInstall}
+              className="flex min-h-[48px] items-center gap-2.5 px-3.5 py-2.5 [@media(max-height:700px)]:py-0.5 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer"
             >
               <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
                 <Smartphone className="size-4.5" />
               </div>
               <span className="min-w-0 text-body font-semibold text-ink leading-tight">{t('install')}</span>
-            </Link>
+            </button>
           )}
         </div>
 

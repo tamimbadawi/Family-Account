@@ -9,6 +9,8 @@ import { EntrySheetProvider } from '@/components/entry/EntrySheetContext';
 import { EntrySheet } from '@/components/entry/EntrySheet';
 import { Toaster } from '@/components/ui/sonner';
 import { UpdatingPill } from '@/components/layout/UpdatingPill';
+// Keeps Android's install popup from the moment the app loads, for Settings → Install app
+import '@/lib/standalone';
 
 export default function AppLayout({
   children,
