@@ -32,7 +32,7 @@ export class FamilyAdminError extends Error {
 }
 
 /** Calls an Edge Function and turns its { error: code } answer into a FamilyAdminError. */
-export async function callFunction<T>(name: 'family-admin' | 'operator', body: object): Promise<T> {
+export async function callFunction<T>(name: 'family-admin' | 'operator' | 'sign-up', body: object): Promise<T> {
   const { data, error } = await getSupabaseBrowserClient().functions.invoke(name, {
     body,
     // Never leave the screen loading forever: give up after 15 s and show the error
