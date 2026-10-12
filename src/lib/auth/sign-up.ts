@@ -1,5 +1,6 @@
-// Creating your own account from the sign-in page. Off unless NEXT_PUBLIC_SIGNUP_ENABLED is "true",
-// and Supabase must also allow new sign-ups. Pure helpers here; the page does the network call.
+// Creating your own account from the sign-in page: only for an email a family has invited in the
+// last 24 hours (the `sign-up` Edge Function checks). Off unless NEXT_PUBLIC_SIGNUP_ENABLED is "true".
+// Pure helpers here; the page does the network call.
 
 /** Message keys in the `auth` namespace. */
 export type SignUpErrorKey =
@@ -7,6 +8,7 @@ export type SignUpErrorKey =
   | 'signUpPasswordTooShort'
   | 'passwordsDontMatch'
   | 'emailTaken'
+  | 'notInvited'
   | 'signUpUnavailable'
   | 'tooManyAttempts'
   | 'signUpFailed';
@@ -25,10 +27,14 @@ export function validateSignUp(email: string, password: string, repeat: string):
   return null;
 }
 
-/** Supabase's error → our wording. Its own text is never shown. */
+/** The sign-up function's error code (or Supabase's error) → our wording. Their own text is never shown. */
 export function signUpErrorKey(error: { code?: string; status?: number; message?: string }): SignUpErrorKey {
   const code = error.code ?? '';
   const message = (error.message ?? '').toLowerCase();
+  if (code === 'not_invited') return 'notInvited';
+  if (code === 'email_taken') return 'emailTaken';
+  if (code === 'short_password') return 'signUpPasswordTooShort';
+  if (code === 'bad_email') return 'emailInvalid';
   if (code === 'user_already_exists' || code === 'email_exists' || message.includes('already registered')) {
     return 'emailTaken';
   }

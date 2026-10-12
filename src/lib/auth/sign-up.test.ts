@@ -25,6 +25,13 @@ describe('signUpErrorKey', () => {
     expect(signUpErrorKey({ message: 'User already registered' })).toBe('emailTaken');
   });
 
+  it('maps the answers of the sign-up function', () => {
+    expect(signUpErrorKey({ code: 'not_invited' })).toBe('notInvited');
+    expect(signUpErrorKey({ code: 'email_taken' })).toBe('emailTaken');
+    expect(signUpErrorKey({ code: 'short_password' })).toBe('signUpPasswordTooShort');
+    expect(signUpErrorKey({ code: 'bad_email' })).toBe('emailInvalid');
+  });
+
   it('maps sign-ups being switched off in Supabase', () => {
     expect(signUpErrorKey({ code: 'signup_disabled' })).toBe('signUpUnavailable');
     expect(signUpErrorKey({ message: 'Signups not allowed for this instance' })).toBe('signUpUnavailable');

@@ -23,7 +23,7 @@ begin
   execute 'set local role authenticated';
 
   -- ---------- Who may create a family ----------
-  -- Since 0018 a person without an invite may create a family: see self_signup_smoke_test.sql
+  -- A person without an invite cannot create a family (0019): see invited_signup_smoke_test.sql
   perform set_config('request.jwt.claim.sub', nobody::text, true);
   ok := false;
   begin perform public.create_household('X', 'Nobody', 'en'); exception when others then ok := true; end;
