@@ -12,6 +12,8 @@
 //
 // Support messages: what people send from Settings → Contact support (0016_support_messages). The
 // open ones come back with 'list', photos as signed links valid for an hour; 'support_done' closes one.
+//
+// Dashboard: 'insights' returns usage counts per day, per family and per person (0025_operator_insights).
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const normalizeEmail = (e: string) => e.trim().toLowerCase();
@@ -159,6 +161,16 @@ Deno.serve(async (req) => {
       if (!body.inviteId) return reply(400, { error: 'bad_request' });
       const { error } = await admin.rpc('decide_family_invite', { p_invite_id: body.inviteId, p_status: 'declined' });
       return error ? reply(500, { error: 'failed' }) : reply(200, { ok: true });
+    }
+
+    // Dashboard numbers: counts and dates only, never amounts (operator_insights, 0025)
+    case 'insights': {
+      const { data, error } = await admin.rpc('operator_insights');
+      if (error) {
+        console.error('[operator] operator_insights failed', error.code);
+        return reply(500, { error: 'failed' });
+      }
+      return reply(200, data);
     }
 
     case 'support_done': {
