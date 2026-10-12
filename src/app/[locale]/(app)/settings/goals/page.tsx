@@ -25,7 +25,6 @@ import type { EnrichedSavingsGoal } from '@/lib/data/types';
 import { money, normalizeDigits, pickName } from '@/lib/format';
 import { formatGoalTargetDate } from '@/lib/goals/progress';
 import { CategoryIcon } from '@/components/ui/category-icon';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -177,26 +176,9 @@ export default function SavingsGoalsPage() {
         <p className="text-body text-ink-muted leading-relaxed">
           {t('subtitle')}
         </p>
-        {isLoading && (
-          <div className="space-y-3">
-            {[1, 2].map((n) => (
-              <div key={n} className="p-4 bg-surface rounded-card border border-line/40 space-y-3">
-                <div className="flex items-center gap-3">
-                  <Skeleton className="size-11 rounded-2xl" />
-                  <div className="space-y-1.5 flex-1">
-                    <Skeleton className="h-5 w-32" />
-                    <Skeleton className="h-4 w-24" />
-                  </div>
-                </div>
-                <Skeleton className="h-2.5 w-full rounded-full" />
-              </div>
-            ))}
-          </div>
-        )}
-
         {isEmpty && (
-          <div className="flex flex-col items-center justify-center text-center p-8 mt-6 bg-surface rounded-card border border-line/40 shadow-card">
-            <div className="flex size-16 items-center justify-center rounded-2xl bg-surface-2 text-ink-muted/50 mb-3">
+          <div className="flex flex-col items-center text-center py-8 px-4">
+            <div className="flex size-16 items-center justify-center rounded-full bg-accent-soft text-accent mb-3">
               <Target className="size-8" />
             </div>
             <h2 className="text-heading font-semibold text-ink mb-1">

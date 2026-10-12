@@ -10,7 +10,6 @@ import { useSaveError } from '@/components/ui/use-save-error';
 import type { EnrichedRecurringRule } from '@/lib/data/types';
 import { money, pickName } from '@/lib/format';
 import { CategoryIcon } from '@/components/ui/category-icon';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useEntrySheet } from '@/components/entry/EntrySheetContext';
 import { useRecurrenceSummary } from '@/components/entry/useRecurrenceSummary';
 
@@ -68,14 +67,9 @@ export default function RecurringSettingsPage() {
           >
             <ChevronLeft className="size-6 rtl:rotate-180" />
           </Link>
-          <div className="min-w-0">
-            <h1 className="text-title font-bold text-ink leading-tight truncate">
-              {t('title')}
-            </h1>
-            <p className="text-caption text-ink-muted leading-tight truncate">
-              {t('subtitle')}
-            </p>
-          </div>
+          <h1 className="text-title font-bold text-ink leading-tight">
+            {t('title')}
+          </h1>
         </div>
 
         {/* + New button */}
@@ -83,35 +77,21 @@ export default function RecurringSettingsPage() {
           type="button"
           onClick={handleAddNew}
           aria-label={t('addNew')}
-          className="flex h-12 min-w-12 items-center justify-center gap-1 rounded-2xl bg-accent px-4 text-body font-semibold text-accent-ink transition-transform active:scale-95 shrink-0 cursor-pointer"
+          className="flex h-12 min-w-12 items-center justify-center gap-1.5 rounded-2xl bg-accent px-3.5 text-body font-semibold text-accent-ink transition-transform active:scale-95 shrink-0 cursor-pointer"
         >
           <Plus className="size-5" />
-          <span className="hidden sm:inline">{t('addNew')}</span>
+          <span>{t('addNew')}</span>
         </button>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 px-5 py-4 space-y-3 pb-[max(env(safe-area-inset-bottom,0px),1.5rem)]">
-        {isLoading && (
-          <div className="space-y-3">
-            {[1, 2, 3].map((n) => (
-              <div key={n} className="flex items-center justify-between p-4 bg-surface rounded-card border border-line/40">
-                <div className="flex items-center gap-3">
-                  <Skeleton className="size-11 rounded-2xl" />
-                  <div className="space-y-1.5">
-                    <Skeleton className="h-5 w-32" />
-                    <Skeleton className="h-4 w-24" />
-                  </div>
-                </div>
-                <Skeleton className="h-10 w-20 rounded-xl" />
-              </div>
-            ))}
-          </div>
-        )}
-
+      <div className="flex-1 px-5 py-4 space-y-4 pb-[max(env(safe-area-inset-bottom,0px),1.5rem)]">
+        <p className="text-body text-ink-muted leading-relaxed">
+          {t('subtitle')}
+        </p>
         {isEmpty && (
-          <div className="flex flex-col items-center justify-center text-center p-8 mt-6 bg-surface rounded-card border border-line/40 shadow-card">
-            <div className="flex size-16 items-center justify-center rounded-2xl bg-surface-2 text-ink-muted/50 mb-3">
+          <div className="flex flex-col items-center text-center py-8 px-4">
+            <div className="flex size-16 items-center justify-center rounded-full bg-accent-soft text-accent mb-3">
               <Repeat className="size-8" />
             </div>
             <h2 className="text-heading font-semibold text-ink mb-1">
