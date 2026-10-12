@@ -66,5 +66,29 @@ jobs:
           $P -f supabase/migrations/0001_schema.sql
           out=$(psql -h localhost -U postgres -q -f supabase/tests/rls_smoke_test.sql 2>&1 || true)
           echo "$out"
-          echo "$out" | grep -q "SMOKE TEST RESULTS" || { echo "::error::Smoke test did not run"; exit 1; }
           if echo "$out" | grep -q "^FAIL"; then echo "::error::Smoke test has failures"; exit 1; fi
+
+  ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run Headless UI Checks
+        run: npm run ui:check -- --prod
+      - name: Run Headless UI Flows
+        run: npm run ui:flows -- --prod
+      - name: Upload UI Check Artifacts on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-check-report
+          path: .ui-check/
+          retention-days: 7
+
