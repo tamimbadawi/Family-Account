@@ -146,7 +146,7 @@ export default function HomePage() {
       </div>
 
       {/* 2. Hero Card */}
-      <Link href="/reports" className="block active:scale-[0.99] transition-transform">
+      <Link href="/reports" data-tour="home-spent" className="block rounded-card active:scale-[0.99] transition-transform">
         <Card className="bg-surface p-3.5 sm:p-5 shadow-card hover:shadow-md transition-shadow">
           <span className="text-caption text-ink-muted font-medium">
             {tHome('spentThisMonth')}
@@ -216,7 +216,9 @@ export default function HomePage() {
       )}
 
       {/* 4. Our money row */}
-      <OurMoneyRow />
+      <div data-tour="our-money" className="rounded-card">
+        <OurMoneyRow />
+      </div>
 
       {/* 5. Recent entries */}
       <section className="space-y-1">

@@ -20,7 +20,8 @@ const namespaces = [
   'budgets',
   'sample',
   'recurring',
-  'goals'
+  'goals',
+  'tour'
 ] as const;
 
 function isAppLocale(locale: string | undefined): locale is Locale {

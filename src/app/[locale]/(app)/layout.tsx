@@ -7,6 +7,7 @@ import { TabBar } from '@/components/layout/TabBar';
 import { PageTransition } from '@/components/layout/PageTransition';
 import { EntrySheetProvider } from '@/components/entry/EntrySheetContext';
 import { EntrySheet } from '@/components/entry/EntrySheet';
+import { TourProvider } from '@/components/tour/TourProvider';
 import { Toaster } from '@/components/ui/sonner';
 import { UpdatingPill } from '@/components/layout/UpdatingPill';
 // Keeps Android's install popup from the moment the app loads, for Settings → Install app
@@ -20,6 +21,7 @@ export default function AppLayout({
   return (
     <RepositoryProvider>
       <EntrySheetProvider>
+        <TourProvider>
         <div className="mx-auto flex h-dvh max-w-[520px] flex-col overflow-hidden bg-canvas text-ink relative shadow-2xl">
           <Toaster position="bottom-center" />
           <UpdatingPill />
@@ -34,6 +36,7 @@ export default function AppLayout({
           <TabBar />
           <EntrySheet />
         </div>
+        </TourProvider>
       </EntrySheetProvider>
     </RepositoryProvider>
   );

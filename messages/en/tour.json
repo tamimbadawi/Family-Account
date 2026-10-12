@@ -1,0 +1,50 @@
+{
+  "helpButton": "Help",
+  "helpTitle": "Need a hand? 🙋",
+  "helpIntro": "Pick a guide and we'll walk you through it, one little step at a time.",
+  "progress": "Step {step} of {count}",
+  "close": "Close the guide",
+  "start": "Let's go!",
+  "next": "Next",
+  "back": "Back",
+  "done": "Got it! 🎉",
+  "guides": {
+    "welcome": { "title": "The grand tour", "hint": "A one-minute stroll around the app" },
+    "addEntry": { "title": "Adding money in or out", "hint": "Spent something? Got paid? Start here" },
+    "history": { "title": "Finding an old entry", "hint": "Search, fix or delete" },
+    "reports": { "title": "Reading your reports", "hint": "So… where did the money go?" },
+    "settings": { "title": "Settings", "hint": "Make the app your own" }
+  },
+  "welcome": {
+    "hello": { "title": "Hello there! 👋", "body": "Let us show you around. It takes one minute, and you can escape any time with ✕." },
+    "spent": { "title": "This month's damage 😅", "body": "Everything you spent this month. Tap it to see where it all went." },
+    "money": { "title": "Our money 💰", "body": "What you have right now, in cash and in the bank. Tap to peek inside each one." },
+    "add": { "title": "Meet the + button ⭐", "body": "Paid for something? Got some money? Tap +. You two will become good friends." },
+    "history": { "title": "History 📖", "body": "Everything you ever wrote down lives here. Find any entry to fix or delete it." },
+    "reports": { "title": "Reports 📊", "body": "Friendly charts that show where your money goes, month after month." },
+    "help": { "title": "Lost? Tap ? 🧭", "body": "This button is on every screen. Tap it whenever you want a guide again." }
+  },
+  "addEntry": {
+    "plus": { "title": "It all starts with + ✨", "body": "Tap + at the bottom of any screen. Come on, let's open it together." },
+    "type": { "title": "Out or in? 🤔", "body": "Money out is for things you paid. Money in is for money you got. Move is for money going from one wallet to another." },
+    "amount": { "title": "How much? 🔢", "body": "Tap the big keys. Got a long receipt? Add it up right here, like 120 + 85." },
+    "category": { "title": "What was it for? 🛒", "body": "Groceries? Bills? A little treat? Tap here and pick one." },
+    "details": { "title": "Which wallet, which day 📅", "body": "Today is already picked for you. Add a short note too, if you like." },
+    "save": { "title": "Save it! ✅", "body": "Tap Save and you're done. Oops, a mistake? Tap Undo on the message that pops up." }
+  },
+  "history": {
+    "search": { "title": "Detective mode 🔍", "body": "Type a word or an amount and we'll find the entry for you." },
+    "period": { "title": "Time travel ⏳", "body": "Go back and forth in time. Tap the middle to see a day, a week, a month or a year." },
+    "filter": { "title": "Just the ones you want 🎯", "body": "Show only money out or money in, or just one category or wallet." },
+    "list": { "title": "Tap to fix ✏️", "body": "Tap any entry to change or delete it. Deleted by accident? It waits in Settings for 30 days." }
+  },
+  "reports": {
+    "tabs": { "title": "Three ways to look 👀", "body": "Overview is the quick summary. All reports has ready-made reports. Breakdown is the detailed table." },
+    "overview": { "title": "Follow the money 🕵️", "body": "Tap a slice of the chart or a category to see its entries. Swipe sideways for the last 6 months." }
+  },
+  "settings": {
+    "lists": { "title": "Your lists 🗂️", "body": "Categories, wallets, budgets, monthly entries and savings goals: change them all here." },
+    "more": { "title": "A few more things ⚙️", "body": "Switch between English and Arabic, or download a copy of your entries." },
+    "support": { "title": "We're here for you 💬", "body": "Stuck on something? Write to us here, add a screenshot if you like, and we'll help." }
+  }
+}
