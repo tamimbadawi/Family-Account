@@ -443,6 +443,86 @@ export type Database = {
           },
         ]
       }
+      recurring_rules: {
+        Row: {
+          account_id: string
+          amount: number
+          created_at: string
+          created_by: string | null
+          day_of_month: number
+          household_id: string
+          id: string
+          is_archived: boolean
+          item_id: string | null
+          note: string | null
+          start_month: string
+          to_account_id: string | null
+          type: Database["public"]["Enums"]["txn_type"]
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          day_of_month: number
+          household_id: string
+          id?: string
+          is_archived?: boolean
+          item_id?: string | null
+          note?: string | null
+          start_month: string
+          to_account_id?: string | null
+          type: Database["public"]["Enums"]["txn_type"]
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          day_of_month?: number
+          household_id?: string
+          id?: string
+          is_archived?: boolean
+          item_id?: string | null
+          note?: string | null
+          start_month?: string
+          to_account_id?: string | null
+          type?: Database["public"]["Enums"]["txn_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_rules_household_id_account_id_fkey"
+            columns: ["household_id", "account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "recurring_rules_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_rules_household_id_item_id_fkey"
+            columns: ["household_id", "item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "recurring_rules_household_id_to_account_id_fkey"
+            columns: ["household_id", "to_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["household_id", "id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           to_amount: number | null
@@ -458,6 +538,8 @@ export type Database = {
           occurred_on: string
           photo_path: string | null
           is_sample: boolean
+          recurring_rule_id: string | null
+          recurring_month: string | null
           to_account_id: string | null
           type: Database["public"]["Enums"]["txn_type"]
           updated_at: string
@@ -477,6 +559,8 @@ export type Database = {
           occurred_on?: string
           photo_path?: string | null
           is_sample?: boolean
+          recurring_rule_id?: string | null
+          recurring_month?: string | null
           to_account_id?: string | null
           type: Database["public"]["Enums"]["txn_type"]
           updated_at?: string
@@ -496,6 +580,8 @@ export type Database = {
           occurred_on?: string
           photo_path?: string | null
           is_sample?: boolean
+          recurring_rule_id?: string | null
+          recurring_month?: string | null
           to_account_id?: string | null
           type?: Database["public"]["Enums"]["txn_type"]
           updated_at?: string

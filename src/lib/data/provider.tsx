@@ -21,6 +21,7 @@ import type {
   CategoryLevel,
   CategoryTotal,
   EnrichedEntry,
+  EnrichedRecurringRule,
   Household,
   Item,
   Member,
@@ -299,6 +300,19 @@ export function useBudgets(includeArchived = false): Budget[] | undefined {
     async () => {
       if (typeof window === 'undefined') return [];
       return repo.getBudgets(includeArchived);
+    },
+    [repo, includeArchived],
+    undefined
+  );
+}
+
+export function useRecurringRules(includeArchived = false): EnrichedRecurringRule[] | undefined {
+  const repo = useRepository();
+
+  return useLiveQuery(
+    async () => {
+      if (typeof window === 'undefined') return [];
+      return repo.getRecurringRules(includeArchived);
     },
     [repo, includeArchived],
     undefined

@@ -123,6 +123,7 @@ export class LiveRepository extends MockRepository {
       this.pulling = null;
     });
     await this.pulling;
+    await this.processDueRecurringRules().catch((err) => console.warn('[recurring] process failed', err));
   }
 
   /** Sign-out: nothing of the family stays on the phone. */
@@ -144,9 +145,16 @@ export class LiveRepository extends MockRepository {
     if (offline()) throw new OfflineError();
     let saved: AnyRow;
     try {
-      const { data, error } = await this.client()
-        .from(table)
-        .upsert(toServerPayload(row as unknown as AnyRow) as never)
+      const payload = toServerPayload(row as unknown as AnyRow);
+      const isRecurringTxn = table === 'transactions' && Boolean((row as TransactionRow).recurring_rule_id);
+      const query = this.client().from(table as keyof Database['public']['Tables']);
+      const upsertBuilder = isRecurringTxn
+        ? query.upsert(payload as never, {
+            onConflict: 'household_id,recurring_rule_id,recurring_month',
+          })
+        : query.upsert(payload as never);
+
+      const { data, error } = await upsertBuilder
         .select('*')
         .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS))
         .single();

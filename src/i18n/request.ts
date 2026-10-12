@@ -18,7 +18,8 @@ const namespaces = [
   'family',
   'operator',
   'budgets',
-  'sample'
+  'sample',
+  'recurring'
 ] as const;
 
 function isAppLocale(locale: string | undefined): locale is Locale {

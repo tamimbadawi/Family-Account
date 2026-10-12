@@ -540,5 +540,147 @@ describe('MockRepository with fake-indexeddb', () => {
       expect(await repo.getWallets()).toEqual(walletsBefore);
     });
   });
+
+  describe('recurring rules (R3)', () => {
+    it('creates and archives a recurring rule', async () => {
+      const db = new FamilyAccountsDB('test-recurring-1');
+      const repo = new MockRepository(db);
+      await repo.ensureSeeded();
+
+      const item = (await repo.getItems())[0];
+      const wallet = (await repo.getWallets())[0];
+
+      const rule = await repo.createRecurringRule({
+        type: 'expense',
+        amount: 1500,
+        dayOfMonth: 10,
+        startMonth: '2026-08',
+        accountId: wallet.id,
+        itemId: item.id,
+        note: 'Monthly club membership',
+      });
+
+      expect(rule.amount).toBe(1500);
+      expect(rule.dayOfMonth).toBe(10);
+      expect(rule.startMonth).toBe('2026-08');
+      expect(rule.isArchived).toBe(false);
+
+      const activeRules = await repo.getRecurringRules();
+      expect(activeRules.some((r) => r.id === rule.id)).toBe(true);
+
+      // Archive rule
+      await repo.archiveRecurringRule(rule.id, true);
+      const afterArchive = await repo.getRecurringRules();
+      expect(afterArchive.some((r) => r.id === rule.id)).toBe(false);
+
+      const allRules = await repo.getRecurringRules(true);
+      expect(allRules.some((r) => r.id === rule.id && r.isArchived)).toBe(true);
+
+      // Restore rule
+      await repo.archiveRecurringRule(rule.id, false);
+      const afterRestore = await repo.getRecurringRules();
+      expect(afterRestore.some((r) => r.id === rule.id && !r.isArchived)).toBe(true);
+    });
+
+    it('processes due recurring rules idempotently without duplicating entries', async () => {
+      const db = new FamilyAccountsDB('test-recurring-2');
+      const repo = new MockRepository(db);
+      await repo.ensureSeeded();
+
+      const item = (await repo.getItems())[0];
+      const wallet = (await repo.getWallets())[0];
+
+      const rule = await repo.createRecurringRule({
+        type: 'expense',
+        amount: 2000,
+        dayOfMonth: 5,
+        startMonth: '2026-08',
+        accountId: wallet.id,
+        itemId: item.id,
+        note: 'Gym subscription',
+      });
+
+      // On 2026-10-12: months 2026-08, 2026-09, 2026-10 are due (since day 5 has passed)
+      const createdCount = await repo.processDueRecurringRules('2026-10-12');
+      expect(createdCount).toBe(3);
+
+      const entries = await repo.listEntries();
+      const ruleEntries = entries.filter((e) => e.recurringRuleId === rule.id);
+      expect(ruleEntries).toHaveLength(3);
+      expect(ruleEntries.map((e) => e.recurringMonth).sort()).toEqual(['2026-08', '2026-09', '2026-10']);
+      expect(ruleEntries.map((e) => e.occurredOn).sort()).toEqual(['2026-08-05', '2026-09-05', '2026-10-05']);
+
+      // Calling processDueRecurringRules again creates 0 duplicates
+      const secondRun = await repo.processDueRecurringRules('2026-10-12');
+      expect(secondRun).toBe(0);
+      expect(await repo.listEntries()).toHaveLength(entries.length);
+    });
+
+    it('respects end-of-month clamping for shorter months (Feb 28/29, Apr 30)', async () => {
+      const db = new FamilyAccountsDB('test-recurring-3');
+      const repo = new MockRepository(db);
+      await repo.ensureSeeded();
+
+      const item = (await repo.getItems())[0];
+      const wallet = (await repo.getWallets())[0];
+
+      const rule = await repo.createRecurringRule({
+        type: 'expense',
+        amount: 800,
+        dayOfMonth: 31,
+        startMonth: '2026-02',
+        accountId: wallet.id,
+        itemId: item.id,
+      });
+
+      // In 2026-02 (28 days), should clamp to 2026-02-28
+      await repo.processDueRecurringRules('2026-03-01');
+      const entries = await repo.listEntries();
+      const febEntry = entries.find((e) => e.recurringRuleId === rule.id && e.recurringMonth === '2026-02');
+      expect(febEntry).toBeDefined();
+      expect(febEntry?.occurredOn).toBe('2026-02-28');
+    });
+
+    it('editing or deleting a generated recurring entry does not alter the rule or duplicate', async () => {
+      const db = new FamilyAccountsDB('test-recurring-4');
+      const repo = new MockRepository(db);
+      await repo.ensureSeeded();
+
+      const item = (await repo.getItems())[0];
+      const wallet = (await repo.getWallets())[0];
+
+      const rule = await repo.createRecurringRule({
+        type: 'expense',
+        amount: 1000,
+        dayOfMonth: 1,
+        startMonth: '2026-10',
+        accountId: wallet.id,
+        itemId: item.id,
+      });
+
+      await repo.processDueRecurringRules('2026-10-12');
+      const entries = await repo.listEntries();
+      const generated = entries.find((e) => e.recurringRuleId === rule.id);
+      expect(generated).toBeDefined();
+
+      // Edit entry amount
+      await repo.updateEntry(generated!.id, { amount: 1200 });
+      const updated = await repo.getEntry(generated!.id);
+      expect(updated?.amount).toBe(1200);
+
+      // Rule remains unchanged
+      const ruleAfter = await repo.getRecurringRule(rule.id);
+      expect(ruleAfter?.amount).toBe(1000);
+
+      // Soft-delete entry
+      await repo.softDeleteEntry(generated!.id);
+      expect((await repo.getEntry(generated!.id))?.deletedAt).not.toBeNull();
+      expect((await repo.listEntries()).some((e) => e.id === generated!.id)).toBe(false);
+
+      // processDueRecurringRules must not re-create the deleted month
+      const rerun = await repo.processDueRecurringRules('2026-10-12');
+      expect(rerun).toBe(0);
+    });
+  });
 });
 

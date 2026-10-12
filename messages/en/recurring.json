@@ -1,0 +1,12 @@
+{
+  "title": "Recurring entries",
+  "subtitle": "Repeats automatically every month",
+  "emptyTitle": "No recurring entries yet",
+  "emptyDesc": "When adding rent, salary or bills, turn on \"Repeats every month\" to record them automatically.",
+  "dayOfMonth": "Day {day} of every month",
+  "stop": "Stop",
+  "stopped": "Recurring entry stopped",
+  "restored": "Recurring entry restored",
+  "back": "Back",
+  "fromTo": "{from} → {to}"
+}

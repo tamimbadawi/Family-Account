@@ -13,6 +13,7 @@ import type {
   CategoryLevel,
   CategoryTotal,
   EnrichedEntry,
+  EnrichedRecurringRule,
   Entry,
   EntryType,
   Household,
@@ -22,6 +23,7 @@ import type {
   PivotEntry,
   PivotPeriod,
   RecentItem,
+  RecurringRule,
   Subcategory,
   SyncStatus,
   Wallet,
@@ -51,6 +53,22 @@ export interface CreateEntryInput {
   type: EntryType;
   amount: number;
   occurredOn: string; // YYYY-MM-DD
+  accountId: string;
+  toAccountId?: string | null;
+  itemId?: string | null;
+  note?: string | null;
+  recurringRuleId?: string | null;
+  recurringMonth?: string | null;
+  createdBy?: string | null;
+}
+
+export interface CreateRecurringRuleInput {
+  id?: string;
+  householdId?: string;
+  type: EntryType;
+  amount: number;
+  dayOfMonth: number;
+  startMonth: string;
   accountId: string;
   toAccountId?: string | null;
   itemId?: string | null;
@@ -202,6 +220,14 @@ export interface Repository {
   updateBudget(id: string, updates: UpdateBudgetInput): Promise<Budget>;
   /** "Remove" a budget = archive it; archive=false brings it back (Undo). */
   archiveBudget(id: string, archive?: boolean): Promise<void>;
+
+  // Recurring Rules (monthly bills, salaries, rent)
+  getRecurringRules(includeArchived?: boolean): Promise<EnrichedRecurringRule[]>;
+  getRecurringRule(id: string): Promise<RecurringRule | null>;
+  createRecurringRule(input: CreateRecurringRuleInput): Promise<RecurringRule>;
+  archiveRecurringRule(id: string, archive?: boolean): Promise<void>;
+  /** Generates any due monthly entries not yet created. Returns count of created entries. */
+  processDueRecurringRules(currentDate?: string): Promise<number>;
 
   // Entries (Transactions)
   listEntries(params?: ListEntriesParams): Promise<EnrichedEntry[]>;

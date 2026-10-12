@@ -16,6 +16,8 @@ import type {
   Item,
   ItemRow,
   Member,
+  RecurringRule,
+  RecurringRuleRow,
   Subcategory,
   SubcategoryRow,
   TransactionRow,
@@ -204,7 +206,7 @@ export function toItemRow(i: Item): ItemRow {
 // ---------- Entry (Transaction) ----------
 
 export function toEntry(row: TransactionRow): Entry {
-  return {
+  const entry: Entry = {
     id: row.id,
     householdId: row.household_id,
     type: row.type,
@@ -221,10 +223,17 @@ export function toEntry(row: TransactionRow): Entry {
     updatedAt: row.updated_at,
     deletedAt: row.deleted_at,
   };
+  if (row.recurring_rule_id !== undefined) {
+    entry.recurringRuleId = row.recurring_rule_id;
+  }
+  if (row.recurring_month !== undefined) {
+    entry.recurringMonth = row.recurring_month;
+  }
+  return entry;
 }
 
 export function toTransactionRow(e: Entry): TransactionRow {
-  return {
+  const row: TransactionRow = {
     id: e.id,
     household_id: e.householdId,
     type: e.type,
@@ -240,6 +249,53 @@ export function toTransactionRow(e: Entry): TransactionRow {
     created_at: e.createdAt,
     updated_at: e.updatedAt,
     deleted_at: e.deletedAt,
+  };
+  if (e.recurringRuleId !== undefined) {
+    row.recurring_rule_id = e.recurringRuleId;
+  }
+  if (e.recurringMonth !== undefined) {
+    row.recurring_month = e.recurringMonth;
+  }
+  return row;
+}
+
+// ---------- Recurring Rule ----------
+
+export function toRecurringRule(row: RecurringRuleRow): RecurringRule {
+  return {
+    id: row.id,
+    householdId: row.household_id,
+    type: row.type,
+    amount: roundMoney(Number(row.amount)),
+    dayOfMonth: row.day_of_month,
+    startMonth: row.start_month,
+    accountId: row.account_id,
+    toAccountId: row.to_account_id,
+    itemId: row.item_id,
+    note: row.note,
+    isArchived: Boolean(row.is_archived),
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function toRecurringRuleRow(r: RecurringRule): RecurringRuleRow {
+  return {
+    id: r.id,
+    household_id: r.householdId,
+    type: r.type,
+    amount: roundMoney(r.amount),
+    day_of_month: r.dayOfMonth,
+    start_month: r.startMonth,
+    account_id: r.accountId,
+    to_account_id: r.toAccountId,
+    item_id: r.itemId,
+    note: r.note,
+    is_archived: r.isArchived,
+    created_by: r.createdBy,
+    created_at: r.createdAt,
+    updated_at: r.updatedAt,
   };
 }
 
