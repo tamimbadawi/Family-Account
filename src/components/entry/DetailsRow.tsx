@@ -11,6 +11,8 @@ import { formatMonth, pickName, shiftMonth } from '@/lib/format';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 
+import { splitByPurpose } from '@/lib/money/groups';
+
 const CHIP =
   'relative inline-flex h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-2xl bg-surface-2 px-3 text-body font-semibold text-ink transition-transform active:scale-95 cursor-pointer';
 
@@ -25,6 +27,7 @@ export interface WalletSelectProps {
   onChange: (walletId: string) => void;
   exclude?: string | null;
   label: string;
+  grouped?: boolean;
 }
 
 // The entry sheet underneath pulls focus back to itself (tapping a text field here would close the picker), and
@@ -35,18 +38,47 @@ const OPTION =
   'flex h-14 w-full items-center gap-3 rounded-2xl px-4 text-body font-semibold transition-transform active:scale-95 cursor-pointer';
 
 /** Wallet chip ("Cash ▾"). Picking Bank asks which bank, and a new bank can be added by name right there. */
-export function WalletSelect({ value, onChange, exclude, label }: WalletSelectProps) {
+export function WalletSelect({ value, onChange, exclude, label, grouped = false }: WalletSelectProps) {
   const locale = useLocale();
   const t = useTranslations('entry');
+  const tMoney = useTranslations('money');
   const repo = useRepository();
   const saveError = useSaveError();
-  const wallets = (useWallets() ?? []).filter((w) => !exclude || w.id !== exclude);
-  const current = wallets.find((w) => w.id === value);
+  const rawWallets = useWallets();
+  const allWallets = React.useMemo(() => rawWallets ?? [], [rawWallets]);
+  const savingsGoals = useSavingsGoals(false);
+  const goalWalletIds = React.useMemo(
+    () => new Set((savingsGoals ?? []).map((g) => g.walletId)),
+    [savingsGoals]
+  );
+
+  const wallets = React.useMemo(() => {
+    let list = allWallets.filter((w) => !exclude || w.id !== exclude);
+    if (!grouped) {
+      list = list.filter((w) => (w.purpose ?? 'spending') === 'spending' || w.id === value);
+    }
+    return list;
+  }, [allWallets, exclude, grouped, value]);
+
+  const current = allWallets.find((w) => w.id === value);
   const banks = wallets.filter((w) => w.type === 'bank');
   const others = wallets.filter((w) => w.type !== 'bank');
   const nameOf = (w: Wallet) => pickName({ name_ar: w.nameAr, name_en: w.nameEn }, locale);
-  // A wallet that holds a savings goal says so, so moving money into a goal is easy to spot
-  const goalWalletIds = new Set((useSavingsGoals(false) ?? []).map((g) => g.walletId));
+
+  const { spending, goal, investment } = React.useMemo(
+    () => splitByPurpose(wallets),
+    [wallets]
+  );
+
+  const groups = React.useMemo(
+    () =>
+      [
+        { key: 'spending', heading: tMoney('groupSpending'), items: spending },
+        { key: 'goal', heading: tMoney('groupGoals'), items: goal },
+        { key: 'investment', heading: tMoney('groupInvestments'), items: investment },
+      ].filter((g) => g.items.length > 0),
+    [tMoney, spending, goal, investment]
+  );
 
   const [isOpen, setIsOpen] = React.useState(false);
   const [step, setStep] = React.useState<'kind' | 'bank'>('kind');
@@ -81,7 +113,7 @@ export function WalletSelect({ value, onChange, exclude, label }: WalletSelectPr
     >
       <CategoryIcon name={w.icon} className={`size-5 shrink-0 ${w.id === value ? 'text-accent-ink' : 'text-accent'}`} />
       <span className="min-w-0 flex-1 truncate text-start">{nameOf(w)}</span>
-      {goalWalletIds.has(w.id) && (
+      {goalWalletIds.has(w.id) && !grouped && (
         <span className={`shrink-0 text-caption font-medium ${w.id === value ? 'text-accent-ink' : 'text-ink-muted'}`}>{t('savingsGoal')}</span>
       )}
     </button>
@@ -92,28 +124,44 @@ export function WalletSelect({ value, onChange, exclude, label }: WalletSelectPr
       <button type="button" onClick={open} aria-label={label} className={CHIP}>
         <CategoryIcon name={current?.icon} className="size-5 shrink-0 text-accent" />
         <span className="truncate">{current ? nameOf(current) : label}</span>
-        </button>
+      </button>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent showCloseButton={false} onFocusOutside={keepFocus} onCloseAutoFocus={keepFocus} className="max-w-[calc(100%-1.5rem)] gap-3 p-4">
-          {step === 'kind' ? (
+        <DialogContent showCloseButton={false} onFocusOutside={keepFocus} onCloseAutoFocus={keepFocus} className="max-h-[85vh] max-w-[calc(100%-1.5rem)] gap-3 overflow-y-auto p-4">
+          {grouped ? (
+            <>
+              <DialogTitle>{label}</DialogTitle>
+              {groups.map((grp) => (
+                <div key={grp.key} className="flex flex-col gap-1.5">
+                  <div className="px-1 text-caption font-semibold text-ink-muted">
+                    {grp.heading}
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    {grp.items.map(option)}
+                  </div>
+                </div>
+              ))}
+            </>
+          ) : step === 'kind' ? (
             <>
               <DialogTitle>{label}</DialogTitle>
               {others.map(option)}
-              <button
-                type="button"
-                onClick={() => setStep('bank')}
-                className={`${OPTION} ${current?.type === 'bank' ? 'bg-accent text-accent-ink' : 'bg-surface-2 text-ink'}`}
-              >
-                <CategoryIcon
-                  name="building-2"
-                  className={`size-5 shrink-0 ${current?.type === 'bank' ? 'text-accent-ink' : 'text-accent'}`}
-                />
-                <span className="flex-1 truncate text-start">
-                  {t('bank')}
-                  {current?.type === 'bank' ? ` · ${nameOf(current)}` : ''}
-                </span>
-                <ChevronRight className="size-5 shrink-0 rtl:rotate-180" />
-              </button>
+              {banks.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setStep('bank')}
+                  className={`${OPTION} ${current?.type === 'bank' ? 'bg-accent text-accent-ink' : 'bg-surface-2 text-ink'}`}
+                >
+                  <CategoryIcon
+                    name="building-2"
+                    className={`size-5 shrink-0 ${current?.type === 'bank' ? 'text-accent-ink' : 'text-accent'}`}
+                  />
+                  <span className="flex-1 truncate text-start">
+                    {t('bank')}
+                    {current?.type === 'bank' ? ` · ${nameOf(current)}` : ''}
+                  </span>
+                  <ChevronRight className="size-5 shrink-0 rtl:rotate-180" />
+                </button>
+              )}
             </>
           ) : (
             <>

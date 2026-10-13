@@ -21,7 +21,7 @@ const SAMPLE = { '/reports/r/[id]': '/reports/r/this-vs-last-month' };
 // Which screens each flow in ui-flows.mjs walks through. A flow missing here runs whenever anything changed.
 const FLOW_ROUTES = {
   income: [''], expense: [''], switchtype: [''], newgroup: [''], newcategory: [''], photo: ['', '/history'],
-  date: [''], bank: [''], save_at_level: ['', '/history'],
+  date: [''], bank: [''], entry_pickers: [''], save_at_level: ['', '/history'],
   reports_tabs: ['/reports'], reports_library: ['/reports'], reports_sheets: ['/reports', '/reports/r/[id]'],
   reports_planning: ['/reports'], reports_wallets: ['/reports'], our_money: ['/reports'],
   update_balance: ['/settings/wallets'], download_data: ['/settings'],
