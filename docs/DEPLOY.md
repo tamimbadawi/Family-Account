@@ -12,6 +12,7 @@ Changes that are finished and checked, waiting to go live. Nothing here is live 
 
 | PR | What it changes |
 |---|---|
+| [#110](https://github.com/tamimbadawi/Family-Account/pull/110) | Settings → More settings shows "Admin panel" (opens `/operator`) for the operator only, so it can be reached from the installed iPhone app |
 
 ## Deployed
 
