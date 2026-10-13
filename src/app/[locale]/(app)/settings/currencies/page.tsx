@@ -11,8 +11,7 @@ import { CurrencySelect } from '@/components/family/CurrencySelect';
 import { useHousehold, useRepository } from '@/lib/data/provider';
 import { isOfflineError } from '@/lib/data/errors';
 import { currencyName, currencySymbol } from '@/lib/format';
-import { isAuthConfigured } from '@/lib/supabase/client';
-import { familyAdmin, type FamilyList } from '@/lib/auth/family-admin';
+import { useIsFamilyAdmin } from '@/lib/auth/use-family-members';
 
 /** Settings → Currencies: the one or two currencies the family's wallets use. Only the admin can change them. */
 export default function CurrenciesPage() {
@@ -20,24 +19,10 @@ export default function CurrenciesPage() {
   const tCommon = useTranslations('common');
   const tSettings = useTranslations('settings');
   const locale = useLocale();
-  const live = isAuthConfigured();
   const repo = useRepository();
   const household = useHousehold();
 
-  // Sample-data mode has no admin, so anyone can change them there
-  const [isOwner, setIsOwner] = React.useState(!live);
-  React.useEffect(() => {
-    if (!live) return;
-    let cancelled = false;
-    familyAdmin<FamilyList>({ action: 'list' })
-      .then((list) => {
-        if (!cancelled) setIsOwner(Boolean(list.isOwner));
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [live]);
+  const isOwner = useIsFamilyAdmin() ?? false;
 
   const currentCurrencies = React.useMemo(() => {
     return household?.currencies ?? (household?.currency ? [household.currency] : ['EGP']);

@@ -188,6 +188,12 @@ export function useRepository(): Repository {
   return context ?? getDefaultRepository();
 }
 
+/** ID of the user signed in on this phone (null if not known or not signed in). */
+export function useCurrentUserId(): string | null {
+  const repo = useRepository();
+  return repo.currentUserId ?? null;
+}
+
 // ---------- Live Query Hooks ----------
 
 export function useEntries(params?: ListEntriesParams): EnrichedEntry[] | undefined {
