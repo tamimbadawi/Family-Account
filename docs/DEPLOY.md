@@ -12,12 +12,15 @@ Changes that are finished and checked, waiting to go live. Nothing here is live 
 
 | PR | What it changes |
 |---|---|
-| [#123](https://github.com/tamimbadawi/Family-Account/pull/123) | Investments: tap a "Value updated" line to change or remove that value (with Undo); the help guide says so |
+| — | Nothing waiting |
 
 ## Deployed
 
 | Date | PR | What it changed |
 |---|---|---|
+| 2026-10-13 | [#124](https://github.com/tamimbadawi/Family-Account/pull/124) | Investments by quantity: gold in grams (18k/21k/24k) and stocks in shares. Add, buy more and sell by quantity; "Update price" asks the price of one gram or share and updates every gold of the same karat; older gold can switch with "Track by weight". Migrations `0028_investment_units` and `0029_sample_gold_units` applied (sample Gold is now 20 g of 21k) |
+| 2026-10-13 | [#123](https://github.com/tamimbadawi/Family-Account/pull/123) | Investments: tap a "Value updated" line to change or remove that value (with Undo); the help guide says so |
+| 2026-10-13 | [#122](https://github.com/tamimbadawi/Family-Account/pull/122) | Record only: migration file `0027_sample_investments` (applied to the live database earlier on 2026-10-13: sample Gold and Bank certificate for families with sample data and for new families) |
 | 2026-10-13 | [#113](https://github.com/tamimbadawi/Family-Account/pull/113), [#116](https://github.com/tamimbadawi/Family-Account/pull/116), [#117](https://github.com/tamimbadawi/Family-Account/pull/117), [#118](https://github.com/tamimbadawi/Family-Account/pull/118), [#119](https://github.com/tamimbadawi/Family-Account/pull/119), [#120](https://github.com/tamimbadawi/Family-Account/pull/120) | Money restructure: Home shows "To spend" and "Saved"; Our money is a page (`/money`) with Spending and Saving; goals moved to `/money/goals`; investments (gold, certificate, stocks, property, other) with Add money, Take out and Update value; wallet pickers grouped by purpose; Reports wallet card in three groups; "What we have" and Balance over time no longer add spending and saved together; Our money help guide. Migration `0026_money_purposes` applied first |
 | 2026-10-13 | [#115](https://github.com/tamimbadawi/Family-Account/pull/115) | Speed: Settings → Family, Currencies and the name on Home open from the copy on the phone and no longer wait on the server; a test fails if a screen calls the server when it opens |
 | 2026-10-13 | [#110](https://github.com/tamimbadawi/Family-Account/pull/110) | Settings → More settings shows "Admin panel" (opens `/operator`) for the operator only, so it can be reached from the installed iPhone app |
