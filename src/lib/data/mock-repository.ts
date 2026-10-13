@@ -19,6 +19,7 @@ import {
   toSavingsGoal,
   toSubcategory,
   toWallet,
+  toInvestmentValue,
 } from './mappers';
 import {
   DEFAULT_HOUSEHOLD,
@@ -62,11 +63,14 @@ import type {
   CategoryRow,
   CategoryTotal,
   EnrichedEntry,
+  EnrichedInvestment,
   EnrichedRecurringRule,
   EnrichedSavingsGoal,
   Entry,
   Household,
   HouseholdMemberRow,
+  InvestmentValue,
+  InvestmentValueRow,
   Item,
   ItemRow,
   Member,
@@ -88,6 +92,7 @@ import type {
 } from './types';
 import { entryDateForMonth, getDueDates } from '../recurring/date';
 import { calculateGoalProgress } from '../goals/progress';
+import { investmentWorth } from '../money/worth';
 
 /** Tables the app writes to, with their Dexie row types. */
 export interface WritableRows {
@@ -99,6 +104,7 @@ export interface WritableRows {
   budgets: BudgetRow;
   recurring_rules: RecurringRuleRow;
   savings_goals: SavingsGoalRow;
+  investment_values: InvestmentValueRow;
 }
 export type WritableTable = keyof WritableRows;
 export type WritableRow<K extends WritableTable> = WritableRows[K];
@@ -215,6 +221,7 @@ export class MockRepository implements Repository {
         this.db.photos,
         this.db.recurring_rules,
         this.db.savings_goals,
+        this.db.investment_values,
         this.db.meta,
       ],
       async () => {
@@ -230,6 +237,7 @@ export class MockRepository implements Repository {
           this.db.photos.clear(),
           this.db.recurring_rules.clear(),
           this.db.savings_goals.clear(),
+          this.db.investment_values.clear(),
         ]);
 
         // Insert household and members
@@ -355,6 +363,9 @@ export class MockRepository implements Repository {
         color: null,
         sort_order: spec.sortOrder,
         is_archived: false,
+        purpose: 'goal',
+        investment_kind: null,
+        matures_on: null,
         created_at: now.toISOString(),
         updated_at: now.toISOString(),
       });
@@ -575,6 +586,13 @@ export class MockRepository implements Repository {
     const household = await this.db.households.get(hid);
     const currency = input.currency ?? household?.currencies?.[0] ?? household?.currency ?? 'EGP';
 
+    const purpose = input.purpose ?? 'spending';
+    if (purpose === 'investment' && !input.investmentKind) {
+      throw new Error('Investment account must have an investmentKind');
+    }
+    const investmentKind = purpose === 'investment' ? input.investmentKind ?? null : null;
+    const maturesOn = purpose === 'investment' ? input.maturesOn ?? null : null;
+
     const row: AccountRow = {
       id,
       household_id: hid,
@@ -587,6 +605,9 @@ export class MockRepository implements Repository {
       color: input.color ?? null,
       sort_order: sortOrder,
       is_archived: false,
+      purpose,
+      investment_kind: investmentKind,
+      matures_on: maturesOn,
       created_at: now,
       updated_at: now,
     };
@@ -611,6 +632,17 @@ export class MockRepository implements Repository {
       }
     }
 
+    const purpose = updates.purpose !== undefined ? updates.purpose : (row.purpose ?? 'spending');
+    const investmentKind =
+      updates.investmentKind !== undefined
+        ? updates.investmentKind
+        : (row.investment_kind ?? null);
+    if (purpose === 'investment' && !investmentKind) {
+      throw new Error('Investment account must have an investmentKind');
+    }
+    const maturesOn =
+      updates.maturesOn !== undefined ? updates.maturesOn : (row.matures_on ?? null);
+
     const updatedRow: AccountRow = {
       ...row,
       name_ar: updates.nameAr !== undefined ? updates.nameAr : row.name_ar,
@@ -624,6 +656,9 @@ export class MockRepository implements Repository {
       icon: updates.icon !== undefined ? updates.icon : row.icon,
       color: updates.color !== undefined ? updates.color : row.color,
       sort_order: updates.sortOrder !== undefined ? updates.sortOrder : row.sort_order,
+      purpose,
+      investment_kind: purpose === 'investment' ? investmentKind : null,
+      matures_on: purpose === 'investment' ? maturesOn : null,
       updated_at: new Date().toISOString(),
     };
 
@@ -1112,6 +1147,118 @@ export class MockRepository implements Repository {
   async archiveSavingsGoal(id: string, archive = true): Promise<void> {
     await this.ensureSeeded();
     await this.patch('savings_goals', id, { is_archived: archive, updated_at: new Date().toISOString() });
+  }
+
+  // ---------- Investments (M1) ----------
+
+  async getInvestments(includeArchived = false): Promise<EnrichedInvestment[]> {
+    await this.ensureSeeded();
+    const allBalances = await this.walletBalances();
+    const investmentWallets = allBalances.filter(
+      (w) => w.purpose === 'investment' && (includeArchived || !w.isArchived)
+    );
+    if (investmentWallets.length === 0) return [];
+
+    const accountIds = new Set(investmentWallets.map((w) => w.id));
+
+    const transfers = await this.db.transactions
+      .filter(
+        (t) =>
+          t.deleted_at === null &&
+          t.type === 'transfer' &&
+          (accountIds.has(t.account_id) || (t.to_account_id !== null && accountIds.has(t.to_account_id)))
+      )
+      .toArray();
+
+    const allValues = await this.db.investment_values
+      .filter((v) => accountIds.has(v.account_id))
+      .toArray();
+
+    return investmentWallets.map((w) => {
+      const moves = transfers
+        .filter((t) => t.account_id === w.id || t.to_account_id === w.id)
+        .map((t) => ({
+          signedAmount: t.to_account_id === w.id ? Number(t.amount) : -Number(t.amount),
+          createdAt: t.created_at,
+        }));
+
+      const values = allValues
+        .filter((v) => v.account_id === w.id)
+        .map((v) => ({
+          value: Number(v.value),
+          createdAt: v.created_at,
+          valuedOn: v.valued_on,
+          deletedAt: v.deleted_at,
+        }));
+
+      const worthResult = investmentWorth({
+        putIn: w.balance,
+        values,
+        moves,
+      });
+
+      return {
+        ...w,
+        putIn: w.balance,
+        worth: worthResult.worth,
+        gain: worthResult.gain,
+        lastValuedOn: worthResult.lastValuedOn,
+      };
+    });
+  }
+
+  async getInvestmentValues(accountId: string): Promise<InvestmentValue[]> {
+    await this.ensureSeeded();
+    const rows = await this.db.investment_values
+      .where('account_id')
+      .equals(accountId)
+      .filter((v) => v.deleted_at === null)
+      .toArray();
+
+    rows.sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0));
+    return rows.map(toInvestmentValue);
+  }
+
+  async addInvestmentValue(input: {
+    id?: string;
+    accountId: string;
+    value: number;
+    valuedOn?: string;
+  }): Promise<InvestmentValue> {
+    await this.ensureSeeded();
+    const val = roundMoney(input.value);
+    if (val < 0) {
+      throw new Error('Investment value cannot be negative');
+    }
+    const id = input.id ?? crypto.randomUUID();
+    const now = new Date().toISOString();
+    const account = await this.db.accounts.get(input.accountId);
+    if (!account) {
+      throw new Error(`Account not found: ${input.accountId}`);
+    }
+
+    const row: InvestmentValueRow = {
+      id,
+      household_id: account.household_id,
+      account_id: input.accountId,
+      value: val,
+      valued_on: input.valuedOn ?? localISODate(),
+      created_by: this.currentUserId,
+      created_at: now,
+      updated_at: now,
+      deleted_at: null,
+    };
+
+    return toInvestmentValue(await this.persist('investment_values', row));
+  }
+
+  async softDeleteInvestmentValue(id: string): Promise<void> {
+    await this.ensureSeeded();
+    const now = new Date().toISOString();
+    await this.patch('investment_values', id, {
+      deleted_at: now,
+      updated_at: now,
+    });
   }
 
   // ---------- Subcategories ----------

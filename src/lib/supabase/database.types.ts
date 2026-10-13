@@ -32,6 +32,9 @@ export type Database = {
           opening_balance: number
           sort_order: number
           type: Database["public"]["Enums"]["account_type"]
+          purpose: Database["public"]["Enums"]["account_purpose"]
+          investment_kind: string | null
+          matures_on: string | null
           updated_at: string
         }
         Insert: {
@@ -48,6 +51,9 @@ export type Database = {
           opening_balance?: number
           sort_order?: number
           type?: Database["public"]["Enums"]["account_type"]
+          purpose?: Database["public"]["Enums"]["account_purpose"]
+          investment_kind?: string | null
+          matures_on?: string | null
           updated_at?: string
         }
         Update: {
@@ -64,6 +70,9 @@ export type Database = {
           opening_balance?: number
           sort_order?: number
           type?: Database["public"]["Enums"]["account_type"]
+          purpose?: Database["public"]["Enums"]["account_purpose"]
+          investment_kind?: string | null
+          matures_on?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -601,6 +610,57 @@ export type Database = {
           },
         ]
       }
+      investment_values: {
+        Row: {
+          account_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          household_id: string
+          id: string
+          updated_at: string
+          value: number
+          valued_on: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          household_id: string
+          id?: string
+          updated_at?: string
+          value: number
+          valued_on?: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          household_id?: string
+          id?: string
+          updated_at?: string
+          value?: number
+          valued_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investment_values_household_id_account_id_fkey"
+            columns: ["household_id", "account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "investment_values_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           to_amount: number | null
@@ -922,6 +982,7 @@ export type Database = {
       valid_currencies: { Args: { c: string[] }; Returns: boolean }
     }
     Enums: {
+      account_purpose: "spending" | "goal" | "investment"
       account_type: "cash" | "bank" | "card" | "wallet"
       category_kind: "expense" | "income"
       txn_type: "expense" | "income" | "transfer"

@@ -13,11 +13,14 @@ import type {
   CategoryLevel,
   CategoryTotal,
   EnrichedEntry,
+  EnrichedInvestment,
   EnrichedRecurringRule,
   EnrichedSavingsGoal,
   Entry,
   EntryType,
   Household,
+  InvestmentKind,
+  InvestmentValue,
   Item,
   Member,
   MonthSummary,
@@ -31,6 +34,7 @@ import type {
   SyncStatus,
   Wallet,
   WalletBalance,
+  WalletPurpose,
   WalletType,
 } from './types';
 
@@ -133,6 +137,9 @@ export interface CreateWalletInput {
   icon?: string | null;
   color?: string | null;
   sortOrder?: number;
+  purpose?: WalletPurpose;
+  investmentKind?: InvestmentKind | null;
+  maturesOn?: string | null;
 }
 
 export interface UpdateWalletInput {
@@ -144,6 +151,9 @@ export interface UpdateWalletInput {
   icon?: string | null;
   color?: string | null;
   sortOrder?: number;
+  purpose?: WalletPurpose;
+  investmentKind?: InvestmentKind | null;
+  maturesOn?: string | null;
 }
 
 export interface CreateCategoryInput {
@@ -273,6 +283,12 @@ export interface Repository {
   createSavingsGoal(input: CreateSavingsGoalInput): Promise<SavingsGoal>;
   updateSavingsGoal(id: string, updates: UpdateSavingsGoalInput): Promise<SavingsGoal>;
   archiveSavingsGoal(id: string, archive?: boolean): Promise<void>;
+
+  // Investments (M1)
+  getInvestments(includeArchived?: boolean): Promise<EnrichedInvestment[]>;
+  getInvestmentValues(accountId: string): Promise<InvestmentValue[]>;
+  addInvestmentValue(input: { id?: string; accountId: string; value: number; valuedOn?: string }): Promise<InvestmentValue>;
+  softDeleteInvestmentValue(id: string): Promise<void>;
 
   // Entries (Transactions)
   listEntries(params?: ListEntriesParams): Promise<EnrichedEntry[]>;

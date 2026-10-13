@@ -20,7 +20,7 @@ export const DEMO_HOUSEHOLD_ID = '11111111-1111-1111-1111-111111111111';
 export const USER_MAMA_ID = '22222222-2222-2222-2222-222222222222';
 export const USER_BABA_ID = '33333333-3333-3333-3333-333333333333';
 
-export const SEED_VERSION = 4;
+export const SEED_VERSION = 5;
 
 export const WALLET_CASH_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
 export const WALLET_BANK_ID = 'aaaaaaaa-0000-0000-0000-000000000002'; // NBE
@@ -71,6 +71,9 @@ export const DEFAULT_WALLETS: AccountRow[] = [
     color: '#0F766E',
     sort_order: 0,
     is_archived: false,
+    purpose: 'spending',
+    investment_kind: null,
+    matures_on: null,
     created_at: '2026-06-01T00:00:00.000Z',
     updated_at: '2026-06-01T00:00:00.000Z',
   },
@@ -86,6 +89,9 @@ export const DEFAULT_WALLETS: AccountRow[] = [
     color: '#15803D',
     sort_order: 1,
     is_archived: false,
+    purpose: 'spending',
+    investment_kind: null,
+    matures_on: null,
     created_at: '2026-06-01T00:00:00.000Z',
     updated_at: '2026-06-01T00:00:00.000Z',
   },
@@ -101,6 +107,9 @@ export const DEFAULT_WALLETS: AccountRow[] = [
     color: '#1D4ED8',
     sort_order: 2,
     is_archived: false,
+    purpose: 'spending',
+    investment_kind: null,
+    matures_on: null,
     created_at: '2026-06-01T00:00:00.000Z',
     updated_at: '2026-06-01T00:00:00.000Z',
   },
@@ -116,6 +125,9 @@ export const DEFAULT_WALLETS: AccountRow[] = [
     color: '#B91C1C',
     sort_order: 3,
     is_archived: false,
+    purpose: 'spending',
+    investment_kind: null,
+    matures_on: null,
     created_at: '2026-06-01T00:00:00.000Z',
     updated_at: '2026-06-01T00:00:00.000Z',
   },

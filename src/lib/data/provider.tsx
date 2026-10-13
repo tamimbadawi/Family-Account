@@ -22,9 +22,11 @@ import type {
   CategoryLevel,
   CategoryTotal,
   EnrichedEntry,
+  EnrichedInvestment,
   EnrichedRecurringRule,
   EnrichedSavingsGoal,
   Household,
+  InvestmentValue,
   Item,
   Member,
   MonthSummary,
@@ -384,6 +386,32 @@ export function useSavingsGoals(includeArchived = false): EnrichedSavingsGoal[] 
       return repo.getSavingsGoals(includeArchived);
     },
     [repo, includeArchived],
+    undefined
+  );
+}
+
+export function useInvestments(includeArchived = false): EnrichedInvestment[] | undefined {
+  const repo = useRepository();
+
+  return useLiveQuery(
+    async () => {
+      if (typeof window === 'undefined') return [];
+      return repo.getInvestments(includeArchived);
+    },
+    [repo, includeArchived],
+    undefined
+  );
+}
+
+export function useInvestmentValues(accountId: string): InvestmentValue[] | undefined {
+  const repo = useRepository();
+
+  return useLiveQuery(
+    async () => {
+      if (typeof window === 'undefined' || !accountId) return [];
+      return repo.getInvestmentValues(accountId);
+    },
+    [repo, accountId],
     undefined
   );
 }
