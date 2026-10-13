@@ -17,7 +17,10 @@ const APP = 'src/app/[locale]';
 // developer-only style guide pages, which are long reference pages and not part of the app.
 const NOT_CHECKABLE = ['/operator', '/join', '/choose-password', '/styleguide', '/styleguide/entry'];
 // A screen with a changing part in its address is checked with this example.
-const SAMPLE = { '/reports/r/[id]': '/reports/r/this-vs-last-month' };
+const SAMPLE = {
+  '/reports/r/[id]': '/reports/r/this-vs-last-month',
+  '/money/investment/[id]': '/money/investment/aaaaaaaa-0000-0000-0000-0000000000e1',
+};
 // Which screens each flow in ui-flows.mjs walks through. A flow missing here runs whenever anything changed.
 const FLOW_ROUTES = {
   income: [''], expense: [''], switchtype: [''], newgroup: [''], newcategory: [''], photo: ['', '/history'],
@@ -28,6 +31,10 @@ const FLOW_ROUTES = {
   history_filter: ['/history'], history_search: ['/history'],
   budgets: ['', '/settings', '/settings/budgets', '/reports/r/[id]'], budget_alerts: ['', '/settings/budgets'],
   recurring_entries: ['', '/settings/recurring'], savings_goals: ['', '/settings/goals'],
+  investment_add: ['', '/money'],
+  investment_paid: ['', '/money'],
+  investment_value: ['', '/money', '/money/investment/[id]'],
+  investment_take: ['', '/money', '/money/investment/[id]'],
 };
 
 const posix = (p) => p.split(path.sep).join('/');

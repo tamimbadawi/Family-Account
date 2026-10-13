@@ -1327,6 +1327,251 @@ const FLOWS = {
       throw new Error('Tour overlay did not close');
     }
   },
+
+  async investment_add(page, { locale }) {
+    const ar = locale === 'ar';
+    // 1. Read Home numbers
+    await page.goto(`${BASE}/${locale}`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    const before = await homeNumbers(page);
+
+    // 2. Go to Saving tab on /money
+    await page.goto(`${BASE}/${locale}/money?tab=saving`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    // 3. Click "+ Add investment"
+    const addBtn = page.getByRole('button', { name: ar ? /\+ إضافة استثمار/ : /\+ Add investment/ }).first();
+    await assertUsable(page, addBtn, 'Add investment button');
+    await addBtn.click();
+    await sleep(600);
+
+    const drawer = page.locator('[data-slot="drawer-content"]').last();
+    await drawer.waitFor({ state: 'visible', timeout: 5000 });
+
+    // 4. Gold tile is selected by default; type 5000 on pad
+    await typeAmount(page, ['5', '0', '0', '0']);
+    await sleep(300);
+
+    // 5. "I already had it" is selected by default; save
+    const saveBtn = drawer.getByRole('button', { name: ar ? 'حفظ' : 'Save' }).first();
+    await assertUsable(page, saveBtn, 'Save investment button');
+    await saveBtn.click();
+    await sleep(600);
+
+    // 6. Gold row with 5,000 is in the list
+    const goldRow = page.locator('a[href*="/money/investment/"]').filter({ hasText: ar ? 'دهب' : 'Gold' }).first();
+    await assertUsable(page, goldRow, 'Gold investment row');
+    const goldText = await goldRow.innerText();
+    if (!goldText.includes('5,000')) throw new Error(`Expected Gold row to show 5,000, got: ${goldText}`);
+
+    // 7. Go back to Home
+    const backLink = page.getByRole('link', { name: ar ? 'رجوع' : 'Back' }).first();
+    await assertUsable(page, backLink, 'Back to Home link');
+    await backLink.click();
+    await page.waitForURL(`${BASE}/${locale}`, { timeout: 10000 });
+    await sleep(600);
+
+    // 8. Home "Saved" went up by 5,000, "To spend" did not change
+    const after = await homeNumbers(page);
+    if (after.saved !== before.saved + 5000) {
+      throw new Error(`Expected Saved to increase by 5000: was ${before.saved}, now ${after.saved}`);
+    }
+    if (after.toSpend !== before.toSpend) {
+      throw new Error(`Expected To spend unchanged: was ${before.toSpend}, now ${after.toSpend}`);
+    }
+
+    // 9. Undo removes it
+    const undoBtn = page.getByRole('button', { name: ar ? 'تراجع' : 'Undo' }).first();
+    if (await undoBtn.isVisible()) {
+      await undoBtn.click();
+      await sleep(600);
+      const afterUndo = await homeNumbers(page);
+      if (afterUndo.saved !== before.saved) {
+        throw new Error(`Expected Saved after Undo to be ${before.saved}, got ${afterUndo.saved}`);
+      }
+    }
+  },
+
+  async investment_paid(page, { locale }) {
+    const ar = locale === 'ar';
+    // 1. Read Home numbers
+    await page.goto(`${BASE}/${locale}`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    const before = await homeNumbers(page);
+
+    // 2. Go to Saving tab on /money
+    await page.goto(`${BASE}/${locale}/money?tab=saving`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    // 3. Click "+ Add investment"
+    const addBtn = page.getByRole('button', { name: ar ? /\+ إضافة استثمار/ : /\+ Add investment/ }).first();
+    await assertUsable(page, addBtn, 'Add investment button');
+    await addBtn.click();
+    await sleep(600);
+
+    const drawer = page.locator('[data-slot="drawer-content"]').last();
+    await drawer.waitFor({ state: 'visible', timeout: 5000 });
+
+    // 4. Type 5000 on pad
+    await typeAmount(page, ['5', '0', '0', '0']);
+    await sleep(300);
+
+    // 5. Select a bank account from Paid from (not "alreadyHave")
+    const bankOption = drawer.locator('button[aria-pressed]').filter({ hasNotText: ar ? 'موجود عندي من قبل كده' : 'I already had it' }).first();
+    await assertUsable(page, bankOption, 'Bank option in paid from');
+    await bankOption.click();
+    await sleep(300);
+
+    // 6. Save
+    const saveBtn = drawer.getByRole('button', { name: ar ? 'حفظ' : 'Save' }).first();
+    await assertUsable(page, saveBtn, 'Save investment button');
+    await saveBtn.click();
+    await sleep(600);
+
+    // 7. Go back to Home
+    const backLink = page.getByRole('link', { name: ar ? 'رجوع' : 'Back' }).first();
+    await assertUsable(page, backLink, 'Back to Home link');
+    await backLink.click();
+    await page.waitForURL(`${BASE}/${locale}`, { timeout: 10000 });
+    await sleep(600);
+
+    // 8. "To spend" goes DOWN by 5,000, "Saved" UP by 5,000, "Spent this month" unchanged
+    const after = await homeNumbers(page);
+    if (after.toSpend !== before.toSpend - 5000) {
+      throw new Error(`Expected To spend down by 5000: was ${before.toSpend}, now ${after.toSpend}`);
+    }
+    if (after.saved !== before.saved + 5000) {
+      throw new Error(`Expected Saved up by 5000: was ${before.saved}, now ${after.saved}`);
+    }
+    if (after.spent !== before.spent) {
+      throw new Error(`Expected Spent this month unchanged: was ${before.spent}, now ${after.spent}`);
+    }
+
+    // 9. Undo removes it
+    const undoBtn = page.getByRole('button', { name: ar ? 'تراجع' : 'Undo' }).first();
+    if (await undoBtn.isVisible()) {
+      await undoBtn.click();
+      await sleep(600);
+    }
+  },
+
+  async investment_value(page, { locale }) {
+    const ar = locale === 'ar';
+    // 1. Read Home numbers
+    await page.goto(`${BASE}/${locale}`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    const beforeHome = await homeNumbers(page);
+
+    // 2. Open sample Gold
+    await page.goto(`${BASE}/${locale}/money/investment/aaaaaaaa-0000-0000-0000-0000000000e1`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    // 3. Update value -> 100000 -> Save
+    const updateBtn = page.getByRole('button', { name: ar ? 'تحديث القيمة' : 'Update value' }).first();
+    await assertUsable(page, updateBtn, 'Update value button');
+    await updateBtn.click();
+    await sleep(600);
+
+    const drawer = page.locator('[data-slot="drawer-content"]').last();
+    await drawer.waitFor({ state: 'visible', timeout: 5000 });
+
+    await typeAmount(page, ['1', '0', '0', '0', '0', '0']);
+    await sleep(300);
+
+    const saveBtn = drawer.getByRole('button', { name: ar ? 'حفظ' : 'Save' }).first();
+    await assertUsable(page, saveBtn, 'Save value button');
+    await saveBtn.click();
+    await sleep(600);
+
+    // 4. Verify Worth now 100,000, You put in 80,000, It grew by 20,000
+    const pageText = await page.innerText('body');
+    if (!pageText.includes('100,000')) throw new Error(`Expected Worth now 100,000 in page text`);
+    if (!pageText.includes('80,000')) throw new Error(`Expected You put in 80,000 in page text`);
+    if (!pageText.includes('20,000')) throw new Error(`Expected It grew by 20,000 in page text`);
+
+    // 5. Home "Spent this month" and "Money in" unchanged
+    await page.goto(`${BASE}/${locale}`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(600);
+    const afterHome = await homeNumbers(page);
+    if (afterHome.spent !== beforeHome.spent) {
+      throw new Error(`Expected Spent unchanged: was ${beforeHome.spent}, now ${afterHome.spent}`);
+    }
+    if (afterHome.moneyIn !== beforeHome.moneyIn) {
+      throw new Error(`Expected Money in unchanged: was ${beforeHome.moneyIn}, now ${afterHome.moneyIn}`);
+    }
+
+    // 6. Undo -> Worth now back to 96,000
+    const undoBtn = page.getByRole('button', { name: ar ? 'تراجع' : 'Undo' }).first();
+    if (await undoBtn.isVisible()) {
+      await undoBtn.click();
+      await sleep(600);
+    }
+    await page.goto(`${BASE}/${locale}/money/investment/aaaaaaaa-0000-0000-0000-0000000000e1`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(600);
+    const restoredText = await page.innerText('body');
+    if (!restoredText.includes('96,000')) throw new Error(`Expected Worth back to 96,000 after Undo`);
+  },
+
+  async investment_take(page, { locale }) {
+    const ar = locale === 'ar';
+    // 1. Open sample Gold
+    await page.goto(`${BASE}/${locale}/money/investment/aaaaaaaa-0000-0000-0000-0000000000e1`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    // 2. Click "Take out"
+    const takeBtn = page.getByRole('button', { name: ar ? 'سحب' : 'Take out' }).first();
+    await assertUsable(page, takeBtn, 'Take out button');
+    await takeBtn.click();
+    await sleep(600);
+
+    const drawer = page.locator('[data-slot="drawer-content"]').last();
+    await drawer.waitFor({ state: 'visible', timeout: 5000 });
+
+    // 3. Type amount above worth (200000 > 96000)
+    await typeAmount(page, ['2', '0', '0', '0', '0', '0']);
+    await sleep(300);
+
+    // 4. Save button is disabled and "only has" line is shown
+    const saveBtn = drawer.getByRole('button', { name: ar ? 'حفظ' : 'Save' }).first();
+    const disabled = await saveBtn.isDisabled();
+    if (!disabled) throw new Error('Expected save button to be disabled for amount > worth');
+    const onlyHasEl = drawer.locator('p').filter({ hasText: ar ? 'الاستثمار ده فيه' : 'This investment only has' });
+    await assertUsable(page, onlyHasEl, 'Only has message');
+
+    // 5. Clear amount via backspace keys
+    const bsBtn = drawer.locator('button[aria-label*="backspace"], button[aria-label*="مسح"]').first();
+    for (let i = 0; i < 6; i++) {
+      await bsBtn.click();
+    }
+    await sleep(200);
+
+    // 6. Type valid amount 1000
+    await typeAmount(page, ['1', '0', '0', '0']);
+    await sleep(300);
+
+    // 7. Pick destination spending wallet
+    const walletChoice = drawer.locator('button[aria-pressed]').first();
+    await assertUsable(page, walletChoice, 'Destination wallet choice');
+    const walletText = await walletChoice.innerText();
+    const balanceBefore = Number((walletText.match(/[\d,]+/)?.[0] || '0').replace(/,/g, ''));
+    await walletChoice.click();
+    await sleep(200);
+
+    // 8. Save
+    await assertUsable(page, saveBtn, 'Save take-out button');
+    await saveBtn.click();
+    await sleep(600);
+
+    // 9. Go to Settings -> Wallets and verify chosen wallet balance went up by 1,000
+    await page.goto(`${BASE}/${locale}/settings/wallets`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    const walletsText = await page.innerText('body');
+    const expectedNewBal = balanceBefore + 1000;
+    const formatted = new Intl.NumberFormat('en-US').format(expectedNewBal);
+    if (!walletsText.includes(formatted)) {
+      throw new Error(`Expected wallet balance to increase by 1000 to ${formatted}`);
+    }
+  },
 };
 
 const MULTI_LOCALE_FLOW_NAMES = [
@@ -1346,6 +1591,10 @@ const MULTI_LOCALE_FLOW_NAMES = [
   'currencies',
   'money_page',
   'help_money',
+  'investment_add',
+  'investment_paid',
+  'investment_value',
+  'investment_take',
 ];
 const LOCALES = ['en', 'ar'];
 
