@@ -32,7 +32,7 @@ npm run ui:site
 
 It builds the app (only when the code has changed), then checks every screen on the main iPhone and the smallest
 Android, in light and dark, in English and Arabic, plus every user flow (including with the keyboard open).
-It takes about two and a half minutes. Paste its summary line and every `FAIL` line into the PR description.
+It takes about a minute and a half. Paste its summary line and every `FAIL` line into the PR description.
 A PR with any `FAIL` line is not done.
 
 `npm run ui:site -- --full` runs the same on all six phone sizes (about 12 minutes). Only the orchestrator runs

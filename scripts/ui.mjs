@@ -163,12 +163,13 @@ const waited = Date.now();
 for (const name of ['last-check.json', 'last-flows.json']) fs.rmSync(path.resolve('.ui-check', name), { force: true });
 
 // Screens and flows run side by side. More pages at once than this overloads the machine and is slower, not faster.
-const env = { BASE_URL: base, UI_FAST: '1', UI_PARALLEL: '4' };
+const full = mode === 'site' && args.includes('--full');
+// --full is the release gate: original waits, every line printed.
+const env = { BASE_URL: base, UI_PARALLEL: '4', ...(full ? {} : { UI_FAST: '1' }) };
 // feature: one iPhone, light. site: every screen on the main iPhone and the smallest Android, light and dark, and
 // every flow on the iPhone (plus the keyboard-open size). site --full: every size for both (the release gate).
-const full = args.includes('--full');
 const screenSizes = mode === 'feature' ? { UI_SIZES: '390x844', UI_THEMES: 'light' } : full ? {} : { UI_SIZES: '390x844,360x640' };
-const flowSizes = mode === 'site' && full ? {} : { UI_SIZES: '390x844' };
+const flowSizes = full ? {} : { UI_SIZES: '390x844' };
 const [check, flow] = await Promise.all([
   run('scripts/ui-check.mjs', ['--routes', ...urls], { ...env, ...screenSizes }),
   mode === 'site' || flows.length
