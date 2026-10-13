@@ -25,6 +25,7 @@ import {
   DEFAULT_HOUSEHOLD,
   DEFAULT_MEMBERS,
   DEFAULT_WALLETS,
+  DEFAULT_INVESTMENT_VALUES,
   DEMO_HOUSEHOLD_ID,
   generateRealisticEntries,
   getFlattenedCategoryTree,
@@ -188,6 +189,7 @@ export class MockRepository implements Repository {
           await this.backfillMissingCreators();
           await this.seedSampleBudgets();
           await this.seedSampleGoals();
+          await this.seedSampleInvestments();
           await this.processDueRecurringRules();
           return;
         }
@@ -246,6 +248,9 @@ export class MockRepository implements Repository {
 
         // Insert wallets
         await this.db.accounts.bulkPut(DEFAULT_WALLETS);
+
+        // Insert sample investment values
+        await this.db.investment_values.bulkPut(DEFAULT_INVESTMENT_VALUES);
 
         // Insert categories, subcategories, items
         const tree = getFlattenedCategoryTree(DEMO_HOUSEHOLD_ID);
@@ -419,6 +424,11 @@ export class MockRepository implements Repository {
     await this.db.meta.put({ key: 'goalsSeeded', value: true });
   }
 
+  private async seedSampleInvestments(): Promise<void> {
+    if ((await this.db.investment_values.count()) > 0) return;
+    await this.db.investment_values.bulkPut(DEFAULT_INVESTMENT_VALUES);
+  }
+
   // Sample members were first seeded as ماما / بابا. Names are now English: rename them in place
   // (only those exact defaults), so phones keep their practice entries.
   // Entries added before who-added-it was recorded (2026-10-06) have no creator, so they showed
@@ -471,6 +481,7 @@ export class MockRepository implements Repository {
       this.db.budgets,
       this.db.savings_goals,
       this.db.accounts,
+      this.db.investment_values,
       this.db.meta,
     ];
 
@@ -480,6 +491,7 @@ export class MockRepository implements Repository {
       photos: await this.db.photos.toArray(),
       budgets: await this.db.budgets.toArray(),
       savings_goals: await this.db.savings_goals.toArray(),
+      investment_values: await this.db.investment_values.toArray(),
       wallets: await this.db.accounts.bulkGet([...sampleWalletIds]),
     };
 
@@ -489,6 +501,7 @@ export class MockRepository implements Repository {
         this.db.photos.clear(),
         this.db.budgets.clear(),
         this.db.savings_goals.clear(),
+        this.db.investment_values.clear(),
       ]);
       const now = new Date().toISOString();
       for (const wallet of before.wallets) {
@@ -511,6 +524,7 @@ export class MockRepository implements Repository {
         await this.db.photos.bulkPut(before.photos);
         await this.db.budgets.bulkPut(before.budgets);
         await this.db.savings_goals.bulkPut(before.savings_goals);
+        await this.db.investment_values.bulkPut(before.investment_values);
         await this.db.accounts.bulkPut(before.wallets.filter((w) => w !== undefined));
         await this.db.meta.delete('sampleCleared');
       });

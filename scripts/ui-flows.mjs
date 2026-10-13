@@ -1362,6 +1362,8 @@ const FLOWS = {
 
     // 6. Newly created Gold row with 5,000 is in the list
     const goldRow = page.locator('a[href*="/money/investment/"]').filter({ hasText: '5,000' }).first();
+    await goldRow.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
     await assertUsable(page, goldRow, 'Gold investment row');
     const goldText = await goldRow.innerText();
     if (!goldText.includes('5,000')) throw new Error(`Expected Gold row to show 5,000, got: ${goldText}`);
