@@ -78,7 +78,7 @@ and the orchestrator applies it when merging.
 **Merge gate (non-negotiable, added 2026-10-06 after the user found two interaction bugs):** nothing merges unless,
 on the PR's branch (run locally; only `main` deploys to Vercel, PR branches have no preview), BOTH are green: `npm run ui:check` (every screen, sizes 390x844, 375x667 and 412x700 for
 Android-in-a-browser, light and dark, /en and /ar) AND `npm run ui:flows` (every user action, including with the
-keyboard open). Look-and-feel steps also need the user's OK on the preview. Never skip this to go faster.
+keyboard open). `npm run ui:site -- --full` runs both in one go, on every screen, and builds and starts the app itself. Look-and-feel steps also need the user's OK on the preview. Never skip this to go faster.
 
 Whenever the user says a chat opened a PR or is BLOCKED (or just "check"):
 1. `git fetch`; find every new `step/*` branch on origin. Merge in dependency order (stacked branches after their base).

@@ -11,7 +11,10 @@
     "test": "vitest run",
     "check-rtl": "node scripts/check-rtl.mjs",
     "ui:check": "node scripts/ui-check.mjs",
-    "ui:flows": "node scripts/ui-flows.mjs"
+    "ui:flows": "node scripts/ui-flows.mjs",
+    "ui:feature": "node scripts/ui.mjs feature",
+    "ui:site": "node scripts/ui.mjs site",
+    "ui:stop": "node scripts/ui.mjs stop"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

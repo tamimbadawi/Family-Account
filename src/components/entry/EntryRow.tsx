@@ -111,7 +111,7 @@ export function EntryRow({ entry, onClick, showDate = false }: EntryRowProps) {
               <Paperclip aria-label={t('hasPhoto')} className="size-4 shrink-0 text-ink-muted" />
             )}
           </div>
-          <div className="truncate text-caption text-ink-muted leading-tight">
+          <div className="break-words text-caption text-ink-muted leading-tight">
             {showDate && (
               <span dir="ltr" className="tabular-nums">
                 {formatDmy(entry.occurredOn)}
