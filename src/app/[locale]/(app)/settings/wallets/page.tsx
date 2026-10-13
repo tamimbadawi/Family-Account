@@ -46,7 +46,10 @@ export default function WalletManagerPage() {
 
   // Opened from a header wallet shortcut (?from=<path>): back returns there.
   const backHref = React.useSyncExternalStore(noopSubscribe, readBackHref, () => '/settings');
-  const wallets = useWallets(showArchived);
+  const allWallets = useWallets(showArchived);
+  const wallets = React.useMemo(() => {
+    return allWallets?.filter((w) => (w.purpose ?? 'spending') === 'spending');
+  }, [allWallets]);
   const balances = useWalletBalances();
 
   const balanceMap = React.useMemo(() => {

@@ -19,7 +19,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CategoryIcon } from '@/components/ui/category-icon';
-import { OurMoneyRow } from '@/components/wallets/OurMoneySheet';
+import { MoneyTiles } from '@/components/wallets/MoneyTiles';
 import { SampleDataBadge } from '@/components/layout/SampleDataBadge';
 import { money, pickName } from '@/lib/format';
 import { useSignedInName } from '@/lib/auth/use-signed-in-name';
@@ -99,7 +99,10 @@ export default function HomePage() {
         </div>
 
         {/* Our money skeleton */}
-        <Skeleton className="h-14 rounded-card" />
+        <div className="grid grid-cols-2 gap-2">
+          <Skeleton className="h-16 rounded-card" />
+          <Skeleton className="h-16 rounded-card" />
+        </div>
 
         {/* Recent entries Skeleton */}
         <div className="space-y-2 rounded-card bg-surface p-4 shadow-card">
@@ -217,9 +220,9 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* 4. Our money row */}
+      {/* 4. Our money tiles */}
       <div data-tour="our-money" className="rounded-card">
-        <OurMoneyRow />
+        <MoneyTiles />
       </div>
 
       {/* 5. Recent entries */}

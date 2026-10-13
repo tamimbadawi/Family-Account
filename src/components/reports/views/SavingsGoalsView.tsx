@@ -51,7 +51,7 @@ export function SavingsGoalsView() {
         </div>
         <p className="text-body text-ink-muted leading-relaxed">{tGoals('emptyDesc')}</p>
         <Link
-          href="/settings/goals"
+          href="/money/goals"
           className="mx-auto flex min-h-12 items-center rounded-2xl bg-accent px-5 text-body font-semibold text-accent-ink"
         >
           {tGoals('newGoal')}
@@ -131,7 +131,7 @@ export function SavingsGoalsView() {
       })}
 
       <Link
-        href="/settings/goals"
+        href="/money/goals"
         className="flex min-h-12 items-center justify-center rounded-2xl bg-surface-2 text-body font-semibold text-accent"
       >
         {t('library.manageGoals')}

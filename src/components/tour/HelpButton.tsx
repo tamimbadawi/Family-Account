@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { ChevronRight, CircleHelp, History, PieChart, Plus, Settings, Sparkles, type LucideIcon } from 'lucide-react';
+import { ChevronRight, CircleHelp, History, PieChart, PiggyBank, Plus, Settings, Sparkles, type LucideIcon } from 'lucide-react';
 import { usePathname } from '@/i18n/navigation';
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { useTour } from './TourProvider';
@@ -11,6 +11,7 @@ import { GUIDE_ORDER, guideForPath, type TourId } from './tours';
 const GUIDE_ICONS: Record<TourId, LucideIcon> = {
   welcome: Sparkles,
   addEntry: Plus,
+  money: PiggyBank,
   history: History,
   reports: PieChart,
   settings: Settings,

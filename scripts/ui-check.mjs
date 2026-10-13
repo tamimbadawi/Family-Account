@@ -62,8 +62,8 @@ if (process.env.UI_SIZES) {
 
 const THEMES = isQuick ? ['light'] : (process.env.UI_THEMES || 'light,dark').split(',');
 // Screens that are lists may scroll inside their content area; every other screen must fit with no scrolling.
-const LIST_ROUTES = ['/history', '/settings/categories', '/settings/deleted', '/settings/budgets', '/settings/recurring', '/settings/goals'];
-const DEFAULT_ROUTES =['/en', '/en/history', '/en/reports', '/en/settings', '/en/login', '/ar', '/ar/settings'];
+const LIST_ROUTES = ['/history', '/settings/categories', '/settings/deleted', '/settings/budgets', '/settings/recurring', '/money', '/money/goals'];
+const DEFAULT_ROUTES =['/en', '/en/history', '/en/reports', '/en/settings', '/en/login', '/ar', '/ar/settings', '/en/money', '/ar/money'];
 // Git Bash rewrites "/en" into "C:/Program Files/Git/en"; undo that, and accept "en/history" without a slash.
 const toRoute = (a) => '/' + a.replace(/^.*\/Git\//, '').replace(/^\/+/, '');
 const routes = routesArg.length ? routesArg.map(toRoute) : DEFAULT_ROUTES;

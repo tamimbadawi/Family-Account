@@ -411,7 +411,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
       {isGoal ? (
         goals && goals.length === 0 ? (
           <Link
-            href="/settings/goals"
+            href="/money/goals"
             onClick={onClose}
             className="flex min-h-12 items-center justify-center rounded-2xl bg-accent-soft px-4 text-center text-body font-semibold text-accent"
           >
