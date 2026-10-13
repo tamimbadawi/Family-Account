@@ -91,5 +91,52 @@
   "changeTransfer": "Change this transfer",
   "transferUpdated": "Transfer updated",
   "removeTransfer": "Remove this transfer",
-  "transferRemoved": "Transfer removed"
+  "transferRemoved": "Transfer removed",
+  "ideasEntry": "Investment ideas",
+  "ideasEntryHint": "Where could this money earn the most? An estimate from bank rates.",
+  "ideas": {
+    "title": "Investment ideas",
+    "disclaimer": "This is an estimate from the rates banks publish, not advice. It is before tax and fees, rates change, and a variable rate can go down. Check with the bank before you decide.",
+    "ratesFrom": "Rates checked {date}.",
+    "amountLabel": "Amount to invest",
+    "tapToEnter": "Tap to enter",
+    "amountQuestion": "How much do you want to invest?",
+    "showIdeas": "Show ideas",
+    "goalLabel": "What do you want from it?",
+    "goalMonthly": "Money every month",
+    "goalGrow": "Most over time",
+    "lengthLabel": "For how long, at most?",
+    "length": {
+      "any": "Any",
+      "upTo1y": "1 year",
+      "upTo3y": "3 years"
+    },
+    "headingMonthly": "Pays the most every month",
+    "headingGrow": "Earns the most each year",
+    "perMonth": "≈ {amount} a month",
+    "perYear": "≈ {amount} a year",
+    "backAtEnd": "{amount} back at the end",
+    "rateYearOne": "{rate} in year 1",
+    "termDays": "{n} days",
+    "termMonths": "{n} months",
+    "termYears": "{n, plural, one {# year} other {# years}}",
+    "payout": {
+      "daily": "Paid daily",
+      "monthly": "Paid monthly",
+      "quarterly": "Paid every 3 months",
+      "semiannual": "Paid every 6 months",
+      "yearly": "Paid yearly",
+      "maturity": "Paid at the end"
+    },
+    "noteVariable": "Rate can change",
+    "noteFirstYearOnly": "Year 1 only",
+    "noteStale": "May be out of date",
+    "enterAmountFirst": "Enter an amount to see ideas.",
+    "noIdeas": "Nothing fits this amount and length. Try a longer time or a bigger amount.",
+    "needMore": "{n, plural, one {# more option needs} other {# more options need}} a bigger amount.",
+    "showAll": "Show all {n}",
+    "showFewer": "Show fewer",
+    "loadError": "Could not load bank rates. Check your connection.",
+    "tryAgain": "Try again"
+  }
 }

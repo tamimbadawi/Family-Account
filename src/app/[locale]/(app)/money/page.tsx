@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Lightbulb } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { Link, useRouter } from '@/i18n/navigation';
 import {
@@ -419,6 +419,21 @@ function MoneyContent() {
                 </Card>
               )}
             </div>
+
+            {/* Investment ideas */}
+            <Link
+              href="/money/ideas"
+              className="flex min-h-16 w-full items-center gap-3 rounded-card bg-surface px-3.5 py-3 shadow-card border border-line/60 hover:bg-surface-2 active:bg-surface-2/80 transition-colors select-none text-start"
+            >
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-income-soft text-income">
+                <Lightbulb className="size-5" />
+              </div>
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <div className="text-body font-semibold text-ink leading-tight">{t('ideasEntry')}</div>
+                <div className="text-caption text-ink-muted leading-tight">{t('ideasEntryHint')}</div>
+              </div>
+              <ChevronRight className="size-4 text-ink-muted rtl:rotate-180 shrink-0" />
+            </Link>
           </>
         )}
       </div>

@@ -91,5 +91,52 @@
   "changeTransfer": "عدّل التحويل ده",
   "transferUpdated": "التحويل اتعدّل",
   "removeTransfer": "شيل التحويل ده",
-  "transferRemoved": "التحويل اتشال"
+  "transferRemoved": "التحويل اتشال",
+  "ideasEntry": "أفكار للاستثمار",
+  "ideasEntryHint": "الفلوس دي ممكن تكسب أكتر فين؟ تقدير من أسعار البنوك.",
+  "ideas": {
+    "title": "أفكار للاستثمار",
+    "disclaimer": "ده تقدير من الأسعار اللي البنوك بتنشرها، مش نصيحة. قبل الضرايب والمصاريف، والأسعار بتتغير، والعائد المتغير ممكن ينزل. اسأل البنك قبل ما تقرر.",
+    "ratesFrom": "الأسعار متراجعة يوم {date}.",
+    "amountLabel": "المبلغ اللي هتستثمره",
+    "tapToEnter": "دوس واكتب المبلغ",
+    "amountQuestion": "عايز تستثمر كام؟",
+    "showIdeas": "وريني الأفكار",
+    "goalLabel": "عايز منها إيه؟",
+    "goalMonthly": "فلوس كل شهر",
+    "goalGrow": "أكتر مكسب مع الوقت",
+    "lengthLabel": "أقصى مدة قد إيه؟",
+    "length": {
+      "any": "أي مدة",
+      "upTo1y": "سنة",
+      "upTo3y": "3 سنين"
+    },
+    "headingMonthly": "بيدفع أكتر كل شهر",
+    "headingGrow": "بيكسب أكتر كل سنة",
+    "perMonth": "≈ {amount} في الشهر",
+    "perYear": "≈ {amount} في السنة",
+    "backAtEnd": "يرجعلك {amount} في الآخر",
+    "rateYearOne": "{rate} أول سنة",
+    "termDays": "{n} يوم",
+    "termMonths": "{n} شهور",
+    "termYears": "{n, plural, one {سنة} two {سنتين} few {# سنين} many {# سنة} other {# سنة}}",
+    "payout": {
+      "daily": "عائد يومي",
+      "monthly": "عائد شهري",
+      "quarterly": "عائد كل 3 شهور",
+      "semiannual": "عائد كل 6 شهور",
+      "yearly": "عائد سنوي",
+      "maturity": "العائد في الآخر"
+    },
+    "noteVariable": "العائد ممكن يتغير",
+    "noteFirstYearOnly": "أول سنة بس",
+    "noteStale": "ممكن يكون قديم",
+    "enterAmountFirst": "اكتب مبلغ علشان تشوف الأفكار.",
+    "noIdeas": "مفيش حاجة مناسبة للمبلغ والمدة دي. جرّب مدة أطول أو مبلغ أكبر.",
+    "needMore": "{n, plural, one {اختيار تاني محتاج} two {اختيارين تانيين محتاجين} few {# اختيارات تانية محتاجة} other {# اختيار تاني محتاجين}} مبلغ أكبر.",
+    "showAll": "اعرض الكل ({n})",
+    "showFewer": "اعرض أقل",
+    "loadError": "مقدرناش نجيب أسعار البنوك. اتأكد من النت.",
+    "tryAgain": "جرّب تاني"
+  }
 }
