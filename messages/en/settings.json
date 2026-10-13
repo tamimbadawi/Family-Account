@@ -83,5 +83,6 @@
   "install": "Install app",
   "more": "More settings",
   "moreHint": "Language, currencies, download",
-  "moreHintInstall": "Language, currencies, install app"
+  "moreHintInstall": "Language, currencies, install app",
+  "operator": "Admin panel"
 }

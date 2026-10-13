@@ -96,6 +96,9 @@ describe('pivot engine', () => {
     color: '#0F766E',
     sortOrder: 0,
     isArchived: false,
+    purpose: 'spending',
+    investmentKind: null,
+    maturesOn: null,
     createdAt: '2026-01-01',
     updatedAt: '2026-01-01',
   };

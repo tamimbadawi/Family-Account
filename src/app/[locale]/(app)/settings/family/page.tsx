@@ -11,17 +11,19 @@ import { useRestoreSheetAfterKeyboard } from '@/components/settings/useRestoreSh
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useHouseholdMembers } from '@/lib/data/provider';
+import { useRepository } from '@/lib/data/provider';
 import { isAuthConfigured } from '@/lib/supabase/client';
-import { familyAdmin, createFamilyInviteLink, type FamilyList, type FamilyMember } from '@/lib/auth/family-admin';
+import { familyAdmin, createFamilyInviteLink } from '@/lib/auth/family-admin';
+import { useFamily, useIsFamilyAdmin, useMyUserId } from '@/lib/auth/use-family-members';
+import type { Member } from '@/lib/data/types';
 import { joinLink, familyInviteLink, sendInvite } from '@/lib/auth/invite';
 import { FAMILY_NAME_MAX, useFamilyName } from '@/lib/auth/family-name';
 
 type Sheet =
   | { kind: 'rename' }
-  | { kind: 'reset'; member: FamilyMember }
-  | { kind: 'remove'; member: FamilyMember }
-  | { kind: 'owner'; member: FamilyMember }
+  | { kind: 'reset'; member: Member }
+  | { kind: 'remove'; member: Member }
+  | { kind: 'owner'; member: Member }
   | null;
 
 const ROW = 'flex min-h-14 items-center gap-3 px-3.5 py-2.5';
@@ -34,12 +36,12 @@ export default function FamilyPage() {
   const tSettings = useTranslations('settings');
   const locale = useLocale();
   const live = isAuthConfigured();
-  const sampleMembers = useHouseholdMembers();
+  const repo = useRepository();
+  const members = useFamily();
+  const isOwner = useIsFamilyAdmin() === true;
+  const myUserId = useMyUserId();
   const family = useFamilyName();
 
-  const [list, setList] = React.useState<FamilyList | null>(null);
-  const [loadFailed, setLoadFailed] = React.useState(false);
-  const [attempt, setAttempt] = React.useState(0);
   const [sheet, setSheet] = React.useState<Sheet>(null);
   const sheetRef = React.useRef<HTMLDivElement>(null);
   useRestoreSheetAfterKeyboard(sheetRef, sheet !== null);
@@ -48,31 +50,10 @@ export default function FamilyPage() {
   const [name, setName] = React.useState('');
   const [password, setPassword] = React.useState('');
 
-  const load = React.useCallback(async () => {
-    try {
-      setList(await familyAdmin<FamilyList>({ action: 'list' }));
-    } catch {
-      toast.error(t('loadFailed'));
-    }
-  }, [t]);
-
   React.useEffect(() => {
     if (!live) return;
-    let cancelled = false;
-    familyAdmin<FamilyList>({ action: 'list' })
-      .then((result) => {
-        if (!cancelled) {
-          setList(result);
-          setLoadFailed(false);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setLoadFailed(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [live, attempt]);
+    repo.refresh?.().catch((err) => console.warn('[family] refresh failed', err));
+  }, [live, repo]);
 
   const open = (next: Sheet) => {
     setError(null);
@@ -140,7 +121,7 @@ export default function FamilyPage() {
       await work();
       setSheet(null);
       toast.success(done, action && { action, duration: 10000 });
-      if (live) await load();
+      if (live) void repo.refresh?.().catch((err) => console.warn('[family] refresh failed', err));
     } catch (err) {
       const code = err instanceof Error ? err.message : 'failed';
       setError(t.has(`errors.${code}`) ? t(`errors.${code}`) : t('errors.failed'));
@@ -163,10 +144,6 @@ export default function FamilyPage() {
     }
   };
 
-  const members: FamilyMember[] = live
-    ? (list?.members ?? [])
-    : sampleMembers.map((m) => ({ userId: m.userId, displayName: m.displayName, role: m.role, email: '' }));
-  const isOwner = live && Boolean(list?.isOwner);
   // The family admin can change the family's name (sample-data mode: anyone, as there is no admin)
   const canRename = isOwner || !live;
 
@@ -215,58 +192,42 @@ export default function FamilyPage() {
       <div className="flex-1 space-y-4 px-5 py-4 pb-24">
         <p className="text-body text-ink-muted">{isOwner ? t('ownerHint') : t('memberHint')}</p>
 
-        {live && !list && loadFailed ? (
-          <div className="space-y-3 rounded-card border border-line/40 bg-surface p-4 text-center shadow-card">
-            <p className="text-body text-ink">{t('loadFailed')}</p>
-            <Button variant="outline" onClick={() => setAttempt((a) => a + 1)} className="h-12 w-full text-body font-semibold">
-              {t('tryAgain')}
-            </Button>
-          </div>
-        ) : (
-          <div className="divide-y divide-line/40 rounded-card border border-line/40 bg-surface shadow-card">
-          {live && !list
-            ? [1, 2].map((i) => (
-                <div key={i} className={ROW}>
-                  <Skeleton className="size-10 rounded-full" />
-                  <Skeleton className="h-4 w-32" />
+        <div className="divide-y divide-line/40 rounded-card border border-line/40 bg-surface shadow-card">
+          {members.map((m) => (
+            <div key={m.userId} className={ROW}>
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-member-1-soft text-body font-bold text-member-1">
+                {m.displayName.charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 text-body font-semibold text-ink">
+                  <span className="truncate">{m.displayName}</span>
+                  {m.role === 'owner' && <Crown aria-label={t('admin')} className="size-4 shrink-0 text-warning" />}
                 </div>
-              ))
-            : members.map((m) => (
-                <div key={m.userId} className={ROW}>
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-member-1-soft text-body font-bold text-member-1">
-                    {m.displayName.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 text-body font-semibold text-ink">
-                      <span className="truncate">{m.displayName}</span>
-                      {m.role === 'owner' && <Crown aria-label={t('admin')} className="size-4 shrink-0 text-warning" />}
-                    </div>
-                    <div className="truncate text-caption text-ink-muted">
-                      {m.role === 'owner' ? t('admin') : t('member')}
-                    </div>
-                  </div>
-                  {isOwner && m.userId !== list?.me && (
-                    <div className="flex gap-1.5">
-                      <button type="button" aria-label={t('resetPassword')} className={ACTION} onClick={() => open({ kind: 'reset', member: m })}>
-                        <KeyRound className="size-5" />
-                      </button>
-                      <button type="button" aria-label={t('makeAdmin')} className={ACTION} onClick={() => open({ kind: 'owner', member: m })}>
-                        <Crown className="size-5" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={t('remove')}
-                        className={`${ACTION} text-danger`}
-                        onClick={() => open({ kind: 'remove', member: m })}
-                      >
-                        <UserMinus className="size-5" />
-                      </button>
-                    </div>
-                  )}
+                <div className="truncate text-caption text-ink-muted">
+                  {m.role === 'owner' ? t('admin') : t('member')}
                 </div>
-              ))}
-          </div>
-        )}
+              </div>
+              {isOwner && m.userId !== myUserId && (
+                <div className="flex gap-1.5">
+                  <button type="button" aria-label={t('resetPassword')} className={ACTION} onClick={() => open({ kind: 'reset', member: m })}>
+                    <KeyRound className="size-5" />
+                  </button>
+                  <button type="button" aria-label={t('makeAdmin')} className={ACTION} onClick={() => open({ kind: 'owner', member: m })}>
+                    <Crown className="size-5" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t('remove')}
+                    className={`${ACTION} text-danger`}
+                    onClick={() => open({ kind: 'remove', member: m })}
+                  >
+                    <UserMinus className="size-5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
 
         {(isOwner || !live) && (
           <div className="space-y-2">

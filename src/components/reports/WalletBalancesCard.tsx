@@ -2,105 +2,132 @@
 
 import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Banknote, Building2, CreditCard, Wallet as WalletIcon } from 'lucide-react';
-import { useWalletBalances } from '@/lib/data/provider';
-import type { WalletType } from '@/lib/data/types';
+import { ChevronRight } from 'lucide-react';
+import { Link } from '@/i18n/navigation';
+import { useInvestments, useWalletBalances } from '@/lib/data/provider';
 import { Card } from '@/components/ui/card';
-import { money, pickName } from '@/lib/format';
-import { OurMoneySheet } from '@/components/wallets/OurMoneySheet';
+import { money } from '@/lib/format';
 
 export interface WalletBalancesCardProps {
   className?: string;
 }
 
-function getWalletTypeIcon(type: WalletType) {
-  switch (type) {
-    case 'cash':
-      return Banknote;
-    case 'bank':
-      return Building2;
-    case 'card':
-      return CreditCard;
-    case 'wallet':
-    default:
-      return WalletIcon;
-  }
-}
-
 export function WalletBalancesCard({ className = '' }: WalletBalancesCardProps) {
   const locale = useLocale();
   const t = useTranslations('reports');
-  const wallets = useWalletBalances();
-  const [sheetOpen, setSheetOpen] = React.useState(false);
+  const tMoney = useTranslations('money');
+  const walletBalances = useWalletBalances();
+  const investments = useInvestments(false);
 
-  return (
-    <>
+  if (!walletBalances || investments === undefined) {
+    return (
       <Card
-        onClick={() => setSheetOpen(true)}
-        className={`rounded-card bg-surface p-3.5 shadow-card select-none gap-0 cursor-pointer hover:bg-surface-2/40 transition-colors ${className}`}
+        className={`rounded-card bg-surface p-3.5 shadow-card select-none gap-0 ${className}`}
       >
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-heading font-semibold text-ink">
             {t('walletBalances')}
           </h2>
           <span className="text-caption font-medium text-accent">
-            {locale.startsWith('ar') ? 'عرض الكل' : 'View all'}
+            {tMoney('viewAll')}
           </span>
         </div>
-
-      {!wallets ? (
         <div className="space-y-2">
-          <div className="h-10 rounded-xl bg-surface-2 animate-pulse" />
-          <div className="h-10 rounded-xl bg-surface-2 animate-pulse" />
+          <div className="h-14 rounded-xl bg-surface-2 animate-pulse" />
+          <div className="h-14 rounded-xl bg-surface-2 animate-pulse" />
         </div>
-      ) : wallets.length === 0 ? (
+      </Card>
+    );
+  }
+
+  /** Format per-currency subtotal, never crossing currencies. */
+  const formatSubtotal = (items: { currency?: string; amount: number }[]) => {
+    const byCurrency = new Map<string, number>();
+    for (const item of items) {
+      const cur = item.currency || 'EGP';
+      byCurrency.set(cur, (byCurrency.get(cur) ?? 0) + item.amount);
+    }
+    if (byCurrency.size === 0) return money(0, locale);
+    return [...byCurrency.entries()]
+      .map(([cur, amount]) => money(amount, locale, { currency: cur || undefined }))
+      .join(' + ');
+  };
+
+  const spending = walletBalances.filter(
+    (w) => !w.isArchived && (w.purpose ?? 'spending') === 'spending'
+  );
+  const goal = walletBalances.filter(
+    (w) => !w.isArchived && w.purpose === 'goal'
+  );
+  const investment = investments.filter((w) => !w.isArchived);
+
+  const groups: { key: string; label: string; subtotal: string; href: string }[] = [];
+  if (spending.length > 0) {
+    groups.push({
+      key: 'spending',
+      label: tMoney('groupSpending'),
+      subtotal: formatSubtotal(spending.map((w) => ({ currency: w.currency, amount: w.balance }))),
+      href: '/money',
+    });
+  }
+  if (goal.length > 0) {
+    groups.push({
+      key: 'goal',
+      label: tMoney('groupGoals'),
+      subtotal: formatSubtotal(goal.map((w) => ({ currency: w.currency, amount: w.balance }))),
+      href: '/money?tab=saving',
+    });
+  }
+  if (investment.length > 0) {
+    groups.push({
+      key: 'investment',
+      label: tMoney('groupInvestments'),
+      subtotal: formatSubtotal(investment.map((w) => ({ currency: w.currency, amount: w.worth }))),
+      href: '/money?tab=saving',
+    });
+  }
+
+  return (
+    <Card
+      className={`rounded-card bg-surface p-3.5 shadow-card select-none gap-0 ${className}`}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-heading font-semibold text-ink">
+          {t('walletBalances')}
+        </h2>
+        <Link
+          href="/money"
+          className="text-caption font-medium text-accent"
+        >
+          {tMoney('viewAll')}
+        </Link>
+      </div>
+
+      {groups.length === 0 ? (
         <p className="text-body text-ink-muted text-center py-3">
           {t('noData')}
         </p>
       ) : (
         <div className="divide-y divide-line">
-          {wallets.map((wallet) => {
-            const name =
-              pickName({ name_ar: wallet.nameAr, name_en: wallet.nameEn }, locale) ||
-              wallet.id;
-            const Icon = getWalletTypeIcon(wallet.type);
-            const color = wallet.color || 'var(--accent)';
-
-            return (
-              <div
-                key={wallet.id}
-                className="flex items-center justify-between gap-3 py-2"
-              >
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div
-                    style={{
-                      backgroundColor: `${color}18`,
-                      color: color,
-                    }}
-                    className="flex size-8 shrink-0 items-center justify-center rounded-full"
-                  >
-                    <Icon className="size-4" />
-                  </div>
-                  <span className="text-body font-semibold text-ink truncate">
-                    {name}
-                  </span>
-                </div>
-
-                <span
-                  className={`text-body font-bold tabular-nums shrink-0 ps-2 ${
-                    wallet.balance >= 0 ? 'text-ink' : 'text-expense'
-                  }`}
-                >
-                  {money(wallet.balance, locale)}
+          {groups.map((group) => (
+            <Link
+              key={group.key}
+              href={group.href}
+              className="flex min-h-14 items-center justify-between gap-3 py-2 transition-colors hover:bg-surface-2/40 active:bg-surface-2/60 -mx-1 px-1 rounded-xl"
+            >
+              <span className="text-body font-semibold text-ink">
+                {group.label}
+              </span>
+              <div className="flex items-center gap-1 shrink-0 ps-2">
+                <span className="text-body font-bold tabular-nums text-ink">
+                  {group.subtotal}
                 </span>
+                <ChevronRight className="size-4 text-ink-muted rtl:rotate-180 shrink-0" />
               </div>
-            );
-          })}
+            </Link>
+          ))}
         </div>
       )}
     </Card>
-
-    <OurMoneySheet open={sheetOpen} onOpenChange={setSheetOpen} />
-  </>
   );
 }

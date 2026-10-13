@@ -14,6 +14,7 @@
 // =========================================================
 
 import type { EnrichedEntry, Wallet, WalletBalance } from '../data/types';
+import { totalsByCurrency } from '../money/groups';
 import {
   ITEM_EXPENSE_BALANCE_CORRECTION_ID,
   ITEM_INCOME_BALANCE_CORRECTION_ID,
@@ -55,7 +56,7 @@ export function isBalanceCorrection(entry: {
 }
 
 // -------------------------------------------------------------
-// 1. Net worth total
+// 1. Net worth (What we have)
 // -------------------------------------------------------------
 
 export interface WalletNetWorthItem {
@@ -63,27 +64,42 @@ export interface WalletNetWorthItem {
   nameAr: string | null;
   nameEn: string | null;
   type: string;
+  currency: string;
   icon: string | null;
   color: string | null;
   currentBalance: number;
   prevMonthBalance: number;
   changeVsLastMonth: number;
   sharePercentage: number;
+  purpose: 'spending' | 'goal' | 'investment';
+}
+
+export interface NetWorthGroup {
+  purpose: 'spending' | 'goal' | 'investment';
+  wallets: WalletNetWorthItem[];
+  totals: { currency: string; amount: number }[];
 }
 
 export interface NetWorthReportResult {
-  totalNetWorth: number;
-  prevMonthTotal: number;
-  changeVsLastMonth: number;
-  changePercentage: number;
-  wallets: WalletNetWorthItem[];
+  spendingTotals: { currency: string; amount: number }[];
+  savedTotals: { currency: string; amount: number }[];
+  spendingChangeVsLastMonth: number;
+  spendingPrevMonthTotal: number;
+  spendingChangePercentage: number;
+  spendingChanges: {
+    currency: string;
+    changeVsLastMonth: number;
+    changePercentage: number;
+  }[];
+  groups: NetWorthGroup[];
 }
 
 export function netWorthReport(
   wallets: Wallet[],
   balances: WalletBalance[],
   entries: EnrichedEntry[],
-  currentMonth: string
+  currentMonth: string,
+  investments?: { id: string; worth: number }[]
 ): NetWorthReportResult {
   const activeWallets = wallets.filter((w) => !w.isArchived);
   const balanceMap = new Map<string, number>();
@@ -115,58 +131,130 @@ export function netWorthReport(
     }
   }
 
-  let totalNetWorth = 0;
-  let prevMonthTotal = 0;
+  // Create WalletNetWorthItems
+  const allWalletItems: WalletNetWorthItem[] = activeWallets.map((w) => {
+    const rawPurpose = w.purpose ?? 'spending';
+    const purpose: 'spending' | 'goal' | 'investment' =
+      rawPurpose === 'goal' ? 'goal' : rawPurpose === 'investment' ? 'investment' : 'spending';
 
-  const walletItems: WalletNetWorthItem[] = activeWallets.map((w) => {
-    const currentBalance = round2(balanceMap.get(w.id) ?? w.openingBalance);
+    let currentBalance: number;
+    if (purpose === 'investment') {
+      const inv = investments?.find((i) => i.id === w.id);
+      currentBalance = round2(inv ? inv.worth : (balanceMap.get(w.id) ?? w.openingBalance));
+    } else {
+      currentBalance = round2(balanceMap.get(w.id) ?? w.openingBalance);
+    }
+
     const delta = deltaMap.get(w.id) ?? 0;
     const prevMonthBalance = round2(currentBalance - delta);
     const changeVsLastMonth = round2(currentBalance - prevMonthBalance);
-
-    totalNetWorth += currentBalance;
-    prevMonthTotal += prevMonthBalance;
 
     return {
       id: w.id,
       nameAr: w.nameAr,
       nameEn: w.nameEn,
       type: w.type,
+      currency: w.currency || 'EGP',
       icon: w.icon,
       color: w.color,
       currentBalance,
       prevMonthBalance,
       changeVsLastMonth,
       sharePercentage: 0,
+      purpose,
     };
   });
 
-  totalNetWorth = round2(totalNetWorth);
-  prevMonthTotal = round2(prevMonthTotal);
-  const changeVsLastMonth = round2(totalNetWorth - prevMonthTotal);
-  const changePercentage =
-    prevMonthTotal !== 0 ? round2((changeVsLastMonth / prevMonthTotal) * 100) : 0;
+  // Partition into three groups in order: spending, goal, investment
+  const groupPurposes: ('spending' | 'goal' | 'investment')[] = ['spending', 'goal', 'investment'];
+  const groups: NetWorthGroup[] = groupPurposes.map((p) => {
+    const groupWallets = allWalletItems.filter((item) => item.purpose === p);
 
-  for (const item of walletItems) {
-    item.sharePercentage =
-      totalNetWorth > 0 ? round2((item.currentBalance / totalNetWorth) * 100) : 0;
-  }
+    // Group totals by currency
+    const totals = totalsByCurrency(
+      groupWallets.map((w) => ({ currency: w.currency, amount: w.currentBalance }))
+    );
 
-  // Sort largest balance first
-  walletItems.sort((a, b) => b.currentBalance - a.currentBalance);
+    // Calculate sharePercentage within its own group and currency
+    const totalByCurrencyMap = new Map<string, number>();
+    for (const t of totals) {
+      totalByCurrencyMap.set(t.currency, t.amount);
+    }
+
+    for (const item of groupWallets) {
+      const groupCurTotal = totalByCurrencyMap.get(item.currency) ?? 0;
+      item.sharePercentage =
+        groupCurTotal > 0 ? round2((item.currentBalance / groupCurTotal) * 100) : 0;
+    }
+
+    // Sort largest balance first within each group
+    groupWallets.sort((a, b) => b.currentBalance - a.currentBalance);
+
+    return {
+      purpose: p,
+      wallets: groupWallets,
+      totals,
+    };
+  });
+
+  const spendingGroup = groups.find((g) => g.purpose === 'spending')!;
+  const goalGroup = groups.find((g) => g.purpose === 'goal')!;
+  const investmentGroup = groups.find((g) => g.purpose === 'investment')!;
+
+  const spendingTotals = spendingGroup.totals;
+
+  // Saved = goals by balance + investments by worth
+  const savedTotals = totalsByCurrency([
+    ...goalGroup.wallets.map((w) => ({ currency: w.currency, amount: w.currentBalance })),
+    ...investmentGroup.wallets.map((w) => ({ currency: w.currency, amount: w.currentBalance })),
+  ]);
+
+  // Spending change vs last month calculation
+  const spendingChanges = spendingTotals.map((st) => {
+    const walletsInCur = spendingGroup.wallets.filter((w) => w.currency === st.currency);
+    const prevMonthTotal = round2(
+      walletsInCur.reduce((sum, w) => sum + w.prevMonthBalance, 0)
+    );
+    const change = round2(st.amount - prevMonthTotal);
+    const changePercentage =
+      prevMonthTotal !== 0 ? round2((change / prevMonthTotal) * 100) : 0;
+    return {
+      currency: st.currency,
+      changeVsLastMonth: change,
+      changePercentage,
+    };
+  });
+
+  const primarySpendingChange = spendingChanges[0] ?? {
+    changeVsLastMonth: 0,
+    changePercentage: 0,
+  };
+  const spendingPrevMonthTotal = round2(
+    spendingGroup.wallets.reduce((sum, w) => sum + w.prevMonthBalance, 0)
+  );
+  const spendingChangeVsLastMonth = primarySpendingChange.changeVsLastMonth;
+  const spendingChangePercentage = primarySpendingChange.changePercentage;
 
   return {
-    totalNetWorth,
-    prevMonthTotal,
-    changeVsLastMonth,
-    changePercentage,
-    wallets: walletItems,
+    spendingTotals,
+    savedTotals,
+    spendingChangeVsLastMonth,
+    spendingPrevMonthTotal,
+    spendingChangePercentage,
+    spendingChanges,
+    groups,
   };
 }
 
 // -------------------------------------------------------------
 // 2. Balance over time
 // -------------------------------------------------------------
+
+export type BalanceOverTimeMode = 'spending' | 'saving';
+
+export interface BalanceOverTimeOptions {
+  mode?: BalanceOverTimeMode;
+}
 
 export interface BalanceOverTimePoint {
   month: string;
@@ -179,11 +267,21 @@ export interface WalletChartMeta {
   nameAr: string | null;
   nameEn: string | null;
   color: string;
+  currency: string;
   icon: string | null;
   finalBalance: number;
 }
 
+export interface CurrencyBalanceOverTime {
+  currency: string;
+  dataPoints: BalanceOverTimePoint[];
+  wallets: WalletChartMeta[];
+  finalTotal: number;
+}
+
 export interface BalanceOverTimeResult {
+  mode: BalanceOverTimeMode;
+  currencies: CurrencyBalanceOverTime[];
   dataPoints: BalanceOverTimePoint[];
   wallets: WalletChartMeta[];
 }
@@ -191,9 +289,21 @@ export interface BalanceOverTimeResult {
 export function balanceOverTimeReport(
   wallets: Wallet[],
   entries: EnrichedEntry[],
-  months: string[]
+  months: string[],
+  options?: BalanceOverTimeOptions | BalanceOverTimeMode
 ): BalanceOverTimeResult {
-  const activeWallets = wallets.filter((w) => !w.isArchived);
+  const mode: BalanceOverTimeMode =
+    typeof options === 'string' ? options : options?.mode ?? 'spending';
+
+  const activeWallets = wallets.filter((w) => {
+    if (w.isArchived) return false;
+    const purpose = w.purpose ?? 'spending';
+    if (mode === 'spending') {
+      return purpose === 'spending';
+    } else {
+      return purpose === 'goal' || purpose === 'investment';
+    }
+  });
 
   // Filter valid entries
   const validEntries = entries
@@ -202,54 +312,78 @@ export function balanceOverTimeReport(
 
   const sortedMonths = [...months].sort();
 
-  const dataPoints: BalanceOverTimePoint[] = sortedMonths.map((m) => {
-    const point: BalanceOverTimePoint = {
-      month: m,
-      total: 0,
-    };
+  // Find all distinct currencies
+  const distinctCurrencies = Array.from(
+    new Set(activeWallets.map((w) => w.currency || 'EGP'))
+  );
+  if (distinctCurrencies.length === 0) {
+    distinctCurrencies.push('EGP');
+  }
 
-    let monthTotal = 0;
-    for (const w of activeWallets) {
-      let bal = w.openingBalance || 0;
-      for (const e of validEntries) {
-        if (e.occurredOn.slice(0, 7) > m) break;
-        if (e.accountId === w.id) {
-          if (e.type === 'income') bal += e.amount;
-          else if (e.type === 'expense' || e.type === 'transfer') bal -= e.amount;
+  const currencies: CurrencyBalanceOverTime[] = distinctCurrencies.map((currency) => {
+    const currWallets = activeWallets.filter((w) => (w.currency || 'EGP') === currency);
+
+    const dataPoints: BalanceOverTimePoint[] = sortedMonths.map((m) => {
+      const point: BalanceOverTimePoint = {
+        month: m,
+        total: 0,
+      };
+
+      let monthTotal = 0;
+      for (const w of currWallets) {
+        let bal = w.openingBalance || 0;
+        for (const e of validEntries) {
+          if (e.occurredOn.slice(0, 7) > m) break;
+          if (e.accountId === w.id) {
+            if (e.type === 'income') bal += e.amount;
+            else if (e.type === 'expense' || e.type === 'transfer') bal -= e.amount;
+          }
+          if (e.type === 'transfer' && e.toAccountId === w.id) {
+            bal += e.amount;
+          }
         }
-        if (e.type === 'transfer' && e.toAccountId === w.id) {
-          bal += e.amount;
-        }
+        bal = round2(bal);
+        point[w.id] = bal;
+        monthTotal += bal;
       }
-      bal = round2(bal);
-      point[w.id] = bal;
-      monthTotal += bal;
-    }
 
-    point.total = round2(monthTotal);
-    return point;
-  });
+      point.total = round2(monthTotal);
+      return point;
+    });
 
-  const lastPoint = dataPoints[dataPoints.length - 1];
+    const lastPoint = dataPoints[dataPoints.length - 1];
 
-  const walletMetas: WalletChartMeta[] = activeWallets.map((w, index) => {
-    const defaultColors = ['#0F766E', '#1D4ED8', '#B45309', '#BE185D', '#6D28D9'];
-    const color = w.color || defaultColors[index % defaultColors.length];
-    const finalBalance = (lastPoint?.[w.id] as number) ?? round2(w.openingBalance);
+    const walletMetas: WalletChartMeta[] = currWallets.map((w, index) => {
+      const defaultColors = ['#0F766E', '#1D4ED8', '#B45309', '#BE185D', '#6D28D9'];
+      const color = w.color || defaultColors[index % defaultColors.length];
+      const finalBalance = (lastPoint?.[w.id] as number) ?? round2(w.openingBalance);
+
+      return {
+        id: w.id,
+        nameAr: w.nameAr,
+        nameEn: w.nameEn,
+        color,
+        currency,
+        icon: w.icon,
+        finalBalance,
+      };
+    });
+
+    const finalTotal = lastPoint?.total ?? 0;
 
     return {
-      id: w.id,
-      nameAr: w.nameAr,
-      nameEn: w.nameEn,
-      color,
-      icon: w.icon,
-      finalBalance,
+      currency,
+      dataPoints,
+      wallets: walletMetas,
+      finalTotal,
     };
   });
 
   return {
-    dataPoints,
-    wallets: walletMetas,
+    mode,
+    currencies,
+    dataPoints: currencies[0]?.dataPoints ?? [],
+    wallets: currencies.flatMap((c) => c.wallets),
   };
 }
 

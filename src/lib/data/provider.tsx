@@ -8,7 +8,7 @@
 // =========================================================
 
 import { useLiveQuery } from 'dexie-react-hooks';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { mockRepository } from './mock-repository';
 import { LiveRepository } from './live-repository';
 import { getLastNMonths } from '@/lib/reports/months';
@@ -22,9 +22,11 @@ import type {
   CategoryLevel,
   CategoryTotal,
   EnrichedEntry,
+  EnrichedInvestment,
   EnrichedRecurringRule,
   EnrichedSavingsGoal,
   Household,
+  InvestmentValue,
   Item,
   Member,
   MonthSummary,
@@ -186,6 +188,25 @@ export function useHouseholdMembers(): Member[] {
 export function useRepository(): Repository {
   const context = useContext(RepositoryContext);
   return context ?? getDefaultRepository();
+}
+
+/** ID of the user signed in on this phone (null if not known or not signed in). */
+export function useCurrentUserId(): string | null {
+  const repo = useRepository();
+
+  const subscribe = React.useCallback(
+    (onStoreChange: () => void) => {
+      if (typeof repo.onUserIdChange !== 'function') return () => {};
+      return repo.onUserIdChange(() => onStoreChange());
+    },
+    [repo]
+  );
+
+  const getSnapshot = React.useCallback(() => {
+    return repo.currentUserId || null;
+  }, [repo]);
+
+  return useSyncExternalStore(subscribe, getSnapshot, () => null);
 }
 
 // ---------- Live Query Hooks ----------
@@ -384,6 +405,32 @@ export function useSavingsGoals(includeArchived = false): EnrichedSavingsGoal[] 
       return repo.getSavingsGoals(includeArchived);
     },
     [repo, includeArchived],
+    undefined
+  );
+}
+
+export function useInvestments(includeArchived = false): EnrichedInvestment[] | undefined {
+  const repo = useRepository();
+
+  return useLiveQuery(
+    async () => {
+      if (typeof window === 'undefined') return [];
+      return repo.getInvestments(includeArchived);
+    },
+    [repo, includeArchived],
+    undefined
+  );
+}
+
+export function useInvestmentValues(accountId: string): InvestmentValue[] | undefined {
+  const repo = useRepository();
+
+  return useLiveQuery(
+    async () => {
+      if (typeof window === 'undefined' || !accountId) return [];
+      return repo.getInvestmentValues(accountId);
+    },
+    [repo, accountId],
     undefined
   );
 }

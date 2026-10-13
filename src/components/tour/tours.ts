@@ -4,7 +4,7 @@
  * in messages/<locale>/tour.json under `<tourId>.<stepId>.title` and `.body`.
  */
 
-export type TourId = 'welcome' | 'addEntry' | 'history' | 'reports' | 'settings';
+export type TourId = 'welcome' | 'addEntry' | 'money' | 'history' | 'reports' | 'settings';
 
 export interface TourStep {
   id: string;
@@ -34,6 +34,14 @@ export const TOURS: Record<TourId, TourStep[]> = {
     { id: 'details', target: 'entry-details', sheet: true },
     { id: 'save', target: 'entry-save', sheet: true },
   ],
+  money: [
+    { id: 'toSpend', route: '/', target: 'money-to-spend' },
+    { id: 'saved', route: '/', target: 'money-saved' },
+    { id: 'tabs', route: '/money', target: 'money-tabs' },
+    { id: 'goals', route: '/money' },
+    { id: 'investments', route: '/money' },
+    { id: 'value', route: '/money' },
+  ],
   history: [
     { id: 'search', route: '/history', target: 'history-search' },
     { id: 'period', route: '/history', target: 'history-period' },
@@ -52,10 +60,11 @@ export const TOURS: Record<TourId, TourStep[]> = {
 };
 
 /** The order guides are listed in the Help sheet. */
-export const GUIDE_ORDER: TourId[] = ['welcome', 'addEntry', 'history', 'reports', 'settings'];
+export const GUIDE_ORDER: TourId[] = ['welcome', 'addEntry', 'money', 'history', 'reports', 'settings'];
 
 /** Which guide fits the screen the person is on, listed first in the Help sheet. */
 export function guideForPath(pathname: string): TourId {
+  if (pathname.startsWith('/money')) return 'money';
   if (pathname.startsWith('/history')) return 'history';
   if (pathname.startsWith('/reports')) return 'reports';
   if (pathname.startsWith('/settings')) return 'settings';

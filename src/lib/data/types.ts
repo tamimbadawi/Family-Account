@@ -7,6 +7,8 @@
 export type CategoryKind = 'expense' | 'income';
 export type EntryType = 'expense' | 'income' | 'transfer';
 export type WalletType = 'cash' | 'bank' | 'card' | 'wallet';
+export type WalletPurpose = 'spending' | 'goal' | 'investment';
+export type InvestmentKind = 'gold' | 'certificate' | 'stocks' | 'property' | 'other';
 export type MemberRole = 'owner' | 'member';
 export type MemberLocale = 'ar' | 'en';
 
@@ -41,12 +43,34 @@ export interface Wallet {
   color: string | null;
   sortOrder: number;
   isArchived: boolean;
+  purpose: WalletPurpose;
+  investmentKind: InvestmentKind | null;
+  maturesOn: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface WalletBalance extends Wallet {
   balance: number;
+}
+
+export interface InvestmentValue {
+  id: string;
+  householdId: string;
+  accountId: string;
+  value: number;
+  valuedOn: string;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export interface EnrichedInvestment extends WalletBalance {
+  putIn: number; // = balance of the account
+  worth: number; // see 4.6
+  gain: number; // worth - putIn
+  lastValuedOn: string | null;
 }
 
 export interface Category {
@@ -321,6 +345,9 @@ export interface AccountRow {
   is_archived: boolean;
   /** Live mode: one of the starter sample banks (0015); hidden when the samples are cleared. */
   is_sample?: boolean;
+  purpose?: WalletPurpose | null;
+  investment_kind?: InvestmentKind | null;
+  matures_on?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -435,6 +462,18 @@ export interface SavingsGoalRow {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface InvestmentValueRow {
+  id: string;
+  household_id: string;
+  account_id: string;
+  value: number;
+  valued_on: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
 }
 
 /** Receipt photo kept on the phone (mock mode); Phase B uploads it to the `receipts` bucket. */

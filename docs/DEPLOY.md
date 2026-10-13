@@ -12,13 +12,16 @@ Changes that are finished and checked, waiting to go live. Nothing here is live 
 
 | PR | What it changes |
 |---|---|
-| [#110](https://github.com/tamimbadawi/Family-Account/pull/110) | Settings → More settings shows "Admin panel" (opens `/operator`) for the operator only, so it can be reached from the installed iPhone app |
-| [#111](https://github.com/tamimbadawi/Family-Account/pull/111) | Docs only: this file becomes the single deploy record (older history, parked work and known issues moved in from the local `DEPLOY-LOG.md`) |
+| — | Nothing waiting |
 
 ## Deployed
 
 | Date | PR | What it changed |
 |---|---|---|
+| 2026-10-13 | [#113](https://github.com/tamimbadawi/Family-Account/pull/113), [#116](https://github.com/tamimbadawi/Family-Account/pull/116), [#117](https://github.com/tamimbadawi/Family-Account/pull/117), [#118](https://github.com/tamimbadawi/Family-Account/pull/118), [#119](https://github.com/tamimbadawi/Family-Account/pull/119), [#120](https://github.com/tamimbadawi/Family-Account/pull/120) | Money restructure: Home shows "To spend" and "Saved"; Our money is a page (`/money`) with Spending and Saving; goals moved to `/money/goals`; investments (gold, certificate, stocks, property, other) with Add money, Take out and Update value; wallet pickers grouped by purpose; Reports wallet card in three groups; "What we have" and Balance over time no longer add spending and saved together; Our money help guide. Migration `0026_money_purposes` applied first |
+| 2026-10-13 | [#115](https://github.com/tamimbadawi/Family-Account/pull/115) | Speed: Settings → Family, Currencies and the name on Home open from the copy on the phone and no longer wait on the server; a test fails if a screen calls the server when it opens |
+| 2026-10-13 | [#110](https://github.com/tamimbadawi/Family-Account/pull/110) | Settings → More settings shows "Admin panel" (opens `/operator`) for the operator only, so it can be reached from the installed iPhone app |
+| 2026-10-13 | [#114](https://github.com/tamimbadawi/Family-Account/pull/114) | Tooling (merged with the release): `ui:feature` and `ui:site` checks for the agents. Small phones: the Welcome form scrolls to its button, entry captions wrap instead of being cut |
 | 2026-10-12 | [#109](https://github.com/tamimbadawi/Family-Account/pull/109) | Tap any total to see the entries behind it: Reports categories (incl. search results), Overview totals and donut, every report (goals, people, wallets, bills, budgets, income, months), Home top categories. History opens already filtered, with a Back button; entries in drill-down lists show their date; arrows point the reading direction in Arabic |
 | 2026-10-12 | [#108](https://github.com/tamimbadawi/Family-Account/pull/108) | History shows the total of a search or filter (e.g. "bread": money out and how many times this month), with "See its history" to open that item's trend card; Reports → All categories gets a search box (find a category, group or item by name with its total this month) |
 | 2026-10-12 | [#107](https://github.com/tamimbadawi/Family-Account/pull/107) | Fix: the installed app no longer opens with empty Reports and History after waking up (it never empties its copy without a sign-in, and pulls again when the sign-in returns) |

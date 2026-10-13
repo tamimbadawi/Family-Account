@@ -30,7 +30,7 @@ describe('MockRepository with fake-indexeddb', () => {
     expect(names).toContain('Baba');
 
     const wallets = await repo.getWallets();
-    expect(wallets).toHaveLength(6);
+    expect(wallets).toHaveLength(8);
     expect(wallets.map((w) => w.nameAr)).toContain('كاش');
     expect(wallets.map((w) => w.nameAr)).toContain('البنك الأهلي');
     expect(wallets.map((w) => w.nameAr)).toContain('بنك CIB');
@@ -62,7 +62,7 @@ describe('MockRepository with fake-indexeddb', () => {
 
   it('calculates wallet balances accurately factoring opening balance and transactions', async () => {
     const balances = await repo.walletBalances();
-    expect(balances).toHaveLength(6);
+    expect(balances).toHaveLength(8);
 
     const cashWallet = balances.find((w) => w.id === WALLET_CASH_ID);
     const bankWallet = balances.find((w) => w.id === WALLET_BANK_ID);
@@ -915,6 +915,95 @@ describe('MockRepository with fake-indexeddb', () => {
       );
     });
   });
+
+  describe('investments (M1)', () => {
+    it('rejects adding an investment wallet without investmentKind', async () => {
+      const db = new FamilyAccountsDB('test-inv-1');
+      const repo = new MockRepository(db);
+      await repo.ensureSeeded();
+
+      await expect(
+        repo.addWallet({
+          nameEn: 'My Gold',
+          type: 'wallet',
+          purpose: 'investment',
+        })
+      ).rejects.toThrow('Investment account must have an investmentKind');
+    });
+
+    it('creates an investment wallet with kind and manages values', async () => {
+      const db = new FamilyAccountsDB('test-inv-2');
+      const repo = new MockRepository(db);
+      await repo.ensureSeeded();
+
+      const inv = await repo.addWallet({
+        nameEn: 'Gold 24k',
+        type: 'wallet',
+        purpose: 'investment',
+        investmentKind: 'gold',
+        openingBalance: 80000,
+      });
+
+      expect(inv.purpose).toBe('investment');
+      expect(inv.investmentKind).toBe('gold');
+
+      let list = await repo.getInvestments();
+      const created = list.find((i) => i.id === inv.id);
+      expect(created).toBeDefined();
+      expect(created?.putIn).toBe(80000);
+      expect(created?.worth).toBe(80000);
+      expect(created?.gain).toBe(0);
+
+      // Add a value update
+      const val = await repo.addInvestmentValue({
+        accountId: inv.id,
+        value: 96000,
+        valuedOn: '2026-10-10',
+      });
+      expect(val.value).toBe(96000);
+
+      list = await repo.getInvestments();
+      const updated = list.find((i) => i.id === inv.id);
+      expect(updated?.worth).toBe(96000);
+      expect(updated?.gain).toBe(16000);
+      expect(updated?.lastValuedOn).toBe('2026-10-10');
+
+      const values = await repo.getInvestmentValues(inv.id);
+      expect(values.length).toBe(1);
+      expect(values[0].id).toBe(val.id);
+
+      // Soft delete value
+      await repo.softDeleteInvestmentValue(val.id);
+      const afterDelete = await repo.getInvestmentValues(inv.id);
+      expect(afterDelete.length).toBe(0);
+
+      list = await repo.getInvestments();
+      const reverted = list.find((i) => i.id === inv.id);
+      expect(reverted?.worth).toBe(80000);
+      expect(reverted?.gain).toBe(0);
+    });
+
+    it('rejects negative investment values', async () => {
+      const db = new FamilyAccountsDB('test-inv-3');
+      const repo = new MockRepository(db);
+      await repo.ensureSeeded();
+
+      const inv = await repo.addWallet({
+        nameEn: 'Gold 21k',
+        type: 'wallet',
+        purpose: 'investment',
+        investmentKind: 'gold',
+      });
+
+      await expect(
+        repo.addInvestmentValue({
+          accountId: inv.id,
+          value: -100,
+        })
+      ).rejects.toThrow('Investment value cannot be negative');
+    });
+  });
 });
+
 
 

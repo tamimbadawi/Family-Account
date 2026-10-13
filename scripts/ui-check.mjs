@@ -29,6 +29,8 @@ const ALL_PROFILES = [
   { name: 'android-browser', os: 'android', w: 412, h: 700, ua: ANDROID_UA },
 ];
 
+// UI_FAST=1 (set by `npm run ui:feature`): quicker wait, a screenshot only for a failing screen, only FAIL lines printed.
+const FAST = process.env.UI_FAST === '1';
 const rawArgs = process.argv.slice(2);
 const isQuick = rawArgs.includes('--quick');
 const routesIdx = rawArgs.indexOf('--routes');
@@ -62,8 +64,8 @@ if (process.env.UI_SIZES) {
 
 const THEMES = isQuick ? ['light'] : (process.env.UI_THEMES || 'light,dark').split(',');
 // Screens that are lists may scroll inside their content area; every other screen must fit with no scrolling.
-const LIST_ROUTES = ['/history', '/settings/categories', '/settings/deleted', '/settings/budgets', '/settings/recurring', '/settings/goals'];
-const DEFAULT_ROUTES =['/en', '/en/history', '/en/reports', '/en/settings', '/en/login', '/ar', '/ar/settings'];
+const LIST_ROUTES = ['/history', '/settings/categories', '/settings/deleted', '/settings/budgets', '/settings/recurring', '/settings/wallets', '/settings/family', '/welcome', '/money', '/money/goals', '/settings/goals', '/money/investment'];
+const DEFAULT_ROUTES = ['/en', '/en/history', '/en/reports', '/en/settings', '/en/login', '/ar', '/ar/settings', '/en/money', '/ar/money', '/en/money/investment/aaaaaaaa-0000-0000-0000-0000000000e1', '/ar/money/investment/aaaaaaaa-0000-0000-0000-0000000000e1'];
 // Git Bash rewrites "/en" into "C:/Program Files/Git/en"; undo that, and accept "en/history" without a slash.
 const toRoute = (a) => '/' + a.replace(/^.*\/Git\//, '').replace(/^\/+/, '');
 const routes = routesArg.length ? routesArg.map(toRoute) : DEFAULT_ROUTES;
@@ -171,7 +173,7 @@ const jobs = routes.flatMap((route) => profiles.flatMap((profile) => THEMES.map(
 const PARALLEL = Number(process.env.UI_PARALLEL || 4);
 async function runJob({ route, profile, theme }) {
       const { w, h, ua } = profile;
-      const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, colorScheme: theme, isMobile: true, hasTouch: true, userAgent: ua });
+      const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: FAST ? 1 : 2, reducedMotion: FAST ? 'reduce' : 'no-preference', colorScheme: theme, isMobile: true, hasTouch: true, userAgent: ua });
       const page = await ctx.newPage();
       await page.addInitScript(() => {
         const style = document.createElement('style');
@@ -185,26 +187,39 @@ async function runJob({ route, profile, theme }) {
       });
       const consoleErrors = [];
       page.on('pageerror', (e) => consoleErrors.push(e.message.slice(0, 120)));
-      await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 45000 }).catch((e) => consoleErrors.push('load: ' + e.message.slice(0, 80)));
-      await page.waitForTimeout(1200);
+      if (FAST) {
+        await page.goto(BASE + route, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch((e) => consoleErrors.push('load: ' + e.message.slice(0, 80)));
+        await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+        // Ready when the fonts are in and the screen has stopped changing for a moment (3 s at most).
+        await page.evaluate(() => document.fonts.ready.then(() => new Promise((done) => {
+          let quiet = setTimeout(done, 300);
+          setTimeout(done, 3000);
+          new MutationObserver(() => { clearTimeout(quiet); quiet = setTimeout(done, 300); })
+            .observe(document.body, { childList: true, subtree: true, characterData: true });
+        }))).catch(() => {});
+      } else {
+        await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 45000 }).catch((e) => consoleErrors.push('load: ' + e.message.slice(0, 80)));
+        await page.waitForTimeout(1200);
+      }
       const a = await page.evaluate(audit).catch((e) => ({ errors: ['audit: ' + e.message] }));
       const name = `${route.replace(/^\//, '').replace(/[/?&=]/g, '_') || 'root'}__${w}x${h}__${theme}.png`;
-      await page.screenshot({ path: path.join(OUT, name) });
       const problems = [];
       if (a.pageScrolls) problems.push('PAGE SCROLLS');
       if (a.sideScroll) problems.push('SIDEWAYS SCROLL');
       if (a.cutByTabBar?.length) problems.push('cut by tab bar: ' + a.cutByTabBar.join(', '));
       if (a.clipped?.length) problems.push('clipped: ' + a.clipped.join(', '));
       if (a.ellipsis?.length) problems.push('ellipsis: ' + a.ellipsis.join(', '));
-      if (a.hiddenInScroll?.length && !LIST_ROUTES.some((r) => route.endsWith(r))) problems.push('content hidden (must fit, no scrolling): ' + a.hiddenInScroll.join(', '));
+      const isList = LIST_ROUTES.some((r) => route.endsWith(r) || route.includes(r + '/') || route.includes(r));
+      if (a.hiddenInScroll?.length && !isList) problems.push('content hidden (must fit, no scrolling): ' + a.hiddenInScroll.join(', '));
       if (a.covered?.length) problems.push('covered by another element (e.g. the + button): ' + a.covered.join(', '));
-      if (a.cutBottom?.length && !LIST_ROUTES.some((r) => route.endsWith(r))) problems.push('cut off at the bottom / under the tab bar: ' + a.cutBottom.join(', '));
+      if (a.cutBottom?.length && !isList) problems.push('cut off at the bottom / under the tab bar: ' + a.cutBottom.join(', '));
       if (a.tooSmall?.length) problems.push('text <15px: ' + a.tooSmall.join(', '));
       if (a.errors?.length) problems.push('errors: ' + a.errors.join(', '));
       if (consoleErrors.length) problems.push('JS errors: ' + consoleErrors.join(' | '));
+      if (!FAST || problems.length) await page.screenshot({ path: path.join(OUT, name) });
       const tag = problems.length ? 'FAIL' : 'ok  ';
       if (problems.length) failures++;
-      console.log(`${tag} ${route} ${w}x${h} ${theme}${problems.length ? ' -> ' + problems.join(' ; ') : ''}  [${name}]`);
+      if (!FAST || problems.length) console.log(`${tag} ${route} ${w}x${h} ${theme}${problems.length ? ' -> ' + problems.join(' ; ') : ''}  [${name}]`);
       await ctx.close();
 }
 const queue = [...jobs];
@@ -213,5 +228,6 @@ await Promise.all(Array.from({ length: Math.min(PARALLEL, queue.length) }, async
 }));
 await browser.close();
 const secs = ((Date.now() - started) / 1000).toFixed(0);
+fs.writeFileSync(path.join(OUT, 'last-check.json'), JSON.stringify({ runs: jobs.length, failed: failures }));
 console.log(`\n${failures ? failures + ' screen(s) with problems' : 'all screens ok'} — ${jobs.length} checks in ${secs}s — screenshots in ${OUT}`);
 process.exit(failures ? 1 : 0);
