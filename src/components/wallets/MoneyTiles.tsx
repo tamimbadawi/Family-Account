@@ -53,10 +53,10 @@ export function MoneyTiles() {
       <Link
         href="/money?tab=spending"
         data-tour="money-to-spend"
-        className="flex h-16 min-w-0 items-center gap-1.5 sm:gap-2 rounded-card bg-surface px-2 sm:px-3 shadow-card transition-transform active:scale-[0.98] select-none"
+        className="flex h-16 min-w-0 items-center gap-1 sm:gap-2 rounded-card bg-surface px-1.5 sm:px-3 shadow-card transition-transform active:scale-[0.98] select-none"
       >
-        <div className="flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-2xl bg-surface-2 text-ink">
-          <WalletIcon className="size-5" />
+        <div className="flex size-8 sm:size-10 shrink-0 items-center justify-center rounded-2xl bg-surface-2 text-ink">
+          <WalletIcon className="size-4 sm:size-5" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="text-caption text-ink-muted truncate leading-tight">{t('toSpend')}</div>
@@ -67,10 +67,10 @@ export function MoneyTiles() {
       <Link
         href="/money?tab=saving"
         data-tour="money-saved"
-        className="flex h-16 min-w-0 items-center gap-1.5 sm:gap-2 rounded-card bg-surface px-2 sm:px-3 shadow-card transition-transform active:scale-[0.98] select-none"
+        className="flex h-16 min-w-0 items-center gap-1 sm:gap-2 rounded-card bg-surface px-1.5 sm:px-3 shadow-card transition-transform active:scale-[0.98] select-none"
       >
-        <div className="flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-2xl bg-income-soft text-income">
-          <PiggyBank className="size-5" />
+        <div className="flex size-8 sm:size-10 shrink-0 items-center justify-center rounded-2xl bg-income-soft text-income">
+          <PiggyBank className="size-4 sm:size-5" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="text-caption text-ink-muted truncate leading-tight">{t('saved')}</div>
