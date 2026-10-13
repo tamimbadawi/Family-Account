@@ -11,6 +11,7 @@ import type {
   CategoryRow,
   HouseholdMemberRow,
   HouseholdRow,
+  InvestmentValueRow,
   ItemRow,
   SubcategoryRow,
   TransactionRow,
@@ -20,13 +21,15 @@ export const DEMO_HOUSEHOLD_ID = '11111111-1111-1111-1111-111111111111';
 export const USER_MAMA_ID = '22222222-2222-2222-2222-222222222222';
 export const USER_BABA_ID = '33333333-3333-3333-3333-333333333333';
 
-export const SEED_VERSION = 5;
+export const SEED_VERSION = 6;
 
 export const WALLET_CASH_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
 export const WALLET_BANK_ID = 'aaaaaaaa-0000-0000-0000-000000000002'; // NBE
 export const WALLET_NBE_ID = WALLET_BANK_ID;
 export const WALLET_CIB_ID = 'aaaaaaaa-0000-0000-0000-000000000003';
 export const WALLET_BANQUE_MISR_ID = 'aaaaaaaa-0000-0000-0000-000000000004';
+export const WALLET_INVEST_GOLD_ID = 'aaaaaaaa-0000-0000-0000-0000000000e1';
+export const WALLET_INVEST_CERT_ID = 'aaaaaaaa-0000-0000-0000-0000000000e2';
 
 export const ITEM_EXPENSE_BALANCE_CORRECTION_ID = 'i0000007-0000-0000-0000-000000000001';
 export const ITEM_INCOME_BALANCE_CORRECTION_ID = 'i0000007-0000-0000-0000-000000000002';
@@ -128,6 +131,42 @@ export const DEFAULT_WALLETS: AccountRow[] = [
     purpose: 'spending',
     investment_kind: null,
     matures_on: null,
+    created_at: '2026-06-01T00:00:00.000Z',
+    updated_at: '2026-06-01T00:00:00.000Z',
+  },
+  {
+    id: WALLET_INVEST_GOLD_ID,
+    household_id: DEMO_HOUSEHOLD_ID,
+    name_ar: 'ذهب',
+    name_en: 'Gold',
+    type: 'wallet',
+    opening_balance: 80000,
+    currency: 'EGP',
+    icon: 'coins',
+    color: '#D97706',
+    sort_order: 10,
+    is_archived: false,
+    purpose: 'investment',
+    investment_kind: 'gold',
+    matures_on: null,
+    created_at: '2026-06-01T00:00:00.000Z',
+    updated_at: '2026-06-01T00:00:00.000Z',
+  },
+  {
+    id: WALLET_INVEST_CERT_ID,
+    household_id: DEMO_HOUSEHOLD_ID,
+    name_ar: 'شهادة بنكية',
+    name_en: 'Bank certificate',
+    type: 'bank',
+    opening_balance: 150000,
+    currency: 'EGP',
+    icon: 'landmark',
+    color: '#0284C7',
+    sort_order: 11,
+    is_archived: false,
+    purpose: 'investment',
+    investment_kind: 'certificate',
+    matures_on: `${new Date().getFullYear() + 2}-03-01`,
     created_at: '2026-06-01T00:00:00.000Z',
     updated_at: '2026-06-01T00:00:00.000Z',
   },
@@ -417,6 +456,40 @@ export function toLocalDateString(d: Date): string {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
+
+export function generateSampleInvestmentValues(
+  base: Date = new Date(),
+  householdId = DEMO_HOUSEHOLD_ID
+): InvestmentValueRow[] {
+  const goldDate = new Date(base.getTime() - 5 * 24 * 60 * 60 * 1000);
+  const certDate = new Date(base.getTime() - 3 * 24 * 60 * 60 * 1000);
+  return [
+    {
+      id: 'bbbbbbbb-0000-0000-0000-0000000000e1',
+      household_id: householdId,
+      account_id: WALLET_INVEST_GOLD_ID,
+      value: 96000,
+      valued_on: toLocalDateString(goldDate),
+      created_by: USER_MAMA_ID,
+      created_at: goldDate.toISOString(),
+      updated_at: goldDate.toISOString(),
+      deleted_at: null,
+    },
+    {
+      id: 'bbbbbbbb-0000-0000-0000-0000000000e2',
+      household_id: householdId,
+      account_id: WALLET_INVEST_CERT_ID,
+      value: 154000,
+      valued_on: toLocalDateString(certDate),
+      created_by: USER_MAMA_ID,
+      created_at: certDate.toISOString(),
+      updated_at: certDate.toISOString(),
+      deleted_at: null,
+    },
+  ];
+}
+
+export const DEFAULT_INVESTMENT_VALUES: InvestmentValueRow[] = generateSampleInvestmentValues();
 
 // Generates ~120 realistic entries over the last 3 months
 export function generateRealisticEntries(
