@@ -221,21 +221,128 @@ describe('wallet-reports pure functions', () => {
     expect(isBalanceCorrection({ itemId: 'regular-item' })).toBe(false);
   });
 
-  it('netWorthReport calculates total net worth and wallet breakdown', () => {
+  it('netWorthReport groups wallets, returns per-currency totals, and excludes totalNetWorth', () => {
     const report = netWorthReport(mockWallets, mockBalances, mockEntries, '2026-10');
-    expect(report.totalNetWorth).toBe(64000); // 4000 + 35000 + 25000
-    expect(report.wallets).toHaveLength(3);
-    expect(report.wallets[0].id).toBe('w-nbe');
-    expect(report.wallets[0].currentBalance).toBe(35000);
-    expect(report.wallets[0].sharePercentage).toBeGreaterThan(50);
+    // Ensure totalNetWorth is removed
+    expect('totalNetWorth' in report).toBe(false);
+    expect(report.spendingTotals).toEqual([{ currency: 'EGP', amount: 64000 }]);
+    expect(report.savedTotals).toEqual([]);
+    expect(report.groups).toHaveLength(3);
+
+    const spendingGroup = report.groups.find((g) => g.purpose === 'spending')!;
+    expect(spendingGroup.wallets).toHaveLength(3);
+    expect(spendingGroup.wallets[0].id).toBe('w-nbe');
+    expect(spendingGroup.wallets[0].currentBalance).toBe(35000);
+    expect(spendingGroup.wallets[0].sharePercentage).toBeGreaterThan(50);
   });
 
-  it('balanceOverTimeReport produces points for each month', () => {
+  it('netWorthReport: two currencies are not added together', () => {
+    const multiCurrencyWallets: Wallet[] = [
+      { ...mockWallets[0], id: 'w-egp', currency: 'EGP', openingBalance: 5000 },
+      { ...mockWallets[1], id: 'w-usd', currency: 'USD', openingBalance: 1000 },
+    ];
+    const multiBalances: WalletBalance[] = [
+      { ...multiCurrencyWallets[0], balance: 5000 },
+      { ...multiCurrencyWallets[1], balance: 1000 },
+    ];
+
+    const report = netWorthReport(multiCurrencyWallets, multiBalances, [], '2026-10');
+    expect(report.spendingTotals).toEqual([
+      { currency: 'EGP', amount: 5000 },
+      { currency: 'USD', amount: 1000 },
+    ]);
+    // Ensure they are never summed across currencies
+    expect(report.spendingTotals).toHaveLength(2);
+  });
+
+  it('netWorthReport: an investment uses worth instead of balance', () => {
+    const investWallet: Wallet = {
+      ...mockWallets[0],
+      id: 'w-invest',
+      purpose: 'investment',
+      openingBalance: 80000,
+    };
+    const balances: WalletBalance[] = [{ ...investWallet, balance: 80000 }];
+    const investments = [{ id: 'w-invest', worth: 96000 }];
+
+    const report = netWorthReport([investWallet], balances, [], '2026-10', investments);
+    const investGroup = report.groups.find((g) => g.purpose === 'investment')!;
+    expect(investGroup.wallets).toHaveLength(1);
+    expect(investGroup.wallets[0].currentBalance).toBe(96000);
+    expect(report.savedTotals).toEqual([{ currency: 'EGP', amount: 96000 }]);
+  });
+
+  it('netWorthReport: a wallet with no purpose lands in spending', () => {
+    const noPurposeWallet: Wallet = {
+      ...mockWallets[0],
+      id: 'w-no-purpose',
+      purpose: undefined as unknown as Wallet['purpose'],
+      openingBalance: 1200,
+    };
+    const report = netWorthReport([noPurposeWallet], [{ ...noPurposeWallet, balance: 1200 }], [], '2026-10');
+    const spendingGroup = report.groups.find((g) => g.purpose === 'spending')!;
+    expect(spendingGroup.wallets.some((w) => w.id === 'w-no-purpose')).toBe(true);
+  });
+
+  it('netWorthReport: archived wallets are skipped', () => {
+    const archivedWallet: Wallet = {
+      ...mockWallets[0],
+      id: 'w-archived',
+      isArchived: true,
+      openingBalance: 5000,
+    };
+    const report = netWorthReport([archivedWallet], [{ ...archivedWallet, balance: 5000 }], [], '2026-10');
+    for (const g of report.groups) {
+      expect(g.wallets.some((w) => w.id === 'w-archived')).toBe(false);
+    }
+    expect(report.spendingTotals).toEqual([]);
+    expect(report.savedTotals).toEqual([]);
+  });
+
+  it('balanceOverTimeReport produces points for each month in spending mode', () => {
     const report = balanceOverTimeReport(mockWallets, mockEntries, ['2026-09', '2026-10']);
     expect(report.dataPoints).toHaveLength(2);
     expect(report.dataPoints[0].month).toBe('2026-09');
     expect(report.dataPoints[1].month).toBe('2026-10');
     expect(report.wallets).toHaveLength(3);
+    expect(report.mode).toBe('spending');
+  });
+
+  it('balanceOverTimeReport filters by spending and saving modes', () => {
+    const mixedWallets: Wallet[] = [
+      { ...mockWallets[0], id: 'w-spend', purpose: 'spending', openingBalance: 1000 },
+      { ...mockWallets[1], id: 'w-goal', purpose: 'goal', openingBalance: 2000 },
+      { ...mockWallets[2], id: 'w-inv', purpose: 'investment', openingBalance: 3000 },
+    ];
+
+    const spendingReport = balanceOverTimeReport(mixedWallets, [], ['2026-10'], 'spending');
+    expect(spendingReport.wallets).toHaveLength(1);
+    expect(spendingReport.wallets[0].id).toBe('w-spend');
+    expect(spendingReport.dataPoints[0].total).toBe(1000);
+
+    const savingReport = balanceOverTimeReport(mixedWallets, [], ['2026-10'], 'saving');
+    expect(savingReport.wallets).toHaveLength(2);
+    expect(savingReport.wallets.map((w) => w.id)).toEqual(['w-goal', 'w-inv']);
+    expect(savingReport.dataPoints[0].total).toBe(5000); // 2000 + 3000
+  });
+
+  it('balanceOverTimeReport: two currencies have separate charts and are not added together', () => {
+    const multiCurWallets: Wallet[] = [
+      { ...mockWallets[0], id: 'w-egp', currency: 'EGP', openingBalance: 4000 },
+      { ...mockWallets[1], id: 'w-usd', currency: 'USD', openingBalance: 500 },
+    ];
+
+    const report = balanceOverTimeReport(multiCurWallets, [], ['2026-10']);
+    expect(report.currencies).toHaveLength(2);
+
+    const egp = report.currencies.find((c) => c.currency === 'EGP')!;
+    const usd = report.currencies.find((c) => c.currency === 'USD')!;
+
+    expect(egp.wallets).toHaveLength(1);
+    expect(egp.dataPoints[0].total).toBe(4000);
+
+    expect(usd.wallets).toHaveLength(1);
+    expect(usd.dataPoints[0].total).toBe(500);
   });
 
   it('inOutPerWalletReport excludes balance corrections from moneyIn and moneyOut', () => {

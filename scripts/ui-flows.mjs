@@ -634,7 +634,49 @@ const FLOWS = {
       await page.evaluate(() => window.scrollTo(0, 0));
 
       // Test interactive controls per report
+      const moneyMsgs = {
+        en: { toSpend: 'To spend', saved: 'Saved', spending: 'Spending', saving: 'Saving' },
+        ar: { toSpend: 'للصرف', saved: 'متحوّش', spending: 'الصرف', saving: 'التحويش' },
+      }[locale];
+
+      if (rId === 'net-worth') {
+        const toSpendLabel = page.getByText(moneyMsgs.toSpend).first();
+        await assertUsable(page, toSpendLabel, `To spend label on net-worth (${locale}/${size})`);
+        const savedLabel = page.getByText(moneyMsgs.saved).first();
+        await assertUsable(page, savedLabel, `Saved label on net-worth (${locale}/${size})`);
+
+        const forbiddenTotal = locale === 'ar' ? 'إجمالي الفلوس' : 'Total net worth';
+        const totalCount = await page.getByText(forbiddenTotal).count();
+        if (totalCount > 0) {
+          throw new Error(`Total net worth found on net-worth (${locale}/${size})`);
+        }
+      }
+
       if (rId === 'balance-over-time') {
+        // Opens on Spending by default
+        const spendingTab = page.getByRole('tab', { name: moneyMsgs.spending });
+        await assertUsable(page, spendingTab, `Spending tab on balance-over-time (${locale}/${size})`);
+        const isSpendingSelected = await spendingTab.getAttribute('aria-selected');
+        if (isSpendingSelected !== 'true') {
+          throw new Error(`balance-over-time did not open on Spending (${locale}/${size})`);
+        }
+
+        // Switches to Saving
+        const savingTab = page.getByRole('tab', { name: moneyMsgs.saving });
+        await assertUsable(page, savingTab, `Saving tab on balance-over-time (${locale}/${size})`);
+        await savingTab.click();
+        await sleep(300);
+        const isSavingSelected = await savingTab.getAttribute('aria-selected');
+        if (isSavingSelected !== 'true') {
+          throw new Error(`balance-over-time failed to switch to Saving (${locale}/${size})`);
+        }
+        const savingNote = page.getByText(reportsMessages[locale].library.savingPutInNote);
+        await assertUsable(page, savingNote, `Saving put in note on balance-over-time (${locale}/${size})`);
+
+        // Switch back to spending
+        await spendingTab.click();
+        await sleep(300);
+
         const p12m = page.getByRole('button', { name: reportsMessages[locale].library.last12Months });
         await assertUsable(page, p12m, `Last 12 months button on ${rId} (${locale}/${size})`);
         await p12m.click();
