@@ -87,6 +87,22 @@ export function money(
 }
 
 /**
+ * Formats a quantity with Western digits (0–9), up to 2 decimals, no trailing zeros.
+ * Examples:
+ *   quantity(20, 'en') => "20"
+ *   quantity(20.5, 'en') => "20.5"
+ *   quantity(20.55, 'ar') => "20.55"
+ */
+export function quantity(n: number, locale: string = 'en'): string {
+  const isAr = locale.startsWith('ar');
+  return new Intl.NumberFormat(isAr ? 'ar-EG' : 'en-EG', {
+    numberingSystem: 'latn',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(n);
+}
+
+/**
  * Formats a total amount into a compact numeric value and separate currency unit
  * designed specifically for center labels inside donut and pie charts.
  * Prevents text overflow and clipping by keeping the number and unit strictly sized.

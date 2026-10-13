@@ -34,7 +34,11 @@ const FLOW_ROUTES = {
   investment_add: ['', '/money'],
   investment_paid: ['', '/money'],
   investment_value: ['', '/money', '/money/investment/[id]'],
+  investment_value_edit: ['/money/investment/[id]'],
   investment_take: ['', '/money', '/money/investment/[id]'],
+  investment_gold_add: ['', '/money'],
+  investment_gold_price: ['', '/money', '/money/investment/[id]'],
+  investment_gold_take: ['', '/money', '/money/investment/[id]'],
 };
 
 const posix = (p) => p.split(path.sep).join('/');

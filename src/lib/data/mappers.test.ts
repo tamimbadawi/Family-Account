@@ -93,6 +93,9 @@ describe('mappers', () => {
       purpose: 'spending',
       investment_kind: null,
       matures_on: null,
+      unit: null,
+      karat: null,
+      opening_quantity: null,
       created_at: '2026-01-01T00:00:00.000Z',
       updated_at: '2026-01-01T00:00:00.000Z',
     };
@@ -103,6 +106,9 @@ describe('mappers', () => {
     expect(domain.purpose).toBe('spending');
     expect(domain.investmentKind).toBeNull();
     expect(domain.maturesOn).toBeNull();
+    expect(domain.unit).toBeNull();
+    expect(domain.karat).toBeNull();
+    expect(domain.openingQuantity).toBeNull();
     expect(toAccountRow(domain)).toEqual(row);
   });
 
@@ -194,6 +200,7 @@ describe('mappers', () => {
       item_id: 'i-1',
       note: 'فاتورة الكهرباء',
       photo_path: 'h-1/t-1.jpg',
+      quantity: null,
       created_by: 'u-1',
       updated_by: null,
       created_at: '2026-10-06T10:00:00.000Z',
@@ -204,6 +211,7 @@ describe('mappers', () => {
     expect(domain.amount).toBe(450.75);
     expect(domain.occurredOn).toBe('2026-10-06');
     expect(domain.photoPath).toBe('h-1/t-1.jpg');
+    expect(domain.quantity).toBeNull();
     expect(toTransactionRow(domain)).toEqual(row);
   });
 
@@ -214,6 +222,7 @@ describe('mappers', () => {
       account_id: 'w-inv',
       value: 96000.5,
       valued_on: '2026-10-10',
+      unit_price: null,
       created_by: 'u-1',
       created_at: '2026-10-10T12:00:00.000Z',
       updated_at: '2026-10-10T12:00:00.000Z',
@@ -226,6 +235,7 @@ describe('mappers', () => {
       accountId: 'w-inv',
       value: 96000.5,
       valuedOn: '2026-10-10',
+      unitPrice: null,
       createdBy: 'u-1',
       createdAt: '2026-10-10T12:00:00.000Z',
       updatedAt: '2026-10-10T12:00:00.000Z',
@@ -234,4 +244,5 @@ describe('mappers', () => {
     expect(toInvestmentValueRow(domain)).toEqual(row);
   });
 });
+
 

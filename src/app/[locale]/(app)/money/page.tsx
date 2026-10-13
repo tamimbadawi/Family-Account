@@ -12,7 +12,7 @@ import {
   useWallets,
 } from '@/lib/data/provider';
 import { totalsByCurrency } from '@/lib/money/groups';
-import { money, pickName } from '@/lib/format';
+import { money, pickName, quantity } from '@/lib/format';
 import { historyHref } from '@/lib/history/link';
 import { useEntrySheet } from '@/components/entry/EntrySheetContext';
 import { getWalletTypeIcon } from '@/components/wallets/wallet-type-icon';
@@ -378,7 +378,13 @@ function MoneyContent() {
                               {invName}
                             </div>
                             <div className="text-caption tabular-nums truncate leading-tight">
-                              {gain > 0 ? (
+                              {inv.unit ? (
+                                <span className="text-ink-muted">
+                                  {inv.unit === 'gram'
+                                    ? `${t('gramsShort', { n: quantity(inv.quantity ?? 0, locale) })}${inv.karat ? ` · ${t('karatShort', { k: inv.karat })}` : ''}`
+                                    : t('sharesCount', { n: quantity(inv.quantity ?? 0, locale) })}
+                                </span>
+                              ) : gain > 0 ? (
                                 <span className="text-income font-medium">
                                   {t('up', {
                                     amount: money(gain, locale, { currency: inv.currency }),

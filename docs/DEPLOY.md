@@ -12,7 +12,7 @@ Changes that are finished and checked, waiting to go live. Nothing here is live 
 
 | PR | What it changes |
 |---|---|
-| — | Nothing waiting |
+| [#123](https://github.com/tamimbadawi/Family-Account/pull/123) | Investments: tap a "Value updated" line to change or remove that value (with Undo); the help guide says so |
 
 ## Deployed
 
