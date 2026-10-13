@@ -37,8 +37,7 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
 
   const [selectedCurrency, setSelectedCurrency] = React.useState<string>(currencies[0] ?? 'EGP');
   const [kind, setKind] = React.useState<InvestmentKind>('gold');
-  const [name, setName] = React.useState('');
-  const [isNameEdited, setIsNameEdited] = React.useState(false);
+  const [customName, setCustomName] = React.useState<string | null>(null);
   const [amountStr, setAmountStr] = React.useState('');
   const [paidFrom, setPaidFrom] = React.useState<string>('alreadyHave');
   const [maturesOn, setMaturesOn] = React.useState('');
@@ -47,24 +46,18 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
   const sheetRef = React.useRef<HTMLDivElement>(null);
   useRestoreSheetAfterKeyboard(sheetRef, open);
 
-  // Initialize and follow kind label when untouched
-  React.useEffect(() => {
-    if (open && !isNameEdited) {
-      setName(t(INVESTMENT_KIND_MAP[kind].messageKey));
-    }
-  }, [open, kind, isNameEdited, t]);
+  const effectiveName = customName !== null ? customName : t(INVESTMENT_KIND_MAP[kind].messageKey);
 
   const handleKindSelect = (k: InvestmentKind) => {
     setKind(k);
-    if (!isNameEdited) {
-      setName(t(INVESTMENT_KIND_MAP[k].messageKey));
+    if (customName === null) {
+      // Keep following the default kind name until user edits it
     }
   };
 
   const resetForm = () => {
     setKind('gold');
-    setName('');
-    setIsNameEdited(false);
+    setCustomName(null);
     setAmountStr('');
     setPaidFrom('alreadyHave');
     setMaturesOn('');
@@ -78,14 +71,14 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
   );
 
   const cleanAmount = Number(normalizeDigits(amountStr).replace(/[,\s٬]/g, '')) || 0;
-  const isFormValid = name.trim().length > 0 && cleanAmount > 0;
+  const cleanName = effectiveName.trim();
+  const isFormValid = cleanName.length > 0 && cleanAmount > 0;
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid || isSubmitting) return;
 
     const id = crypto.randomUUID();
-    const cleanName = name.trim();
     const isAlreadyHave = paidFrom === 'alreadyHave';
     const maturesDate = kind === 'certificate' && maturesOn ? maturesOn : null;
 
@@ -221,10 +214,9 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
               <Input
                 type="text"
                 required
-                value={name}
+                value={effectiveName}
                 onChange={(e) => {
-                  setName(e.target.value);
-                  setIsNameEdited(true);
+                  setCustomName(e.target.value);
                 }}
                 className="h-12 rounded-2xl bg-surface-2 text-body"
               />

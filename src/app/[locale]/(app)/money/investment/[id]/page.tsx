@@ -23,7 +23,6 @@ import { formatDmy } from '@/components/entry/DetailsRow';
 import { formatGoalTargetDate } from '@/lib/goals/progress';
 import { localISODate, money, normalizeDigits, pickName } from '@/lib/format';
 import { toast } from 'sonner';
-import { INVESTMENT_KIND_MAP } from '@/components/money/investment-kind';
 import type { EnrichedEntry } from '@/lib/data/types';
 
 interface InvestmentDetailPageProps {
@@ -48,7 +47,7 @@ export default function InvestmentDetailPage({ params }: InvestmentDetailPagePro
 
   const values = useInvestmentValues(id) ?? [];
   const entries = useEntries({ accountId: id }) ?? [];
-  const allWallets = useWalletBalances() ?? [];
+  const rawWallets = useWalletBalances();
 
   // Redirect if unknown id
   React.useEffect(() => {
@@ -70,18 +69,13 @@ export default function InvestmentDetailPage({ params }: InvestmentDetailPagePro
 
   // Spending wallets in same currency
   const availableSpendingWallets = React.useMemo(() => {
-    if (!investment) return [];
-    return allWallets.filter(
+    if (!investment || !rawWallets) return [];
+    return rawWallets.filter(
       (w) => !w.isArchived && (w.purpose ?? 'spending') === 'spending' && w.currency === investment.currency
     );
-  }, [allWallets, investment]);
+  }, [rawWallets, investment]);
 
-  // Auto-pick first spending wallet
-  React.useEffect(() => {
-    if (fundingMode && !fundingWalletId && availableSpendingWallets.length > 0) {
-      setFundingWalletId(availableSpendingWallets[0].id);
-    }
-  }, [fundingMode, fundingWalletId, availableSpendingWallets]);
+  const selectedFundingWalletId = fundingWalletId || availableSpendingWallets[0]?.id || '';
 
   if (!investment) {
     return null;
@@ -97,7 +91,7 @@ export default function InvestmentDetailPage({ params }: InvestmentDetailPagePro
   const overWorth = isTake && parsedFundAmount > investment.worth;
 
   const handleFund = async () => {
-    if (!fundingWalletId || parsedFundAmount <= 0 || overWorth || isFundingSubmitting) return;
+    if (!selectedFundingWalletId || parsedFundAmount <= 0 || overWorth || isFundingSubmitting) return;
 
     try {
       setIsFundingSubmitting(true);
@@ -107,12 +101,13 @@ export default function InvestmentDetailPage({ params }: InvestmentDetailPagePro
         type: 'transfer',
         amount: parsedFundAmount,
         occurredOn: localISODate(),
-        accountId: isAdd ? fundingWalletId : id,
-        toAccountId: isAdd ? id : fundingWalletId,
+        accountId: isAdd ? selectedFundingWalletId : id,
+        toAccountId: isAdd ? id : selectedFundingWalletId,
       });
 
       setFundingMode(null);
       setFundingAmountStr('');
+      setFundingWalletId('');
 
       const msg = isAdd ? t('addedTo', { name: invName }) : t('takenFrom', { name: invName });
       toast.success(msg, {
@@ -462,7 +457,7 @@ export default function InvestmentDetailPage({ params }: InvestmentDetailPagePro
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {availableSpendingWallets.map((w) => {
-                  const isSelected = fundingWalletId === w.id;
+                  const isSelected = selectedFundingWalletId === w.id;
                   const walletName = pickName({ name_ar: w.nameAr, name_en: w.nameEn }, locale);
                   return (
                     <button
@@ -513,7 +508,7 @@ export default function InvestmentDetailPage({ params }: InvestmentDetailPagePro
             <Button
               type="button"
               onClick={handleFund}
-              disabled={isFundingSubmitting || !fundingWalletId || parsedFundAmount <= 0 || overWorth}
+              disabled={isFundingSubmitting || !selectedFundingWalletId || parsedFundAmount <= 0 || overWorth}
               className="h-14 w-full rounded-2xl bg-accent text-body font-semibold text-accent-ink transition-transform active:scale-98 cursor-pointer disabled:opacity-40"
             >
               {tCommon('save')}
