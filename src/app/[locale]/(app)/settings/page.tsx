@@ -12,6 +12,7 @@ import {
   LifeBuoy,
   LogOut,
   PiggyBank,
+  ShieldCheck,
   Repeat,
   SlidersHorizontal,
   Smartphone,
@@ -30,6 +31,7 @@ import { getSupabaseBrowserClient, isAuthConfigured } from '@/lib/supabase/clien
 import { entriesToCsv } from '@/lib/reports/export';
 import { SupportDrawer } from '@/components/settings/SupportDrawer';
 import { promptInstall, useCanInstall } from '@/lib/standalone';
+import { isOperator } from '@/lib/auth/operator';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
@@ -44,6 +46,17 @@ export default function SettingsPage() {
   const [isSupportOpen, setIsSupportOpen] = React.useState(false);
   const [isMoreOpen, setIsMoreOpen] = React.useState(false);
   const reduceMotion = useReducedMotion();
+
+  // The person who runs the app gets a link to /operator; the installed app has no address bar
+  const [canOperate, setCanOperate] = React.useState(false);
+  React.useEffect(() => {
+    if (!isAuthConfigured()) return;
+    let cancelled = false;
+    isOperator().then((yes) => !cancelled && setCanOperate(yes));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleLanguageToggle = () => {
     const nextLocale = locale === 'ar' ? 'en' : 'ar';
@@ -275,6 +288,19 @@ export default function SettingsPage() {
                       <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
                     )}
                   </button>
+
+                  {/* Admin panel: only for the person who runs the app (OPERATOR_EMAILS) */}
+                  {canOperate && (
+                    <Link href="/operator" className="flex min-h-[48px] w-full items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 text-start transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none cursor-pointer">
+                      <div className="flex items-center gap-3">
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-member-2-soft text-member-2">
+                          <ShieldCheck className="size-4.5" />
+                        </div>
+                        <span className="text-body font-semibold text-ink">{t('operator')}</span>
+                      </div>
+                      <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
+                    </Link>
+                  )}
 
                   {/* Install app: only while the app is still open in the browser */}
                   {canInstall && (

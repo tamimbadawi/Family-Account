@@ -50,6 +50,10 @@ Deno.serve(async (req) => {
   }
 
   switch (body.action) {
+    // Settings asks this to decide whether to show the link to /operator
+    case 'whoami':
+      return reply(200, { ok: true });
+
     // Every family, with counts only, then families whose admin hasn't signed in and set up yet
     case 'list': {
       const { data: rows, error } = await admin.rpc('operator_families');

@@ -1,4 +1,4 @@
-import { callFunction } from './family-admin';
+import { callFunction, FamilyAdminError } from './family-admin';
 
 /** One family as the operator sees it: counts only, never amounts, notes or categories. */
 export interface OperatorFamily {
@@ -115,4 +115,18 @@ type Action =
 /** Calls the `operator` Edge Function; only emails in its OPERATOR_EMAILS secret get an answer. */
 export function operator<T = { ok: true }>(body: Action): Promise<T> {
   return callFunction<T>('operator', body);
+}
+
+/**
+ * True when the signed-in person runs the app (their email is in OPERATOR_EMAILS), so Settings can
+ * show the link to /operator. An older deployed function answers "unknown_action" only after the
+ * email check has passed, so that counts as yes too. Any other failure counts as no.
+ */
+export async function isOperator(): Promise<boolean> {
+  try {
+    await callFunction('operator', { action: 'whoami' });
+    return true;
+  } catch (err) {
+    return err instanceof FamilyAdminError && err.message === 'unknown_action';
+  }
 }
