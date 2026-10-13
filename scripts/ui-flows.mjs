@@ -78,6 +78,20 @@ async function typeAmount(page, digits) {
   for (const d of digits) await tap(page, d);
 }
 async function homeNumbers(page) {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const text = await page.locator('body').innerText();
+    const num = (re) => Number((text.match(re)?.[1] || '0').replace(/,/g, ''));
+    const numbers = {
+      spent: num(/(?:Spent this month|مصاريف الشهر)\s*([\d,]+)/),
+      moneyIn: num(/(?:Money in|دخل)\s*([\d,]+)/),
+      toSpend: num(/(?:To spend|للصرف)\s*([\d,]+)/),
+      saved: num(/(?:Saved|متحوّش)\s*([\d,]+)/),
+    };
+    if (numbers.toSpend > 0 && numbers.saved > 0 && numbers.spent > 0) {
+      return numbers;
+    }
+    await sleep(250);
+  }
   const text = await page.locator('body').innerText();
   const num = (re) => Number((text.match(re)?.[1] || '0').replace(/,/g, ''));
   return {
@@ -1480,6 +1494,8 @@ const FLOWS = {
 
     // 3. Click "+ Add investment"
     const addBtn = page.getByRole('button', { name: ar ? /\+ إضافة استثمار/ : /\+ Add investment/ }).first();
+    await addBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
     await assertUsable(page, addBtn, 'Add investment button');
     await addBtn.click();
     await sleep(600);
@@ -1487,7 +1503,12 @@ const FLOWS = {
     const drawer = page.locator('[data-slot="drawer-content"]').last();
     await drawer.waitFor({ state: 'visible', timeout: 5000 });
 
-    // 4. Gold tile is selected by default; type 5000 on pad
+    // 4. Gold tile is selected by default; tap "I don't know the weight" if visible to test plain gold
+    const noWeightBtn = drawer.getByRole('button', { name: ar ? 'مش عارف الوزن' : "I don't know the weight" }).first();
+    if (await noWeightBtn.isVisible()) {
+      await noWeightBtn.click();
+      await sleep(200);
+    }
     await typeAmount(page, ['5', '0', '0', '0']);
     await sleep(300);
 
@@ -1548,6 +1569,8 @@ const FLOWS = {
 
     // 3. Click "+ Add investment"
     const addBtn = page.getByRole('button', { name: ar ? /\+ إضافة استثمار/ : /\+ Add investment/ }).first();
+    await addBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
     await assertUsable(page, addBtn, 'Add investment button');
     await addBtn.click();
     await sleep(600);
@@ -1555,7 +1578,12 @@ const FLOWS = {
     const drawer = page.locator('[data-slot="drawer-content"]').last();
     await drawer.waitFor({ state: 'visible', timeout: 5000 });
 
-    // 4. Type 5000 on pad
+    // 4. Tap "I don't know the weight" if visible to test plain investment without quantity
+    const noWeightBtn = drawer.getByRole('button', { name: ar ? 'مش عارف الوزن' : "I don't know the weight" }).first();
+    if (await noWeightBtn.isVisible()) {
+      await noWeightBtn.click();
+      await sleep(200);
+    }
     await typeAmount(page, ['5', '0', '0', '0']);
     await sleep(300);
 
@@ -1609,11 +1637,11 @@ const FLOWS = {
     await sleep(800);
     const beforeHome = await homeNumbers(page);
 
-    // 2. Open sample Gold
-    await page.goto(`${BASE}/${locale}/money/investment/aaaaaaaa-0000-0000-0000-0000000000e1`, { waitUntil: 'networkidle', timeout: 45000 });
+    // 2. Open Bank certificate (plain total investment)
+    await page.goto(`${BASE}/${locale}/money/investment/aaaaaaaa-0000-0000-0000-0000000000e2`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(800);
 
-    // 3. Update value -> 100000 -> Save
+    // 3. Update value -> 160000 -> Save
     const updateBtn = page.getByRole('button', { name: ar ? 'تحديث القيمة' : 'Update value' }).first();
     await assertUsable(page, updateBtn, 'Update value button');
     await updateBtn.click();
@@ -1622,7 +1650,7 @@ const FLOWS = {
     const drawer = page.locator('[data-slot="drawer-content"]').last();
     await drawer.waitFor({ state: 'visible', timeout: 5000 });
 
-    await typeAmount(page, ['1', '0', '0', '0', '0', '0']);
+    await typeAmount(page, ['1', '6', '0', '0', '0', '0']);
     await sleep(300);
 
     const saveBtn = drawer.getByRole('button', { name: ar ? 'حفظ' : 'Save' }).first();
@@ -1632,11 +1660,11 @@ const FLOWS = {
     await saveBtn.click();
     await sleep(600);
 
-    // 4. Verify Worth now 100,000, You put in 80,000, It grew by 20,000
+    // 4. Verify Worth now 160,000, You put in 150,000, It grew by 10,000
     const pageText = await page.innerText('body');
-    if (!pageText.includes('100,000')) throw new Error(`Expected Worth now 100,000 in page text`);
-    if (!pageText.includes('80,000')) throw new Error(`Expected You put in 80,000 in page text`);
-    if (!pageText.includes('20,000')) throw new Error(`Expected It grew by 20,000 in page text`);
+    if (!pageText.includes('160,000')) throw new Error(`Expected Worth now 160,000 in page text`);
+    if (!pageText.includes('150,000')) throw new Error(`Expected You put in 150,000 in page text`);
+    if (!pageText.includes('10,000')) throw new Error(`Expected It grew by 10,000 in page text`);
 
     // 5. Undo right now while toast is on screen
     const undoBtn = page.getByRole('button', { name: ar ? 'تراجع' : 'Undo' }).first();
@@ -1644,7 +1672,7 @@ const FLOWS = {
     await undoBtn.click();
     await sleep(800);
     const restoredText = await page.innerText('body');
-    if (!restoredText.includes('96,000')) throw new Error(`Expected Worth back to 96,000 after Undo`);
+    if (!restoredText.includes('154,000')) throw new Error(`Expected Worth back to 154,000 after Undo`);
 
     // 6. Home "Spent this month" and "Money in" unchanged
     await page.goto(`${BASE}/${locale}`, { waitUntil: 'networkidle', timeout: 45000 });
@@ -1658,10 +1686,66 @@ const FLOWS = {
     }
   },
 
+  async investment_value_edit(page, { locale }) {
+    const ar = locale === 'ar';
+    const undoName = ar ? 'تراجع' : 'Undo';
+    // 1. Open Bank certificate (worth 154,000 from its latest value)
+    await page.goto(`${BASE}/${locale}/money/investment/aaaaaaaa-0000-0000-0000-0000000000e2`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    const openLatestValue = async () => {
+      const row = page.getByRole('button', { name: ar ? 'القيمة اتحدّثت' : 'Value updated' }).first();
+      // The list scrolls inside the screen on short phones
+      await row.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+      await sleep(200);
+      await assertUsable(page, row, 'Value updated row');
+      await row.click();
+      await sleep(600);
+      const drawer = page.locator('[data-slot="drawer-content"]').last();
+      await drawer.waitFor({ state: 'visible', timeout: 5000 });
+      return drawer;
+    };
+
+    // 2. Tap the value line -> it opens with the old amount -> add a 0 -> Save
+    let drawer = await openLatestValue();
+    await typeAmount(page, ['0']);
+    const saveBtn = drawer.getByRole('button', { name: ar ? 'حفظ' : 'Save' }).first();
+    await saveBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, saveBtn, 'Save value button');
+    await saveBtn.click();
+    await sleep(600);
+    if (!(await page.innerText('body')).includes('1,540,000')) throw new Error('Expected Worth now 1,540,000 after changing the value');
+
+    // 3. Undo puts the old amount back
+    let undoBtn = page.getByRole('button', { name: undoName }).first();
+    await undoBtn.waitFor({ state: 'visible', timeout: 8000 });
+    await undoBtn.click();
+    await sleep(800);
+    let text = await page.innerText('body');
+    if (text.includes('1,540,000') || !text.includes('154,000')) throw new Error('Expected Worth back to 154,000 after Undo of the change');
+
+    // 4. Remove the value, then Undo brings it back
+    await page.locator('[data-sonner-toast]').first().waitFor({ state: 'detached', timeout: 9000 }).catch(() => {});
+    drawer = await openLatestValue();
+    const removeBtn = drawer.getByRole('button', { name: ar ? 'شيل القيمة دي' : 'Remove this value' }).first();
+    await removeBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, removeBtn, 'Remove this value button');
+    await removeBtn.click();
+    await sleep(600);
+    undoBtn = page.getByRole('button', { name: undoName }).first();
+    await undoBtn.waitFor({ state: 'visible', timeout: 8000 });
+    await undoBtn.click();
+    await sleep(800);
+    text = await page.innerText('body');
+    if (!text.includes('154,000')) throw new Error('Expected Worth back to 154,000 after Undo of the removal');
+  },
+
   async investment_take(page, { locale }) {
     const ar = locale === 'ar';
-    // 1. Open sample Gold
-    await page.goto(`${BASE}/${locale}/money/investment/aaaaaaaa-0000-0000-0000-0000000000e1`, { waitUntil: 'networkidle', timeout: 45000 });
+    // 1. Open Bank certificate
+    await page.goto(`${BASE}/${locale}/money/investment/aaaaaaaa-0000-0000-0000-0000000000e2`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(800);
 
     // 2. Click "Take out"
@@ -1673,7 +1757,7 @@ const FLOWS = {
     const drawer = page.locator('[data-slot="drawer-content"]').last();
     await drawer.waitFor({ state: 'visible', timeout: 5000 });
 
-    // 3. Type amount above worth (200000 > 96000)
+    // 3. Type amount above worth (200000 > 154000)
     await typeAmount(page, ['2', '0', '0', '0', '0', '0']);
     await sleep(300);
 
@@ -1724,6 +1808,202 @@ const FLOWS = {
       throw new Error(`Expected wallet balance to increase by 1000 to ${formatted}`);
     }
   },
+
+  async investment_gold_add(page, { locale }) {
+    const ar = locale === 'ar';
+    // 1. Go to Saving tab on /money
+    await page.goto(`${BASE}/${locale}/money?tab=saving`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    // 2. Click "+ Add investment"
+    const addBtn = page.getByRole('button', { name: ar ? /\+ إضافة استثمار/ : /\+ Add investment/ }).first();
+    await addBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, addBtn, 'Add investment button');
+    await addBtn.click();
+    await sleep(600);
+
+    const drawer = page.locator('[data-slot="drawer-content"]').last();
+    await drawer.waitFor({ state: 'visible', timeout: 5000 });
+
+    // 3. Gold is selected by default, Karat 21 is selected by default.
+    // Box 1 (grams) is active by default: type 10
+    await typeAmount(page, ['1', '0']);
+    await sleep(200);
+
+    // 4. Click Box 2 (What did you pay?)
+    const payBox = drawer.getByRole('button', { name: ar ? /دفعت كام/ : /What did you pay/ }).first();
+    await assertUsable(page, payBox, 'What did you pay box');
+    await payBox.click();
+    await sleep(200);
+
+    // 5. Type 48000
+    await typeAmount(page, ['4', '8', '0', '0', '0']);
+    await sleep(300);
+
+    // 6. Select a wallet from Paid from (not "already have")
+    const bankOption = drawer.locator('button[aria-pressed]').filter({ hasNotText: ar ? 'موجود عندي من قبل كده' : 'I already had it' }).first();
+    await bankOption.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, bankOption, 'Bank option in paid from');
+    await bankOption.click();
+    await sleep(200);
+
+    // 7. Save
+    const saveBtn = drawer.getByRole('button', { name: ar ? 'حفظ' : 'Save' }).first();
+    await saveBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, saveBtn, 'Save gold investment button');
+    await saveBtn.click();
+    await sleep(600);
+
+    // 8. Card shows 10 g and 48,000 on /money
+    const card = page.locator('a[href*="/money/investment/"]').filter({ hasText: '48,000' }).first();
+    await card.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, card, 'Added gold card');
+    const cardText = await card.innerText();
+    const expectedGrams = ar ? '10 جم' : '10 g';
+    if (!cardText.includes(expectedGrams) || !cardText.includes('48,000')) {
+      throw new Error(`Expected card to show "${expectedGrams}" and "48,000", got: ${cardText}`);
+    }
+  },
+
+  async investment_gold_price(page, { locale }) {
+    const ar = locale === 'ar';
+    // 1. Open sample Gold (20 g, 21k, worth 96,000 at 4,800/g)
+    await page.goto(`${BASE}/${locale}/money/investment/aaaaaaaa-0000-0000-0000-0000000000e1`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    // 2. Click "Update price"
+    const updateBtn = page.getByRole('button', { name: ar ? 'تحديث السعر' : 'Update price' }).first();
+    await updateBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, updateBtn, 'Update price button');
+    await updateBtn.click();
+    await sleep(600);
+
+    const drawer = page.locator('[data-slot="drawer-content"]').last();
+    await drawer.waitFor({ state: 'visible', timeout: 5000 });
+
+    // Verify "Also updates: Gold coins"
+    const alsoText = ar ? 'هيتحدّث كمان' : 'Also updates';
+    const caption = drawer.locator('p').filter({ hasText: alsoText }).first();
+    await assertUsable(page, caption, 'Also updates caption');
+
+    // 3. Type 5000
+    await typeAmount(page, ['5', '0', '0', '0']);
+    await sleep(300);
+
+    // 4. Save
+    const saveBtn = drawer.getByRole('button', { name: ar ? 'حفظ' : 'Save' }).first();
+    await saveBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, saveBtn, 'Save price button');
+    await saveBtn.click();
+    await sleep(600);
+
+    // 5. Worth now 100,000 on this page
+    let text = await page.innerText('body');
+    if (!text.includes('100,000')) throw new Error(`Expected Worth now 100,000 on Gold page, got: ${text}`);
+
+    // 6. Go to /money?tab=saving via client link so Undo toast stays on screen
+    const backLink = page.getByRole('link', { name: ar ? 'رجوع' : 'Back' }).first();
+    await assertUsable(page, backLink, 'Back to Our money link');
+    await backLink.click();
+    await sleep(600);
+
+    const coinsCard = page.locator('a[href*="/money/investment/aaaaaaaa-0000-0000-0000-0000000000e3"]').first();
+    await coinsCard.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, coinsCard, 'Gold coins card');
+    const coinsText = await coinsCard.innerText();
+    if (!coinsText.includes('40,000')) throw new Error(`Expected Gold coins to show 40,000, got: ${coinsText}`);
+
+    // 7. Undo restores both
+    const undoBtn = page.getByRole('button', { name: ar ? 'تراجع' : 'Undo' }).first();
+    await undoBtn.waitFor({ state: 'visible', timeout: 8000 });
+    await undoBtn.click();
+    await sleep(800);
+
+    // 8. On /money, Gold coins is back to 38,400 and Sample Gold is back to 96,000
+    const moneyText = await page.innerText('body');
+    if (!moneyText.includes('96,000')) throw new Error(`Expected Gold back to 96,000 after Undo`);
+    if (!moneyText.includes('38,400')) throw new Error(`Expected Gold coins back to 38,400 after Undo`);
+  },
+
+  async investment_gold_take(page, { locale }) {
+    const ar = locale === 'ar';
+    // 1. Open sample Gold (20 g, 21k)
+    await page.goto(`${BASE}/${locale}/money/investment/aaaaaaaa-0000-0000-0000-0000000000e1`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    // 2. Click "Take out"
+    const takeBtn = page.getByRole('button', { name: ar ? 'سحب' : 'Take out' }).first();
+    await takeBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, takeBtn, 'Take out button');
+    await takeBtn.click();
+    await sleep(600);
+
+    const drawer = page.locator('[data-slot="drawer-content"]').last();
+    await drawer.waitFor({ state: 'visible', timeout: 5000 });
+
+    // 3. Type quantity above owned (25 > 20) in Box 1
+    await typeAmount(page, ['2', '5']);
+    await sleep(300);
+
+    // 4. Save is disabled and "You only have 20 g" is shown
+    const saveBtn = drawer.getByRole('button', { name: ar ? 'حفظ' : 'Save' }).first();
+    const disabled = await saveBtn.isDisabled();
+    if (!disabled) throw new Error('Expected save button to be disabled for quantity > owned');
+    const onlyHaveEl = drawer.locator('p').filter({ hasText: ar ? 'عندك 20' : 'You only have 20' }).first();
+    await assertUsable(page, onlyHaveEl, 'Only have quantity message');
+
+    // 5. Backspace twice to clear quantity
+    const bsBtn = drawer.getByRole('button', { name: ar ? 'امسح آخر رقم' : 'Delete last digit' }).first();
+    await assertUsable(page, bsBtn, 'Backspace button');
+    await bsBtn.click();
+    await sleep(50);
+    await bsBtn.click();
+    await sleep(150);
+
+    // 6. Type 5 g
+    await typeAmount(page, ['5']);
+    await sleep(200);
+
+    // 7. Click Box 2 (How much money did you get?)
+    const moneyBox = drawer.getByRole('button', { name: ar ? /خدت كام/ : /How much money did you get/ }).first();
+    await assertUsable(page, moneyBox, 'Money received box');
+    await moneyBox.click();
+    await sleep(200);
+
+    // 8. Type 25000
+    await typeAmount(page, ['2', '5', '0', '0', '0']);
+    await sleep(300);
+
+    // 9. Pick destination wallet
+    const walletChoice = drawer.locator('button[aria-pressed]').first();
+    await walletChoice.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, walletChoice, 'Destination wallet choice');
+    await walletChoice.click();
+    await sleep(200);
+
+    // 10. Save
+    await saveBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, saveBtn, 'Save take-out button');
+    await saveBtn.click();
+    await sleep(600);
+
+    // 11. Verify 15 g left
+    const pageText = await page.innerText('body');
+    const expectedRemaining = ar ? '15 جم' : '15 g';
+    if (!pageText.includes(expectedRemaining)) {
+      throw new Error(`Expected 15 g left on Gold page, got: ${pageText}`);
+    }
+  },
 };
 
 const MULTI_LOCALE_FLOW_NAMES = [
@@ -1746,7 +2026,11 @@ const MULTI_LOCALE_FLOW_NAMES = [
   'investment_add',
   'investment_paid',
   'investment_value',
+  'investment_value_edit',
   'investment_take',
+  'investment_gold_add',
+  'investment_gold_price',
+  'investment_gold_take',
 ];
 const LOCALES = ['en', 'ar'];
 

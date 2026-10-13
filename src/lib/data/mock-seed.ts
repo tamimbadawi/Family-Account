@@ -21,7 +21,7 @@ export const DEMO_HOUSEHOLD_ID = '11111111-1111-1111-1111-111111111111';
 export const USER_MAMA_ID = '22222222-2222-2222-2222-222222222222';
 export const USER_BABA_ID = '33333333-3333-3333-3333-333333333333';
 
-export const SEED_VERSION = 6;
+export const SEED_VERSION = 7;
 
 export const WALLET_CASH_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
 export const WALLET_BANK_ID = 'aaaaaaaa-0000-0000-0000-000000000002'; // NBE
@@ -29,6 +29,7 @@ export const WALLET_NBE_ID = WALLET_BANK_ID;
 export const WALLET_CIB_ID = 'aaaaaaaa-0000-0000-0000-000000000003';
 export const WALLET_BANQUE_MISR_ID = 'aaaaaaaa-0000-0000-0000-000000000004';
 export const WALLET_INVEST_GOLD_ID = 'aaaaaaaa-0000-0000-0000-0000000000e1';
+export const WALLET_INVEST_GOLD_COINS_ID = 'aaaaaaaa-0000-0000-0000-0000000000e3';
 export const WALLET_INVEST_CERT_ID = 'aaaaaaaa-0000-0000-0000-0000000000e2';
 
 export const ITEM_EXPENSE_BALANCE_CORRECTION_ID = 'i0000007-0000-0000-0000-000000000001';
@@ -141,10 +142,34 @@ export const DEFAULT_WALLETS: AccountRow[] = [
     name_en: 'Gold',
     type: 'wallet',
     opening_balance: 80000,
+    opening_quantity: 20,
+    unit: 'gram',
+    karat: 21,
     currency: 'EGP',
     icon: 'coins',
     color: '#D97706',
     sort_order: 10,
+    is_archived: false,
+    purpose: 'investment',
+    investment_kind: 'gold',
+    matures_on: null,
+    created_at: '2026-06-01T00:00:00.000Z',
+    updated_at: '2026-06-01T00:00:00.000Z',
+  },
+  {
+    id: WALLET_INVEST_GOLD_COINS_ID,
+    household_id: DEMO_HOUSEHOLD_ID,
+    name_ar: 'جنيهات ذهب',
+    name_en: 'Gold coins',
+    type: 'wallet',
+    opening_balance: 32000,
+    opening_quantity: 8,
+    unit: 'gram',
+    karat: 21,
+    currency: 'EGP',
+    icon: 'coins',
+    color: '#D97706',
+    sort_order: 11,
     is_archived: false,
     purpose: 'investment',
     investment_kind: 'gold',
@@ -162,7 +187,7 @@ export const DEFAULT_WALLETS: AccountRow[] = [
     currency: 'EGP',
     icon: 'landmark',
     color: '#0284C7',
-    sort_order: 11,
+    sort_order: 12,
     is_archived: false,
     purpose: 'investment',
     investment_kind: 'certificate',
@@ -469,6 +494,19 @@ export function generateSampleInvestmentValues(
       household_id: householdId,
       account_id: WALLET_INVEST_GOLD_ID,
       value: 96000,
+      unit_price: 4800,
+      valued_on: toLocalDateString(goldDate),
+      created_by: USER_MAMA_ID,
+      created_at: goldDate.toISOString(),
+      updated_at: goldDate.toISOString(),
+      deleted_at: null,
+    },
+    {
+      id: 'bbbbbbbb-0000-0000-0000-0000000000e3',
+      household_id: householdId,
+      account_id: WALLET_INVEST_GOLD_COINS_ID,
+      value: 38400,
+      unit_price: 4800,
       valued_on: toLocalDateString(goldDate),
       created_by: USER_MAMA_ID,
       created_at: goldDate.toISOString(),
@@ -480,6 +518,7 @@ export function generateSampleInvestmentValues(
       household_id: householdId,
       account_id: WALLET_INVEST_CERT_ID,
       value: 154000,
+      unit_price: null,
       valued_on: toLocalDateString(certDate),
       created_by: USER_MAMA_ID,
       created_at: certDate.toISOString(),

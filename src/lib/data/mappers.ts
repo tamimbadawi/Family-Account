@@ -35,6 +35,11 @@ export function roundMoney(amount: number): number {
   return Math.round(amount * 100) / 100;
 }
 
+// Rounds quantity to 4 decimal places for storage
+export function roundQuantity(quantity: number): number {
+  return Math.round(quantity * 10000) / 10000;
+}
+
 // ---------- Household ----------
 
 export function toHousehold(row: HouseholdRow): Household {
@@ -103,6 +108,9 @@ export function toWallet(row: AccountRow): Wallet {
     purpose: row.purpose ?? 'spending',
     investmentKind: row.investment_kind ?? null,
     maturesOn: row.matures_on ?? null,
+    unit: row.unit ?? null,
+    karat: row.karat ?? null,
+    openingQuantity: row.opening_quantity != null ? Number(row.opening_quantity) : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -124,6 +132,9 @@ export function toAccountRow(w: Wallet): AccountRow {
     purpose: w.purpose ?? 'spending',
     investment_kind: w.investmentKind ?? null,
     matures_on: w.maturesOn ?? null,
+    unit: w.unit ?? null,
+    karat: w.karat ?? null,
+    opening_quantity: w.openingQuantity != null ? roundQuantity(w.openingQuantity) : null,
     created_at: w.createdAt,
     updated_at: w.updatedAt,
   };
@@ -246,6 +257,9 @@ export function toEntry(row: TransactionRow): Entry {
   if (row.to_amount !== undefined) {
     entry.toAmount = row.to_amount != null ? roundMoney(Number(row.to_amount)) : null;
   }
+  if (row.quantity !== undefined) {
+    entry.quantity = row.quantity != null ? Number(row.quantity) : null;
+  }
   if (row.recurring_rule_id !== undefined) {
     entry.recurringRuleId = row.recurring_rule_id;
   }
@@ -278,6 +292,9 @@ export function toTransactionRow(e: Entry): TransactionRow {
   };
   if (e.toAmount !== undefined) {
     row.to_amount = e.toAmount != null ? roundMoney(e.toAmount) : null;
+  }
+  if (e.quantity !== undefined) {
+    row.quantity = e.quantity != null ? roundQuantity(e.quantity) : null;
   }
   if (e.recurringRuleId !== undefined) {
     row.recurring_rule_id = e.recurringRuleId;
@@ -418,6 +435,7 @@ export function toInvestmentValue(row: InvestmentValueRow): InvestmentValue {
     householdId: row.household_id,
     accountId: row.account_id,
     value: roundMoney(Number(row.value)),
+    unitPrice: row.unit_price != null ? roundMoney(Number(row.unit_price)) : null,
     valuedOn: row.valued_on,
     createdBy: row.created_by,
     createdAt: row.created_at,
@@ -432,6 +450,7 @@ export function toInvestmentValueRow(v: InvestmentValue): InvestmentValueRow {
     household_id: v.householdId,
     account_id: v.accountId,
     value: roundMoney(v.value),
+    unit_price: v.unitPrice != null ? roundMoney(v.unitPrice) : null,
     valued_on: v.valuedOn,
     created_by: v.createdBy,
     created_at: v.createdAt,

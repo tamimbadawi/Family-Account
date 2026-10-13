@@ -30,7 +30,7 @@ describe('MockRepository with fake-indexeddb', () => {
     expect(names).toContain('Baba');
 
     const wallets = await repo.getWallets();
-    expect(wallets).toHaveLength(8);
+    expect(wallets).toHaveLength(9);
     expect(wallets.map((w) => w.nameAr)).toContain('كاش');
     expect(wallets.map((w) => w.nameAr)).toContain('البنك الأهلي');
     expect(wallets.map((w) => w.nameAr)).toContain('بنك CIB');
@@ -62,7 +62,7 @@ describe('MockRepository with fake-indexeddb', () => {
 
   it('calculates wallet balances accurately factoring opening balance and transactions', async () => {
     const balances = await repo.walletBalances();
-    expect(balances).toHaveLength(8);
+    expect(balances).toHaveLength(9);
 
     const cashWallet = balances.find((w) => w.id === WALLET_CASH_ID);
     const bankWallet = balances.find((w) => w.id === WALLET_BANK_ID);
@@ -972,10 +972,28 @@ describe('MockRepository with fake-indexeddb', () => {
       expect(values.length).toBe(1);
       expect(values[0].id).toBe(val.id);
 
+      // Correct the value: same row, new amount
+      const corrected = await repo.updateInvestmentValue(val.id, 90000);
+      expect(corrected.id).toBe(val.id);
+      expect(corrected.value).toBe(90000);
+      expect(corrected.valuedOn).toBe('2026-10-10');
+      list = await repo.getInvestments();
+      expect(list.find((i) => i.id === inv.id)?.worth).toBe(90000);
+      expect((await repo.getInvestmentValues(inv.id)).length).toBe(1);
+      await expect(repo.updateInvestmentValue(val.id, -1)).rejects.toThrow(
+        'Investment value cannot be negative'
+      );
+
       // Soft delete value
       await repo.softDeleteInvestmentValue(val.id);
       const afterDelete = await repo.getInvestmentValues(inv.id);
       expect(afterDelete.length).toBe(0);
+
+      // Undo brings it back
+      await repo.restoreInvestmentValue(val.id);
+      list = await repo.getInvestments();
+      expect(list.find((i) => i.id === inv.id)?.worth).toBe(90000);
+      await repo.softDeleteInvestmentValue(val.id);
 
       list = await repo.getInvestments();
       const reverted = list.find((i) => i.id === inv.id);
@@ -1003,7 +1021,270 @@ describe('MockRepository with fake-indexeddb', () => {
       ).rejects.toThrow('Investment value cannot be negative');
     });
   });
+
+  describe('investments by quantity and unit price (M6)', () => {
+    it('adds gold by grams (both paths)', async () => {
+      const db = new FamilyAccountsDB('test-m6-add-gold');
+      const repo = new MockRepository(db);
+      await repo.ensureSeeded();
+
+      // Path 1: I already had it
+      const gold1 = await repo.addWallet({
+        nameEn: 'Gold Ingot',
+        type: 'wallet',
+        purpose: 'investment',
+        investmentKind: 'gold',
+        unit: 'gram',
+        karat: 21,
+        openingQuantity: 10,
+        openingBalance: 48000,
+      });
+      // Initial price row created
+      await repo.addInvestmentPrice({
+        accountId: gold1.id,
+        unitPrice: 4800,
+      });
+
+      let invs = await repo.getInvestments();
+      const item1 = invs.find((i) => i.id === gold1.id);
+      expect(item1).toBeDefined();
+      expect(item1?.unit).toBe('gram');
+      expect(item1?.karat).toBe(21);
+      expect(item1?.quantity).toBe(10);
+      expect(item1?.unitPrice).toBe(4800);
+      expect(item1?.putIn).toBe(48000);
+      expect(item1?.worth).toBe(48000);
+
+      // Path 2: Paid from a wallet (Cash)
+      const gold2 = await repo.addWallet({
+        nameEn: 'Gold Ring',
+        type: 'wallet',
+        purpose: 'investment',
+        investmentKind: 'gold',
+        unit: 'gram',
+        karat: 18,
+        openingQuantity: 0,
+        openingBalance: 0,
+      });
+      // Transfer from cash
+      await repo.addEntry({
+        type: 'transfer',
+        amount: 20000,
+        quantity: 5,
+        accountId: WALLET_CASH_ID,
+        toAccountId: gold2.id,
+        occurredOn: '2026-10-13',
+      });
+      await repo.addInvestmentPrice({
+        accountId: gold2.id,
+        unitPrice: 4000,
+      });
+
+      invs = await repo.getInvestments();
+      const item2 = invs.find((i) => i.id === gold2.id);
+      expect(item2).toBeDefined();
+      expect(item2?.unit).toBe('gram');
+      expect(item2?.karat).toBe(18);
+      expect(item2?.quantity).toBe(5);
+      expect(item2?.unitPrice).toBe(4000);
+      expect(item2?.putIn).toBe(20000);
+      expect(item2?.worth).toBe(20000);
+    });
+
+    it('addInvestmentPrice updates two same-karat golds and not an 18k one, not a different currency, not an archived one', async () => {
+      const db = new FamilyAccountsDB('test-m6-cascade');
+      const repo = new MockRepository(db);
+      await repo.ensureSeeded();
+      await repo.setHouseholdCurrencies(['EGP', 'USD']);
+
+      // Seeded contains Sample Gold (21k, 20g, EGP) and Gold coins (21k, 8g, EGP)
+      // Create an 18k gold (EGP)
+      const gold18k = await repo.addWallet({
+        nameEn: 'Gold 18k',
+        type: 'wallet',
+        purpose: 'investment',
+        investmentKind: 'gold',
+        unit: 'gram',
+        karat: 18,
+        openingQuantity: 10,
+        openingBalance: 35000,
+      });
+      await repo.addInvestmentPrice({ accountId: gold18k.id, unitPrice: 3500 });
+
+      // Create a 21k gold in USD
+      const goldUsd = await repo.addWallet({
+        nameEn: 'Gold USD',
+        type: 'wallet',
+        purpose: 'investment',
+        investmentKind: 'gold',
+        unit: 'gram',
+        karat: 21,
+        currency: 'USD',
+        openingQuantity: 5,
+        openingBalance: 500,
+      });
+      await repo.addInvestmentPrice({ accountId: goldUsd.id, unitPrice: 100 });
+
+      // Create an archived 21k gold
+      const goldArchived = await repo.addWallet({
+        nameEn: 'Old Gold',
+        type: 'wallet',
+        purpose: 'investment',
+        investmentKind: 'gold',
+        unit: 'gram',
+        karat: 21,
+        openingQuantity: 4,
+        openingBalance: 16000,
+      });
+      await repo.archiveWallet(goldArchived.id, true);
+
+      // Now update price of Sample Gold to 5,000
+      const sampleGold = (await repo.getInvestments()).find((i) => i.nameEn === 'Gold')!;
+      const writtenRows = await repo.addInvestmentPrice({
+        accountId: sampleGold.id,
+        unitPrice: 5000,
+      });
+
+      // Should have written 2 rows: Sample Gold (20g) & Gold coins (8g)
+      expect(writtenRows).toHaveLength(2);
+      const updatedAccountIds = writtenRows.map((r) => r.accountId);
+      expect(updatedAccountIds).toContain(sampleGold.id);
+
+      const goldCoins = (await repo.getInvestments()).find((i) => i.nameEn === 'Gold coins')!;
+      expect(updatedAccountIds).toContain(goldCoins.id);
+
+      // Verify worths
+      const invs = await repo.getInvestments();
+      const updatedSample = invs.find((i) => i.id === sampleGold.id)!;
+      const updatedCoins = invs.find((i) => i.id === goldCoins.id)!;
+      const untouched18k = invs.find((i) => i.id === gold18k.id)!;
+      const untouchedUsd = invs.find((i) => i.id === goldUsd.id)!;
+
+      expect(updatedSample.worth).toBe(100000); // 20 * 5000
+      expect(updatedSample.unitPrice).toBe(5000);
+      expect(updatedCoins.worth).toBe(40000); // 8 * 5000
+      expect(updatedCoins.unitPrice).toBe(5000);
+
+      expect(untouched18k.unitPrice).toBe(3500);
+      expect(untouched18k.worth).toBe(35000);
+      expect(untouchedUsd.unitPrice).toBe(100);
+      expect(untouchedUsd.worth).toBe(500);
+
+      // Archived wallet should not have received a new price row
+      const archivedValues = await repo.getInvestmentValues(goldArchived.id);
+      expect(archivedValues).toHaveLength(0);
+    });
+
+    it('undo of every returned row restores both', async () => {
+      const db = new FamilyAccountsDB('test-m6-undo');
+      const repo = new MockRepository(db);
+      await repo.ensureSeeded();
+
+      const sampleGold = (await repo.getInvestments()).find((i) => i.nameEn === 'Gold')!;
+      const goldCoins = (await repo.getInvestments()).find((i) => i.nameEn === 'Gold coins')!;
+
+      expect(sampleGold.worth).toBe(96000);
+      expect(goldCoins.worth).toBe(38400);
+
+      const writtenRows = await repo.addInvestmentPrice({
+        accountId: sampleGold.id,
+        unitPrice: 5000,
+      });
+      expect(writtenRows).toHaveLength(2);
+
+      let invs = await repo.getInvestments();
+      expect(invs.find((i) => i.id === sampleGold.id)?.worth).toBe(100000);
+      expect(invs.find((i) => i.id === goldCoins.id)?.worth).toBe(40000);
+
+      // Undo: soft-delete every returned row
+      for (const row of writtenRows) {
+        await repo.softDeleteInvestmentValue(row.id);
+      }
+
+      invs = await repo.getInvestments();
+      expect(invs.find((i) => i.id === sampleGold.id)?.worth).toBe(96000);
+      expect(invs.find((i) => i.id === goldCoins.id)?.worth).toBe(38400);
+    });
+
+    it('updateInvestmentPrice recomputes value for single row without cascading', async () => {
+      const db = new FamilyAccountsDB('test-m6-update-price');
+      const repo = new MockRepository(db);
+      await repo.ensureSeeded();
+
+      const sampleGold = (await repo.getInvestments()).find((i) => i.nameEn === 'Gold')!;
+      const goldCoins = (await repo.getInvestments()).find((i) => i.nameEn === 'Gold coins')!;
+
+      const sampleValues = await repo.getInvestmentValues(sampleGold.id);
+      const rowToEdit = sampleValues[0];
+
+      const updated = await repo.updateInvestmentPrice(rowToEdit.id, 5000);
+      expect(updated.id).toBe(rowToEdit.id);
+      expect(updated.unitPrice).toBe(5000);
+      expect(updated.value).toBe(100000); // 20g * 5000
+
+      const invs = await repo.getInvestments();
+      expect(invs.find((i) => i.id === sampleGold.id)?.worth).toBe(100000);
+      // Gold coins must remain untouched (38,400)
+      expect(invs.find((i) => i.id === goldCoins.id)?.worth).toBe(38400);
+    });
+
+    it('trackByQuantity keeps worth intact', async () => {
+      const db = new FamilyAccountsDB('test-m6-track');
+      const repo = new MockRepository(db);
+      await repo.ensureSeeded();
+
+      // Create gold with unit null
+      const plainGold = await repo.addWallet({
+        nameEn: 'Old Gold Holding',
+        type: 'wallet',
+        purpose: 'investment',
+        investmentKind: 'gold',
+        openingBalance: 50000,
+      });
+
+      let inv = (await repo.getInvestments()).find((i) => i.id === plainGold.id)!;
+      expect(inv.unit).toBeNull();
+      expect(inv.worth).toBe(50000);
+
+      // Track by weight: 10 grams, 21k
+      await repo.trackByQuantity(plainGold.id, { quantity: 10, karat: 21 });
+
+      inv = (await repo.getInvestments()).find((i) => i.id === plainGold.id)!;
+      expect(inv.unit).toBe('gram');
+      expect(inv.karat).toBe(21);
+      expect(inv.quantity).toBe(10);
+      expect(inv.unitPrice).toBe(5000); // 50000 / 10
+      expect(inv.worth).toBe(50000); // exactly unchanged
+    });
+
+    it('transfer quantity survives update', async () => {
+      const db = new FamilyAccountsDB('test-m6-tx-quantity');
+      const repo = new MockRepository(db);
+      await repo.ensureSeeded();
+
+      const sampleGold = (await repo.getInvestments()).find((i) => i.nameEn === 'Gold')!;
+      const entry = await repo.addEntry({
+        type: 'transfer',
+        amount: 24000,
+        quantity: 5,
+        accountId: WALLET_CASH_ID,
+        toAccountId: sampleGold.id,
+        occurredOn: '2026-10-13',
+        note: 'Bought 5g',
+      });
+      expect(entry.quantity).toBe(5);
+
+      const updated = await repo.updateEntry(entry.id, {
+        note: 'Bought 5g gold ingot',
+        amount: 24500,
+      });
+      expect(updated.amount).toBe(24500);
+      expect(updated.quantity).toBe(5);
+
+      const fetched = await repo.getEntry(entry.id);
+      expect(fetched?.amount).toBe(24500);
+      expect(fetched?.quantity).toBe(5);
+    });
+  });
 });
-
-
 

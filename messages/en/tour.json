@@ -38,8 +38,8 @@
     "saved": { "title": "Put aside 🐷", "body": "Money you saved for a goal or put into something like gold. It is not counted in your spending money." },
     "tabs": { "title": "Two sides 👀", "body": "Spending shows your cash and banks. Saving shows your goals and investments. Tap to switch." },
     "goals": { "title": "Saving goals 🎯", "body": "Saving for a trip or a car? Tap New goal, then add a little whenever you can." },
-    "investments": { "title": "Investments 🪙", "body": "Gold, a bank certificate, or anything you put money into. Tap Add investment to write it down." },
-    "value": { "title": "What is it worth? 📈", "body": "Prices change. Open an investment and tap Update value whenever you check. It never touches your spending." }
+    "investments": { "title": "Investments 🪙", "body": "Gold is added by grams and karat, or add a bank certificate or anything you put money into. Tap Add investment to write it down." },
+    "value": { "title": "What is it worth? 📈", "body": "Prices change. Open an investment and tap Update price, type today's price of one gram, and all your gold of that karat updates. Typed it wrong? Tap that line to change or remove it. It never touches your spending." }
   },
   "history": {
     "search": { "title": "Detective mode 🔍", "body": "Type a word or an amount and we'll find the entry for you." },

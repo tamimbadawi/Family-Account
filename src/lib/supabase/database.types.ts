@@ -35,6 +35,9 @@ export type Database = {
           purpose: Database["public"]["Enums"]["account_purpose"]
           investment_kind: string | null
           matures_on: string | null
+          unit: string | null
+          karat: number | null
+          opening_quantity: number | null
           updated_at: string
         }
         Insert: {
@@ -54,6 +57,9 @@ export type Database = {
           purpose?: Database["public"]["Enums"]["account_purpose"]
           investment_kind?: string | null
           matures_on?: string | null
+          unit?: string | null
+          karat?: number | null
+          opening_quantity?: number | null
           updated_at?: string
         }
         Update: {
@@ -73,6 +79,9 @@ export type Database = {
           purpose?: Database["public"]["Enums"]["account_purpose"]
           investment_kind?: string | null
           matures_on?: string | null
+          unit?: string | null
+          karat?: number | null
+          opening_quantity?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -621,6 +630,7 @@ export type Database = {
           updated_at: string
           value: number
           valued_on: string
+          unit_price: number | null
         }
         Insert: {
           account_id: string
@@ -632,6 +642,7 @@ export type Database = {
           updated_at?: string
           value: number
           valued_on?: string
+          unit_price?: number | null
         }
         Update: {
           account_id?: string
@@ -643,6 +654,7 @@ export type Database = {
           updated_at?: string
           value?: number
           valued_on?: string
+          unit_price?: number | null
         }
         Relationships: [
           {
@@ -681,6 +693,7 @@ export type Database = {
           recurring_month: string | null
           to_account_id: string | null
           type: Database["public"]["Enums"]["txn_type"]
+          quantity: number | null
           updated_at: string
           updated_by: string | null
         }
@@ -703,6 +716,7 @@ export type Database = {
           recurring_month?: string | null
           to_account_id?: string | null
           type: Database["public"]["Enums"]["txn_type"]
+          quantity?: number | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -725,6 +739,7 @@ export type Database = {
           recurring_month?: string | null
           to_account_id?: string | null
           type?: Database["public"]["Enums"]["txn_type"]
+          quantity?: number | null
           updated_at?: string
           updated_by?: string | null
         }
