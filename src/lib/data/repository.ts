@@ -323,6 +323,11 @@ export interface Repository {
   /** Live mode: forget everything kept on this phone (sign-out). */
   clearCache?(): Promise<void>;
 
+  /** ID of the user signed in on this phone. */
+  currentUserId?: string;
+  /** Subscribe to changes to currentUserId (e.g. when session loads after initial render). */
+  onUserIdChange?(listener: (userId: string | null) => void): () => void;
+
   // Sample data (Phase A): every phone starts with made-up entries so people can look around.
   /** True while the phone still shows the sample entries. */
   hasSampleData?(): Promise<boolean>;
