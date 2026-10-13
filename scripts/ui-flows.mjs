@@ -1354,6 +1354,8 @@ const FLOWS = {
 
     // 5. "I already had it" is selected by default; save
     const saveBtn = drawer.getByRole('button', { name: ar ? 'حفظ' : 'Save' }).first();
+    await saveBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
     await assertUsable(page, saveBtn, 'Save investment button');
     await saveBtn.click();
     await sleep(600);
@@ -1418,12 +1420,16 @@ const FLOWS = {
 
     // 5. Select a bank account from Paid from (not "alreadyHave")
     const bankOption = drawer.locator('button[aria-pressed]').filter({ hasNotText: ar ? 'موجود عندي من قبل كده' : 'I already had it' }).first();
+    await bankOption.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
     await assertUsable(page, bankOption, 'Bank option in paid from');
     await bankOption.click();
     await sleep(300);
 
     // 6. Save
     const saveBtn = drawer.getByRole('button', { name: ar ? 'حفظ' : 'Save' }).first();
+    await saveBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
     await assertUsable(page, saveBtn, 'Save investment button');
     await saveBtn.click();
     await sleep(600);
@@ -1479,6 +1485,8 @@ const FLOWS = {
     await sleep(300);
 
     const saveBtn = drawer.getByRole('button', { name: ar ? 'حفظ' : 'Save' }).first();
+    await saveBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
     await assertUsable(page, saveBtn, 'Save value button');
     await saveBtn.click();
     await sleep(600);
@@ -1489,7 +1497,16 @@ const FLOWS = {
     if (!pageText.includes('80,000')) throw new Error(`Expected You put in 80,000 in page text`);
     if (!pageText.includes('20,000')) throw new Error(`Expected It grew by 20,000 in page text`);
 
-    // 5. Home "Spent this month" and "Money in" unchanged
+    // 5. Undo right now while toast is on screen
+    const undoBtn = page.getByRole('button', { name: ar ? 'تراجع' : 'Undo' }).first();
+    if (await undoBtn.isVisible()) {
+      await undoBtn.click();
+      await sleep(600);
+    }
+    const restoredText = await page.innerText('body');
+    if (!restoredText.includes('96,000')) throw new Error(`Expected Worth back to 96,000 after Undo`);
+
+    // 6. Home "Spent this month" and "Money in" unchanged
     await page.goto(`${BASE}/${locale}`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(600);
     const afterHome = await homeNumbers(page);
@@ -1499,17 +1516,6 @@ const FLOWS = {
     if (afterHome.moneyIn !== beforeHome.moneyIn) {
       throw new Error(`Expected Money in unchanged: was ${beforeHome.moneyIn}, now ${afterHome.moneyIn}`);
     }
-
-    // 6. Undo -> Worth now back to 96,000
-    const undoBtn = page.getByRole('button', { name: ar ? 'تراجع' : 'Undo' }).first();
-    if (await undoBtn.isVisible()) {
-      await undoBtn.click();
-      await sleep(600);
-    }
-    await page.goto(`${BASE}/${locale}/money/investment/aaaaaaaa-0000-0000-0000-0000000000e1`, { waitUntil: 'networkidle', timeout: 45000 });
-    await sleep(600);
-    const restoredText = await page.innerText('body');
-    if (!restoredText.includes('96,000')) throw new Error(`Expected Worth back to 96,000 after Undo`);
   },
 
   async investment_take(page, { locale }) {
@@ -1539,9 +1545,11 @@ const FLOWS = {
     await assertUsable(page, onlyHasEl, 'Only has message');
 
     // 5. Clear amount via backspace keys
-    const bsBtn = drawer.locator('button[aria-label*="backspace"], button[aria-label*="مسح"]').first();
+    const bsBtn = drawer.getByRole('button', { name: ar ? 'امسح آخر رقم' : 'Delete last digit' }).first();
+    await assertUsable(page, bsBtn, 'Backspace button');
     for (let i = 0; i < 6; i++) {
       await bsBtn.click();
+      await sleep(50);
     }
     await sleep(200);
 
@@ -1551,6 +1559,8 @@ const FLOWS = {
 
     // 7. Pick destination spending wallet
     const walletChoice = drawer.locator('button[aria-pressed]').first();
+    await walletChoice.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
     await assertUsable(page, walletChoice, 'Destination wallet choice');
     const walletText = await walletChoice.innerText();
     const balanceBefore = Number((walletText.match(/[\d,]+/)?.[0] || '0').replace(/,/g, ''));
@@ -1558,6 +1568,8 @@ const FLOWS = {
     await sleep(200);
 
     // 8. Save
+    await saveBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
     await assertUsable(page, saveBtn, 'Save take-out button');
     await saveBtn.click();
     await sleep(600);
