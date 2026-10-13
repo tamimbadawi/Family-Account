@@ -26,7 +26,7 @@ const FLOW_ROUTES = {
   reports_planning: ['/reports'], reports_wallets: ['/reports'], our_money: ['/reports'],
   update_balance: ['/settings/wallets'], download_data: ['/settings'],
   history_filter: ['/history'], history_search: ['/history'],
-  budgets: ['/settings', '/settings/budgets'], budget_alerts: ['', '/settings/budgets'],
+  budgets: ['', '/settings', '/settings/budgets', '/reports/r/[id]'], budget_alerts: ['', '/settings/budgets'],
   recurring_entries: ['', '/settings/recurring'], savings_goals: ['', '/settings/goals'],
 };
 
@@ -155,9 +155,11 @@ if (mode === 'site') {
 
 const urls = routes.flatMap((r) => LOCALES.map((l) => `/${l}${address(r)}`));
 const flows = Object.keys(FLOW_ROUTES).filter((f) => FLOW_ROUTES[f].some((r) => routes.includes(r)));
+// Build, before the clock starts, every screen the chosen flows walk through as well (they all start from Home).
+const warm = [...new Set([...urls, ...flows.flatMap((f) => ['', ...FLOW_ROUTES[f]]).flatMap((r) => LOCALES.map((l) => `/${l}${address(r)}`))])];
 // While building: the dev server, which picks up every edit at once. Whole site: the finished app, which is the
 // only thing fast enough to feed hundreds of screens at once (rebuilt only when the code has changed).
-const { base, fresh } = mode === 'site' ? await ensureBuiltServer() : await ensureServer(urls);
+const { base, fresh } = mode === 'site' ? await ensureBuiltServer() : await ensureServer(warm);
 if (fresh) console.log(`${mode === 'site' ? 'Built and started the app' : 'Started the dev server'} at ${base} (kept running for the next check).`);
 const waited = Date.now();
 for (const name of ['last-check.json', 'last-flows.json']) fs.rmSync(path.resolve('.ui-check', name), { force: true });
