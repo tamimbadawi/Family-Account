@@ -13,6 +13,7 @@ Changes that are finished and checked, waiting to go live. Nothing here is live 
 | PR | What it changes |
 |---|---|
 | [#110](https://github.com/tamimbadawi/Family-Account/pull/110) | Settings → More settings shows "Admin panel" (opens `/operator`) for the operator only, so it can be reached from the installed iPhone app |
+| [#114](https://github.com/tamimbadawi/Family-Account/pull/114) | UI checks for the agents: `ui:feature` (only what changed) and `ui:site` (whole site in about 1.5 minutes), one always-on rule. Small phones: the Welcome form scrolls to its button, entry captions wrap instead of being cut |
 | [#111](https://github.com/tamimbadawi/Family-Account/pull/111) | Docs only: this file becomes the single deploy record (older history, parked work and known issues moved in from the local `DEPLOY-LOG.md`) |
 
 ## Deployed

@@ -49,7 +49,10 @@ const reportsMessages = {
   ar: JSON.parse(fs.readFileSync(path.resolve('messages/ar/reports.json'), 'utf8')),
 };
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// UI_FAST=1 (set by `npm run ui:feature`): only FAIL lines are printed.
+const FAST = process.env.UI_FAST === '1';
+// The fixed waits are for animations; with animations off (FAST) a third of the wait is enough.
+const sleep = (ms) => new Promise((r) => setTimeout(r, FAST ? Math.max(120, ms * 0.35) : ms));
 const btn = (page, name) => page.getByRole('button', { name, exact: true }).or(page.getByRole('radio', { name, exact: true })).first();
 
 /** Visible, inside the viewport and not covered by anything else at its centre. */
@@ -91,6 +94,14 @@ async function assertOnePopup(page, amountText) {
   if (shown !== amountText) throw new Error(`amount shows "${shown}" (should be "${amountText}")`);
   if (await btn(page, "Next").count()) throw new Error("a Next step is back; everything should be in one popup");
   await assertUsable(page, page.getByRole("button", { name: /^(Save|Saved|Choose a category|Choose Sub \/ Save)$/ }).last(), "Save button without scrolling");
+}
+/** A tap on a total opens a sheet, or goes to History showing the entries behind it. */
+async function sheetOrEntries(page, drawer) {
+  const opened = await Promise.any([
+    drawer.waitFor({ state: 'visible', timeout: 5000 }),
+    page.waitForURL(/\/history/, { timeout: 5000 }),
+  ]).then(() => true, () => false);
+  if (!opened) throw new Error('nothing opened after tapping a total (no sheet, no entries list)');
 }
 async function saveButton(page) {
   return page.getByRole('button', { name: /^(Save|Saved|Choose Sub \/ Save|حفظ|تم الحفظ|اختار الفرع \/ حفظ)$/ }).last();
@@ -407,7 +418,7 @@ const FLOWS = {
     await seeAllOverview.click();
     await sleep(500);
     const drawer1 = page.locator('[data-slot="drawer-content"]');
-    await drawer1.waitFor({ state: 'visible', timeout: 5000 });
+    await sheetOrEntries(page, drawer1);
     await page.keyboard.press('Escape');
     await sleep(500);
 
@@ -419,7 +430,7 @@ const FLOWS = {
     await cell.click();
     await sleep(500);
     const drawer2 = page.locator('[data-slot="drawer-content"]');
-    await drawer2.waitFor({ state: 'visible', timeout: 5000 });
+    await sheetOrEntries(page, drawer2);
     await page.keyboard.press('Escape');
     await sleep(500);
 
@@ -431,7 +442,7 @@ const FLOWS = {
     await seeAllTvL.click();
     await sleep(500);
     const drawer3 = page.locator('[data-slot="drawer-content"]');
-    await drawer3.waitFor({ state: 'visible', timeout: 5000 });
+    await sheetOrEntries(page, drawer3);
     await page.keyboard.press('Escape');
     await sleep(500);
 
@@ -444,7 +455,7 @@ const FLOWS = {
     await seeAllBig.click();
     await sleep(500);
     const drawer4 = page.locator('[data-slot="drawer-content"]');
-    await drawer4.waitFor({ state: 'visible', timeout: 5000 });
+    await sheetOrEntries(page, drawer4);
     await page.keyboard.press('Escape');
     await sleep(500);
 
@@ -456,7 +467,7 @@ const FLOWS = {
     await dayBtn.click();
     await sleep(500);
     const drawer5 = page.locator('[data-slot="drawer-content"]');
-    await drawer5.waitFor({ state: 'visible', timeout: 5000 });
+    await sheetOrEntries(page, drawer5);
     await page.keyboard.press('Escape');
     await sleep(500);
 
@@ -468,7 +479,7 @@ const FLOWS = {
     await subRow.click();
     await sleep(500);
     const drawer6 = page.locator('[data-slot="drawer-content"]');
-    await drawer6.waitFor({ state: 'visible', timeout: 5000 });
+    await sheetOrEntries(page, drawer6);
     await page.keyboard.press('Escape');
     await sleep(500);
   },
@@ -695,9 +706,12 @@ const FLOWS = {
     await page.goto(`${BASE}/${locale}/settings`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(800);
 
-    const downloadBtn = page.locator('[role="button"]').filter({
-      hasText: locale === 'ar' ? 'تنزيل بياناتي' : 'Download my data',
-    }).first();
+    const downloadBtn = page.getByRole('button', { name: locale === 'ar' ? 'تنزيل بياناتي' : 'Download my data' }).first();
+    // The button lives under "More settings", which starts closed
+    if (!(await downloadBtn.isVisible())) {
+      await page.getByRole('button', { name: new RegExp(locale === 'ar' ? 'إعدادات تانية' : 'More settings') }).first().click();
+      await sleep(400);
+    }
     await assertUsable(page, downloadBtn, `Download my data button (${locale}/${size})`);
 
     const [download] = await Promise.all([
@@ -1181,11 +1195,11 @@ const jobs = names.flatMap((name) => {
 let failures = 0;
 const started = Date.now();
 const queue = [...jobs];
-await Promise.all(Array.from({ length: 4 }, async () => {
+await Promise.all(Array.from({ length: Number(process.env.UI_PARALLEL || 4) }, async () => {
   while (queue.length) {
     const { name, locale, profile } = queue.shift();
     const [w, h] = profile.vp;
-    const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: profile.ua });
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: profile.ua, reducedMotion: FAST ? 'reduce' : 'no-preference' });
     const page = await ctx.newPage();
     await page.addInitScript(() => {
       const style = document.createElement('style');
@@ -1213,10 +1227,11 @@ await Promise.all(Array.from({ length: 4 }, async () => {
     }
     if (error) failures++;
     const label = MULTI_LOCALE_FLOW_NAMES.includes(name) ? `${name} ${locale}` : name;
-    console.log(`${error ? 'FAIL' : 'ok  '} ${label} ${w}x${h}${error ? ' -> ' + error : ''}`);
+    if (!FAST || error) console.log(`${error ? 'FAIL' : 'ok  '} ${label} ${w}x${h}${error ? ' -> ' + error : ''}`);
     await ctx.close();
   }
 }));
 await browser.close();
+fs.writeFileSync(path.resolve('.ui-check/last-flows.json'), JSON.stringify({ runs: jobs.length, failed: failures }));
 console.log(`\n${failures ? failures + ' flow run(s) failed' : 'all flows ok'} — ${jobs.length} runs in ${((Date.now() - started) / 1000).toFixed(0)}s`);
 process.exit(failures ? 1 : 0);
