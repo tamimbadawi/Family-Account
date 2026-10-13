@@ -26,7 +26,7 @@ const FLOW_ROUTES = {
   income: [''], expense: [''], switchtype: [''], newgroup: [''], newcategory: [''], photo: ['', '/history'],
   date: [''], bank: [''], entry_pickers: [''], save_at_level: ['', '/history'],
   reports_tabs: ['/reports'], reports_library: ['/reports'], reports_sheets: ['/reports', '/reports/r/[id]'],
-  reports_planning: ['/reports'], reports_wallets: ['/reports'], our_money: ['/reports'],
+  reports_planning: ['/reports'], reports_wallets: ['/reports'], our_money: ['/reports', '/money'],
   update_balance: ['/settings/wallets'], download_data: ['/settings'],
   history_filter: ['/history'], history_search: ['/history'],
   budgets: ['', '/settings', '/settings/budgets', '/reports/r/[id]'], budget_alerts: ['', '/settings/budgets'],

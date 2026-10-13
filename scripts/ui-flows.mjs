@@ -732,20 +732,29 @@ const FLOWS = {
     }
 
     // The wallet balances card now shows 3 group rows (no single total, no pop-up).
-    // Verify the Spending row is visible.
     const spendingLabel = locale === 'ar' ? 'الصرف' : 'Spending';
+    const goalsLabel = locale === 'ar' ? 'أهداف التحويش' : 'Saving goals';
+    const investmentsLabel = locale === 'ar' ? 'استثمارات' : 'Investments';
+    const savingTabLabel = locale === 'ar' ? 'التحويش' : 'Saving';
+
     const spendingRow = page.getByText(spendingLabel, { exact: true }).first();
     await assertUsable(page, spendingRow, 'Spending group row on wallet card');
 
-    // Verify the Investments row exists.
-    const investmentsLabel = locale === 'ar' ? 'استثمارات' : 'Investments';
+    const goalsRow = page.getByText(goalsLabel, { exact: true }).first();
+    await assertUsable(page, goalsRow, 'Saving goals group row on wallet card');
+
     const investmentsRow = page.getByText(investmentsLabel, { exact: true }).first();
     await assertUsable(page, investmentsRow, 'Investments group row on wallet card');
 
-    // Tap Spending → should land on /money
+    // Tap Spending → should land on /money with spending tab selected
     await spendingRow.click();
     await page.waitForURL(`**/${locale}/money*`, { timeout: 10000 });
     await sleep(400);
+    const spendingTab = page.getByRole('tab', { name: spendingLabel });
+    await assertUsable(page, spendingTab, 'Spending tab on /money');
+    if ((await spendingTab.getAttribute('aria-selected')) !== 'true') {
+      throw new Error('Spending tab not selected after tapping Spending row');
+    }
 
     // Go back to Reports
     await page.goto(`${BASE}/${locale}/reports`, { waitUntil: 'networkidle', timeout: 45000 });
@@ -755,12 +764,37 @@ const FLOWS = {
       await sleep(400);
     }
 
-    // Tap Investments → /money with saving tab
+    // Tap Saving goals → /money?tab=saving, assert Saving tab is selected
+    const goalsRowAfter = page.getByText(goalsLabel, { exact: true }).first();
+    await goalsRowAfter.scrollIntoViewIfNeeded().catch(() => {});
+    await goalsRowAfter.click();
+    await page.waitForURL(`**/${locale}/money*`, { timeout: 10000 });
+    await sleep(400);
+    const savingTabAfterGoals = page.getByRole('tab', { name: savingTabLabel });
+    await assertUsable(page, savingTabAfterGoals, 'Saving tab on /money after goals');
+    if ((await savingTabAfterGoals.getAttribute('aria-selected')) !== 'true') {
+      throw new Error('Saving tab not selected after tapping Saving goals row');
+    }
+
+    // Go back to Reports
+    await page.goto(`${BASE}/${locale}/reports`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(600);
+    if (await page2Dot.isVisible().catch(() => false)) {
+      await page2Dot.click();
+      await sleep(400);
+    }
+
+    // Tap Investments → /money?tab=saving, assert Saving tab is selected
     const investmentsRowAfter = page.getByText(investmentsLabel, { exact: true }).first();
     await investmentsRowAfter.scrollIntoViewIfNeeded().catch(() => {});
     await investmentsRowAfter.click();
     await page.waitForURL(`**/${locale}/money*`, { timeout: 10000 });
     await sleep(400);
+    const savingTabAfterInvest = page.getByRole('tab', { name: savingTabLabel });
+    await assertUsable(page, savingTabAfterInvest, 'Saving tab on /money after investments');
+    if ((await savingTabAfterInvest.getAttribute('aria-selected')) !== 'true') {
+      throw new Error('Saving tab not selected after tapping Investments row');
+    }
 
     // Go back once more and tap "View all" → /money
     await page.goto(`${BASE}/${locale}/reports`, { waitUntil: 'networkidle', timeout: 45000 });
@@ -771,6 +805,7 @@ const FLOWS = {
     }
     const viewAllLabel = locale === 'ar' ? 'عرض الكل' : 'View all';
     const viewAllLink = page.getByText(viewAllLabel, { exact: true }).first();
+    await viewAllLink.scrollIntoViewIfNeeded().catch(() => {});
     await assertUsable(page, viewAllLink, '"View all" link');
     await viewAllLink.click();
     await page.waitForURL(`**/${locale}/money*`, { timeout: 10000 });

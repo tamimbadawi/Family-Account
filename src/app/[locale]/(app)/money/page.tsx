@@ -135,7 +135,7 @@ function MoneyContent() {
           >
             <ChevronLeft className="size-6 rtl:rotate-180" />
           </Link>
-          <h1 className="text-title font-bold text-ink leading-tight">{t('title')}</h1>
+          <h1 className="text-title font-bold text-ink leading-tight truncate">{t('title')}</h1>
         </div>
       </div>
 
