@@ -972,10 +972,28 @@ describe('MockRepository with fake-indexeddb', () => {
       expect(values.length).toBe(1);
       expect(values[0].id).toBe(val.id);
 
+      // Correct the value: same row, new amount
+      const corrected = await repo.updateInvestmentValue(val.id, 90000);
+      expect(corrected.id).toBe(val.id);
+      expect(corrected.value).toBe(90000);
+      expect(corrected.valuedOn).toBe('2026-10-10');
+      list = await repo.getInvestments();
+      expect(list.find((i) => i.id === inv.id)?.worth).toBe(90000);
+      expect((await repo.getInvestmentValues(inv.id)).length).toBe(1);
+      await expect(repo.updateInvestmentValue(val.id, -1)).rejects.toThrow(
+        'Investment value cannot be negative'
+      );
+
       // Soft delete value
       await repo.softDeleteInvestmentValue(val.id);
       const afterDelete = await repo.getInvestmentValues(inv.id);
       expect(afterDelete.length).toBe(0);
+
+      // Undo brings it back
+      await repo.restoreInvestmentValue(val.id);
+      list = await repo.getInvestments();
+      expect(list.find((i) => i.id === inv.id)?.worth).toBe(90000);
+      await repo.softDeleteInvestmentValue(val.id);
 
       list = await repo.getInvestments();
       const reverted = list.find((i) => i.id === inv.id);

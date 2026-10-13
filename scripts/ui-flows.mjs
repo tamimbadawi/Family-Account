@@ -1658,6 +1658,62 @@ const FLOWS = {
     }
   },
 
+  async investment_value_edit(page, { locale }) {
+    const ar = locale === 'ar';
+    const undoName = ar ? 'تراجع' : 'Undo';
+    // 1. Open sample Gold (worth 96,000 from its latest value)
+    await page.goto(`${BASE}/${locale}/money/investment/aaaaaaaa-0000-0000-0000-0000000000e1`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    const openLatestValue = async () => {
+      const row = page.getByRole('button', { name: ar ? 'القيمة اتحدّثت' : 'Value updated' }).first();
+      // The list scrolls inside the screen on short phones
+      await row.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+      await sleep(200);
+      await assertUsable(page, row, 'Value updated row');
+      await row.click();
+      await sleep(600);
+      const drawer = page.locator('[data-slot="drawer-content"]').last();
+      await drawer.waitFor({ state: 'visible', timeout: 5000 });
+      return drawer;
+    };
+
+    // 2. Tap the value line -> it opens with the old amount -> add a 0 -> Save
+    let drawer = await openLatestValue();
+    await typeAmount(page, ['0']);
+    const saveBtn = drawer.getByRole('button', { name: ar ? 'حفظ' : 'Save' }).first();
+    await saveBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, saveBtn, 'Save value button');
+    await saveBtn.click();
+    await sleep(600);
+    if (!(await page.innerText('body')).includes('960,000')) throw new Error('Expected Worth now 960,000 after changing the value');
+
+    // 3. Undo puts the old amount back
+    let undoBtn = page.getByRole('button', { name: undoName }).first();
+    await undoBtn.waitFor({ state: 'visible', timeout: 8000 });
+    await undoBtn.click();
+    await sleep(800);
+    let text = await page.innerText('body');
+    if (text.includes('960,000') || !text.includes('96,000')) throw new Error('Expected Worth back to 96,000 after Undo of the change');
+
+    // 4. Remove the value, then Undo brings it back
+    await page.locator('[data-sonner-toast]').first().waitFor({ state: 'detached', timeout: 9000 }).catch(() => {});
+    drawer = await openLatestValue();
+    const removeBtn = drawer.getByRole('button', { name: ar ? 'شيل القيمة دي' : 'Remove this value' }).first();
+    await removeBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, removeBtn, 'Remove this value button');
+    await removeBtn.click();
+    await sleep(600);
+    undoBtn = page.getByRole('button', { name: undoName }).first();
+    await undoBtn.waitFor({ state: 'visible', timeout: 8000 });
+    await undoBtn.click();
+    await sleep(800);
+    text = await page.innerText('body');
+    if (!text.includes('96,000')) throw new Error('Expected Worth back to 96,000 after Undo of the removal');
+  },
+
   async investment_take(page, { locale }) {
     const ar = locale === 'ar';
     // 1. Open sample Gold
@@ -1746,6 +1802,7 @@ const MULTI_LOCALE_FLOW_NAMES = [
   'investment_add',
   'investment_paid',
   'investment_value',
+  'investment_value_edit',
   'investment_take',
 ];
 const LOCALES = ['en', 'ar'];

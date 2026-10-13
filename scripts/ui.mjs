@@ -34,6 +34,7 @@ const FLOW_ROUTES = {
   investment_add: ['', '/money'],
   investment_paid: ['', '/money'],
   investment_value: ['', '/money', '/money/investment/[id]'],
+  investment_value_edit: ['/money/investment/[id]'],
   investment_take: ['', '/money', '/money/investment/[id]'],
 };
 

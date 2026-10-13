@@ -1291,12 +1291,34 @@ export class MockRepository implements Repository {
     return toInvestmentValue(await this.persist('investment_values', row));
   }
 
+  async updateInvestmentValue(id: string, value: number): Promise<InvestmentValue> {
+    await this.ensureSeeded();
+    const val = roundMoney(value);
+    if (val < 0) {
+      throw new Error('Investment value cannot be negative');
+    }
+    return toInvestmentValue(
+      await this.patch('investment_values', id, {
+        value: val,
+        updated_at: new Date().toISOString(),
+      })
+    );
+  }
+
   async softDeleteInvestmentValue(id: string): Promise<void> {
     await this.ensureSeeded();
     const now = new Date().toISOString();
     await this.patch('investment_values', id, {
       deleted_at: now,
       updated_at: now,
+    });
+  }
+
+  async restoreInvestmentValue(id: string): Promise<void> {
+    await this.ensureSeeded();
+    await this.patch('investment_values', id, {
+      deleted_at: null,
+      updated_at: new Date().toISOString(),
     });
   }
 

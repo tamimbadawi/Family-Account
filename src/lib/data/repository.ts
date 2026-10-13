@@ -288,7 +288,9 @@ export interface Repository {
   getInvestments(includeArchived?: boolean): Promise<EnrichedInvestment[]>;
   getInvestmentValues(accountId: string): Promise<InvestmentValue[]>;
   addInvestmentValue(input: { id?: string; accountId: string; value: number; valuedOn?: string }): Promise<InvestmentValue>;
+  updateInvestmentValue(id: string, value: number): Promise<InvestmentValue>;
   softDeleteInvestmentValue(id: string): Promise<void>;
+  restoreInvestmentValue(id: string): Promise<void>;
 
   // Entries (Transactions)
   listEntries(params?: ListEntriesParams): Promise<EnrichedEntry[]>;

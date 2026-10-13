@@ -66,6 +66,8 @@ export default function InvestmentDetailPage({ params }: InvestmentDetailPagePro
   const [isUpdateValueOpen, setIsUpdateValueOpen] = React.useState(false);
   const [updateValueStr, setUpdateValueStr] = React.useState('');
   const [isUpdateSubmitting, setIsUpdateSubmitting] = React.useState(false);
+  // Set when the drawer is correcting an older value instead of adding a new one
+  const [editingValue, setEditingValue] = React.useState<{ id: string; value: number } | null>(null);
 
   // Spending wallets in same currency
   const availableSpendingWallets = React.useMemo(() => {
@@ -137,6 +139,36 @@ export default function InvestmentDetailPage({ params }: InvestmentDetailPagePro
   const handleUpdateValue = async () => {
     if (parsedUpdateValue === null || isNaN(parsedUpdateValue) || isUpdateSubmitting) return;
 
+    if (editingValue) {
+      const { id: valueId, value: before } = editingValue;
+      try {
+        setIsUpdateSubmitting(true);
+        await repo.updateInvestmentValue(valueId, parsedUpdateValue);
+
+        setIsUpdateValueOpen(false);
+        setUpdateValueStr('');
+
+        toast.success(t('valueChanged'), {
+          action: {
+            label: tCommon('undo'),
+            onClick: async () => {
+              try {
+                await repo.updateInvestmentValue(valueId, before);
+              } catch (err) {
+                saveError(err);
+              }
+            },
+          },
+          duration: 6000,
+        });
+      } catch (err) {
+        saveError(err);
+      } finally {
+        setIsUpdateSubmitting(false);
+      }
+      return;
+    }
+
     try {
       setIsUpdateSubmitting(true);
       const res = await repo.addInvestmentValue({
@@ -153,6 +185,37 @@ export default function InvestmentDetailPage({ params }: InvestmentDetailPagePro
           onClick: async () => {
             try {
               await repo.softDeleteInvestmentValue(res.id);
+            } catch (err) {
+              saveError(err);
+            }
+          },
+        },
+        duration: 6000,
+      });
+    } catch (err) {
+      saveError(err);
+    } finally {
+      setIsUpdateSubmitting(false);
+    }
+  };
+
+  const handleRemoveValue = async () => {
+    if (!editingValue || isUpdateSubmitting) return;
+    const valueId = editingValue.id;
+
+    try {
+      setIsUpdateSubmitting(true);
+      await repo.softDeleteInvestmentValue(valueId);
+
+      setIsUpdateValueOpen(false);
+      setUpdateValueStr('');
+
+      toast.success(t('valueRemoved'), {
+        action: {
+          label: tCommon('undo'),
+          onClick: async () => {
+            try {
+              await repo.restoreInvestmentValue(valueId);
             } catch (err) {
               saveError(err);
             }
@@ -325,6 +388,7 @@ export default function InvestmentDetailPage({ params }: InvestmentDetailPagePro
           <button
             type="button"
             onClick={() => {
+              setEditingValue(null);
               setIsUpdateValueOpen(true);
               setUpdateValueStr('');
             }}
@@ -380,9 +444,15 @@ export default function InvestmentDetailPage({ params }: InvestmentDetailPagePro
               }
 
               return (
-                <div
+                <button
                   key={item.id}
-                  className="flex min-h-14 w-full items-center justify-between gap-3 px-3.5 py-2.5 select-none"
+                  type="button"
+                  onClick={() => {
+                    setEditingValue({ id: item.id, value: item.amount });
+                    setUpdateValueStr(String(item.amount));
+                    setIsUpdateValueOpen(true);
+                  }}
+                  className="flex min-h-14 w-full items-center justify-between gap-3 px-3.5 py-2.5 text-start hover:bg-surface-2 active:bg-surface-2/80 transition-colors cursor-pointer select-none"
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink">
@@ -400,7 +470,7 @@ export default function InvestmentDetailPage({ params }: InvestmentDetailPagePro
                   <span className="text-body font-bold tabular-nums text-ink shrink-0 ps-2">
                     {money(item.amount, locale, { currency })}
                   </span>
-                </div>
+                </button>
               );
             })}
 
@@ -526,7 +596,7 @@ export default function InvestmentDetailPage({ params }: InvestmentDetailPagePro
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[max(env(safe-area-inset-bottom,0px),1.5rem)] space-y-4">
             <DrawerHeader className="px-0 pt-4 pb-1">
               <DrawerTitle className="text-title font-bold text-ink text-start">
-                {t('worthQuestion', { name: invName })}
+                {editingValue ? t('editValue') : t('worthQuestion', { name: invName })}
               </DrawerTitle>
             </DrawerHeader>
 
@@ -547,6 +617,17 @@ export default function InvestmentDetailPage({ params }: InvestmentDetailPagePro
             >
               {tCommon('save')}
             </Button>
+
+            {editingValue && (
+              <button
+                type="button"
+                onClick={handleRemoveValue}
+                disabled={isUpdateSubmitting}
+                className="min-h-12 w-full text-body font-semibold text-expense active:scale-95 transition-all cursor-pointer disabled:opacity-40"
+              >
+                {t('removeValue')}
+              </button>
+            )}
           </div>
         </DrawerContent>
       </Drawer>
