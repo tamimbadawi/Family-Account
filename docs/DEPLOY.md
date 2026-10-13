@@ -12,7 +12,7 @@ Changes that are finished and checked, waiting to go live. Nothing here is live 
 
 | PR | What it changes |
 |---|---|
-| — | Nothing waiting |
+| fix/sample-investments | Record only, no app change: migration file `0027_sample_investments` (already applied to the live database on 2026-10-13: every family with sample data got a sample Gold and Bank certificate; new families get them too, and their sample goal pockets count as saving) |
 
 ## Deployed
 
