@@ -20,6 +20,9 @@ import { CategoryIcon } from '@/components/ui/category-icon';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AddInvestmentDrawer } from '@/components/money/AddInvestmentDrawer';
+import { INVESTMENT_KIND_MAP } from '@/components/money/investment-kind';
+import { formatGoalTargetDate } from '@/lib/goals/progress';
 
 function MoneyContent() {
   const locale = useLocale();
@@ -37,6 +40,7 @@ function MoneyContent() {
   const investments = useInvestments(false);
 
   const isLoading = balances === undefined || goals === undefined || investments === undefined;
+  const [isAddInvestmentOpen, setIsAddInvestmentOpen] = React.useState(false);
 
   // Spending totals and groups
   const { spendingTotals, cashWallets, bankWallets } = React.useMemo(() => {
@@ -330,9 +334,93 @@ function MoneyContent() {
                 </Card>
               )}
             </div>
+
+            {/* Investments section */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h2 className="text-body font-semibold text-ink">{t('investments')}</h2>
+                <button
+                  type="button"
+                  onClick={() => setIsAddInvestmentOpen(true)}
+                  className="text-caption font-semibold text-accent hover:underline cursor-pointer"
+                >
+                  + {t('addInvestment')}
+                </button>
+              </div>
+
+              {!investments || investments.length === 0 ? (
+                <div className="rounded-card bg-surface p-4 shadow-card text-center space-y-2 border border-line/60">
+                  <p className="text-body text-ink-muted">{t('noInvestments')}</p>
+                </div>
+              ) : (
+                <Card className="rounded-card bg-surface shadow-card border border-line/60 divide-y divide-line/30 p-0 overflow-hidden">
+                  {investments.map((inv) => {
+                    const kindInfo = INVESTMENT_KIND_MAP[inv.investmentKind ?? 'other'];
+                    const Icon = kindInfo.icon;
+                    const invName =
+                      pickName({ name_ar: inv.nameAr, name_en: inv.nameEn }, locale) ||
+                      inv.id;
+                    const gain = inv.gain;
+                    const formattedMatures = formatGoalTargetDate(inv.maturesOn, locale);
+
+                    return (
+                      <Link
+                        key={inv.id}
+                        href={`/money/investment/${inv.id}`}
+                        className="flex min-h-16 w-full items-center justify-between gap-3 px-3.5 py-3 hover:bg-surface-2 active:bg-surface-2/80 transition-colors select-none text-start"
+                      >
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-accent-soft text-accent">
+                            <Icon className="size-5" />
+                          </div>
+                          <div className="min-w-0 flex-1 space-y-0.5">
+                            <div className="text-body font-semibold text-ink truncate leading-tight">
+                              {invName}
+                            </div>
+                            <div className="text-caption tabular-nums truncate leading-tight">
+                              {gain > 0 ? (
+                                <span className="text-income font-medium">
+                                  {t('up', {
+                                    amount: money(gain, locale, { currency: inv.currency }),
+                                  })}
+                                </span>
+                              ) : gain < 0 ? (
+                                <span className="text-expense font-medium">
+                                  {t('down', {
+                                    amount: money(Math.abs(gain), locale, { currency: inv.currency }),
+                                  })}
+                                </span>
+                              ) : inv.maturesOn && formattedMatures ? (
+                                <span className="text-ink-muted">
+                                  {t('endsOnLine', { date: formattedMatures })}
+                                </span>
+                              ) : (
+                                <span className="text-ink-muted">{t(kindInfo.messageKey)}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0 ps-2">
+                          <span className="text-body font-bold tabular-nums text-ink">
+                            {money(inv.worth, locale, { currency: inv.currency })}
+                          </span>
+                          <ChevronRight className="size-4 text-ink-muted rtl:rotate-180 shrink-0" />
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </Card>
+              )}
+            </div>
           </>
         )}
       </div>
+
+      <AddInvestmentDrawer
+        open={isAddInvestmentOpen}
+        onOpenChange={setIsAddInvestmentOpen}
+      />
     </div>
   );
 }

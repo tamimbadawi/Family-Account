@@ -39,6 +39,8 @@ export const TOURS: Record<TourId, TourStep[]> = {
     { id: 'saved', route: '/', target: 'money-saved' },
     { id: 'tabs', route: '/money', target: 'money-tabs' },
     { id: 'goals', route: '/money' },
+    { id: 'investments', route: '/money' },
+    { id: 'value', route: '/money' },
   ],
   history: [
     { id: 'search', route: '/history', target: 'history-search' },

@@ -30,14 +30,16 @@
     "type": { "title": "Out or in? 🤔", "body": "Money out is for things you paid. Money in is for money you got. Move is for money going from one wallet to another." },
     "amount": { "title": "How much? 🔢", "body": "Tap the big keys. Got a long receipt? Add it up right here, like 120 + 85." },
     "category": { "title": "What was it for? 🛒", "body": "Groceries? Bills? A little treat? Tap here and pick one." },
-    "details": { "title": "Which wallet, which day 📅", "body": "Today is already picked for you. Add a short note too, if you like." },
+    "details": { "title": "Which wallet, which day 📅", "body": "Pick the wallet you paid from and the day. Today is already picked for you. Add a short note too, if you like." },
     "save": { "title": "Save it! ✅", "body": "Tap Save and you're done. Oops, a mistake? Tap Undo on the message that pops up." }
   },
   "money": {
     "toSpend": { "title": "Ready to spend 💵", "body": "Your cash and bank money. This is what you can pay with today." },
     "saved": { "title": "Put aside 🐷", "body": "Money you saved for a goal or put into something like gold. It is not counted in your spending money." },
     "tabs": { "title": "Two sides 👀", "body": "Spending shows your cash and banks. Saving shows your goals and investments. Tap to switch." },
-    "goals": { "title": "Saving goals 🎯", "body": "Saving for a trip or a car? Tap New goal, then add a little whenever you can." }
+    "goals": { "title": "Saving goals 🎯", "body": "Saving for a trip or a car? Tap New goal, then add a little whenever you can." },
+    "investments": { "title": "Investments 🪙", "body": "Gold, a bank certificate, or anything you put money into. Tap Add investment to write it down." },
+    "value": { "title": "What is it worth? 📈", "body": "Prices change. Open an investment and tap Update value whenever you check. It never touches your spending." }
   },
   "history": {
     "search": { "title": "Detective mode 🔍", "body": "Type a word or an amount and we'll find the entry for you." },

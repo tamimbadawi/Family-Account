@@ -1301,8 +1301,24 @@ const FLOWS = {
     // 7. Step 4: goals on /money
     const step4Heading = page.locator('#tour-title').filter({ hasText: ar ? 'أهداف التحويش 🎯' : 'Saving goals 🎯' });
     await assertUsable(page, step4Heading, 'Step 4: goals title');
+    const nextBtn4 = page.getByRole('button', { name: ar ? 'التالي' : 'Next' }).first();
+    await assertUsable(page, nextBtn4, 'Next button step 4');
+    await nextBtn4.click();
+    await sleep(600);
+
+    // 8. Step 5: investments on /money
+    const step5Heading = page.locator('#tour-title').filter({ hasText: ar ? 'الاستثمارات 🪙' : 'Investments 🪙' });
+    await assertUsable(page, step5Heading, 'Step 5: investments title');
+    const nextBtn5 = page.getByRole('button', { name: ar ? 'التالي' : 'Next' }).first();
+    await assertUsable(page, nextBtn5, 'Next button step 5');
+    await nextBtn5.click();
+    await sleep(600);
+
+    // 9. Step 6: value on /money
+    const step6Heading = page.locator('#tour-title').filter({ hasText: ar ? 'قيمتها كام دلوقتي؟ 📈' : 'What is it worth? 📈' });
+    await assertUsable(page, step6Heading, 'Step 6: value title');
     const doneBtn = page.getByRole('button', { name: ar ? 'فهمت! 🎉' : 'Got it! 🎉' }).first();
-    await assertUsable(page, doneBtn, 'Done button step 4');
+    await assertUsable(page, doneBtn, 'Done button step 6');
     await doneBtn.click();
     await sleep(600);
 
