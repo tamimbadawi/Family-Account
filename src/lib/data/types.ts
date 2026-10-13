@@ -9,6 +9,8 @@ export type EntryType = 'expense' | 'income' | 'transfer';
 export type WalletType = 'cash' | 'bank' | 'card' | 'wallet';
 export type WalletPurpose = 'spending' | 'goal' | 'investment';
 export type InvestmentKind = 'gold' | 'certificate' | 'stocks' | 'property' | 'other';
+export type InvestmentUnit = 'gram' | 'share';
+export type GoldKarat = 18 | 21 | 24;
 export type MemberRole = 'owner' | 'member';
 export type MemberLocale = 'ar' | 'en';
 
@@ -46,6 +48,9 @@ export interface Wallet {
   purpose: WalletPurpose;
   investmentKind: InvestmentKind | null;
   maturesOn: string | null;
+  unit?: InvestmentUnit | null;
+  karat?: GoldKarat | null;
+  openingQuantity?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -59,6 +64,7 @@ export interface InvestmentValue {
   householdId: string;
   accountId: string;
   value: number;
+  unitPrice: number | null;
   valuedOn: string;
   createdBy: string | null;
   createdAt: string;
@@ -71,6 +77,8 @@ export interface EnrichedInvestment extends WalletBalance {
   worth: number; // see 4.6
   gain: number; // worth - putIn
   lastValuedOn: string | null;
+  quantity: number | null; // units owned now
+  unitPrice: number | null; // latest unit price
 }
 
 export interface Category {
@@ -122,6 +130,7 @@ export interface Entry {
   toAmount?: number | null;
   itemId: string | null;
   note: string | null;
+  quantity?: number | null;
   photoPath?: string | null; // receipt photo: '<household_id>/<entry_id>.jpg' (or .webp)
   recurringRuleId?: string | null;
   recurringMonth?: string | null;
@@ -348,6 +357,9 @@ export interface AccountRow {
   purpose?: WalletPurpose | null;
   investment_kind?: InvestmentKind | null;
   matures_on?: string | null;
+  unit?: InvestmentUnit | null;
+  karat?: GoldKarat | null;
+  opening_quantity?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -401,6 +413,7 @@ export interface TransactionRow {
   to_amount?: number | null;
   item_id: string | null;
   note: string | null;
+  quantity?: number | null;
   photo_path?: string | null;
   /** Live mode: one of the starter sample entries (0014). */
   is_sample?: boolean;
@@ -469,6 +482,7 @@ export interface InvestmentValueRow {
   household_id: string;
   account_id: string;
   value: number;
+  unit_price?: number | null;
   valued_on: string;
   created_by: string | null;
   created_at: string;

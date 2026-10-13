@@ -9,6 +9,7 @@ import type { Table } from 'dexie';
 import { db as defaultDb, FamilyAccountsDB } from '../offline/db';
 import {
   roundMoney,
+  roundQuantity,
   toBudget,
   toCategory,
   toEntry,
@@ -68,8 +69,10 @@ import type {
   EnrichedRecurringRule,
   EnrichedSavingsGoal,
   Entry,
+  GoldKarat,
   Household,
   HouseholdMemberRow,
+  InvestmentUnit,
   InvestmentValue,
   InvestmentValueRow,
   Item,
@@ -631,6 +634,12 @@ export class MockRepository implements Repository {
     }
     const investmentKind = purpose === 'investment' ? input.investmentKind ?? null : null;
     const maturesOn = purpose === 'investment' ? input.maturesOn ?? null : null;
+    const unit = purpose === 'investment' ? input.unit ?? null : null;
+    const karat = purpose === 'investment' && unit === 'gram' ? input.karat ?? null : null;
+    const openingQuantity =
+      purpose === 'investment' && unit != null && input.openingQuantity != null
+        ? roundQuantity(input.openingQuantity)
+        : null;
 
     const row: AccountRow = {
       id,
@@ -647,6 +656,9 @@ export class MockRepository implements Repository {
       purpose,
       investment_kind: investmentKind,
       matures_on: maturesOn,
+      unit,
+      karat,
+      opening_quantity: openingQuantity,
       created_at: now,
       updated_at: now,
     };
@@ -681,6 +693,16 @@ export class MockRepository implements Repository {
     }
     const maturesOn =
       updates.maturesOn !== undefined ? updates.maturesOn : (row.matures_on ?? null);
+    const unit =
+      updates.unit !== undefined ? updates.unit : (row.unit ?? null);
+    const karat =
+      updates.karat !== undefined ? updates.karat : (row.karat ?? null);
+    const openingQuantity =
+      updates.openingQuantity !== undefined
+        ? updates.openingQuantity != null
+          ? roundQuantity(updates.openingQuantity)
+          : null
+        : (row.opening_quantity ?? null);
 
     const updatedRow: AccountRow = {
       ...row,
@@ -698,6 +720,9 @@ export class MockRepository implements Repository {
       purpose,
       investment_kind: purpose === 'investment' ? investmentKind : null,
       matures_on: purpose === 'investment' ? maturesOn : null,
+      unit: purpose === 'investment' ? unit : null,
+      karat: purpose === 'investment' && unit === 'gram' ? karat : null,
+      opening_quantity: purpose === 'investment' && unit != null ? openingQuantity : null,
       updated_at: new Date().toISOString(),
     };
 
@@ -1218,6 +1243,10 @@ export class MockRepository implements Repository {
         .filter((t) => t.account_id === w.id || t.to_account_id === w.id)
         .map((t) => ({
           signedAmount: t.to_account_id === w.id ? Number(t.amount) : -Number(t.amount),
+          signedQuantity:
+            t.to_account_id === w.id
+              ? Number(t.quantity ?? 0)
+              : -Number(t.quantity ?? 0),
           createdAt: t.created_at,
         }));
 
@@ -1225,6 +1254,7 @@ export class MockRepository implements Repository {
         .filter((v) => v.account_id === w.id)
         .map((v) => ({
           value: Number(v.value),
+          unitPrice: v.unit_price != null ? Number(v.unit_price) : null,
           createdAt: v.created_at,
           valuedOn: v.valued_on,
           deletedAt: v.deleted_at,
@@ -1234,6 +1264,8 @@ export class MockRepository implements Repository {
         putIn: w.balance,
         values,
         moves,
+        unit: w.unit,
+        openingQuantity: w.openingQuantity,
       });
 
       return {
@@ -1242,8 +1274,32 @@ export class MockRepository implements Repository {
         worth: worthResult.worth,
         gain: worthResult.gain,
         lastValuedOn: worthResult.lastValuedOn,
+        quantity: worthResult.quantity ?? null,
+        unitPrice: worthResult.unitPrice ?? null,
       };
     });
+  }
+
+  private async computeCurrentQuantity(account: AccountRow): Promise<number> {
+    const transfers = await this.db.transactions
+      .filter(
+        (t) =>
+          t.deleted_at === null &&
+          t.type === 'transfer' &&
+          (t.account_id === account.id || t.to_account_id === account.id)
+      )
+      .toArray();
+
+    let qty = Number(account.opening_quantity ?? 0);
+    for (const t of transfers) {
+      const q = Number(t.quantity ?? 0);
+      if (t.to_account_id === account.id) {
+        qty += q;
+      } else if (t.account_id === account.id) {
+        qty -= q;
+      }
+    }
+    return Math.round(qty * 10000) / 10000;
   }
 
   async getInvestmentValues(accountId: string): Promise<InvestmentValue[]> {
@@ -1262,6 +1318,7 @@ export class MockRepository implements Repository {
     id?: string;
     accountId: string;
     value: number;
+    unitPrice?: number | null;
     valuedOn?: string;
   }): Promise<InvestmentValue> {
     await this.ensureSeeded();
@@ -1281,6 +1338,7 @@ export class MockRepository implements Repository {
       household_id: account.household_id,
       account_id: input.accountId,
       value: val,
+      unit_price: input.unitPrice ?? null,
       valued_on: input.valuedOn ?? localISODate(),
       created_by: this.currentUserId,
       created_at: now,
@@ -1289,6 +1347,150 @@ export class MockRepository implements Repository {
     };
 
     return toInvestmentValue(await this.persist('investment_values', row));
+  }
+
+  async addInvestmentPrice(input: {
+    accountId: string;
+    unitPrice: number;
+    valuedOn?: string;
+  }): Promise<InvestmentValue[]> {
+    await this.ensureSeeded();
+    const cleanPrice = roundMoney(input.unitPrice);
+    if (cleanPrice < 0) {
+      throw new Error('Investment price cannot be negative');
+    }
+
+    const account = await this.db.accounts.get(input.accountId);
+    if (!account) {
+      throw new Error(`Account not found: ${input.accountId}`);
+    }
+
+    const targets: AccountRow[] = [account];
+
+    // For gold, also update every other non-archived gold investment in the household with same karat and currency
+    if (
+      account.purpose === 'investment' &&
+      account.investment_kind === 'gold' &&
+      account.unit === 'gram'
+    ) {
+      const otherGolds = await this.db.accounts
+        .filter(
+          (a) =>
+            a.id !== account.id &&
+            !a.is_archived &&
+            a.purpose === 'investment' &&
+            a.investment_kind === 'gold' &&
+            a.unit === 'gram' &&
+            a.karat === account.karat &&
+            (a.currency ?? 'EGP') === (account.currency ?? 'EGP')
+        )
+        .toArray();
+      targets.push(...otherGolds);
+    }
+
+    const createdRows: InvestmentValue[] = [];
+    const now = new Date().toISOString();
+    const valuedOn = input.valuedOn ?? localISODate();
+
+    for (const acc of targets) {
+      const currentQty = await this.computeCurrentQuantity(acc);
+      const val = roundMoney(currentQty * cleanPrice);
+      const id = crypto.randomUUID();
+
+      const row: InvestmentValueRow = {
+        id,
+        household_id: acc.household_id,
+        account_id: acc.id,
+        value: val,
+        unit_price: cleanPrice,
+        valued_on: valuedOn,
+        created_by: this.currentUserId,
+        created_at: now,
+        updated_at: now,
+        deleted_at: null,
+      };
+
+      const saved = await this.persist('investment_values', row);
+      createdRows.push(toInvestmentValue(saved));
+    }
+
+    return createdRows;
+  }
+
+  async updateInvestmentPrice(id: string, unitPrice: number): Promise<InvestmentValue> {
+    await this.ensureSeeded();
+    const cleanPrice = roundMoney(unitPrice);
+    if (cleanPrice < 0) {
+      throw new Error('Investment price cannot be negative');
+    }
+
+    const valueRow = await this.db.investment_values.get(id);
+    if (!valueRow) {
+      throw new Error(`Investment value not found: ${id}`);
+    }
+
+    const account = await this.db.accounts.get(valueRow.account_id);
+    const currentQty = account ? await this.computeCurrentQuantity(account) : 0;
+    const nextVal = roundMoney(currentQty * cleanPrice);
+
+    return toInvestmentValue(
+      await this.patch('investment_values', id, {
+        unit_price: cleanPrice,
+        value: nextVal,
+        updated_at: new Date().toISOString(),
+      })
+    );
+  }
+
+  async trackByQuantity(
+    accountId: string,
+    input: { quantity: number; karat?: number | null }
+  ): Promise<{ account: Wallet; value: InvestmentValue }> {
+    await this.ensureSeeded();
+    const account = await this.db.accounts.get(accountId);
+    if (!account) {
+      throw new Error(`Account not found: ${accountId}`);
+    }
+
+    const isGold = account.investment_kind === 'gold';
+    const unit: InvestmentUnit = isGold ? 'gram' : 'share';
+    const karat = isGold ? ((input.karat as GoldKarat) ?? 21) : null;
+    const qty = roundQuantity(input.quantity);
+
+    // Get current worth of the investment before switching
+    const currentInvestments = await this.getInvestments(true);
+    const existing = currentInvestments.find((i) => i.id === accountId);
+    const currentWorth = existing ? existing.worth : Number(account.opening_balance);
+
+    const unitPrice = qty > 0 ? roundMoney(currentWorth / qty) : 0;
+    const now = new Date().toISOString();
+
+    const updatedAccountRow = await this.patch('accounts', accountId, {
+      unit,
+      karat,
+      opening_quantity: qty,
+      updated_at: now,
+    });
+
+    const valueRow: InvestmentValueRow = {
+      id: crypto.randomUUID(),
+      household_id: account.household_id,
+      account_id: accountId,
+      value: currentWorth,
+      unit_price: unitPrice,
+      valued_on: localISODate(),
+      created_by: this.currentUserId,
+      created_at: now,
+      updated_at: now,
+      deleted_at: null,
+    };
+
+    const savedValue = await this.persist('investment_values', valueRow);
+
+    return {
+      account: toWallet(updatedAccountRow),
+      value: toInvestmentValue(savedValue),
+    };
   }
 
   async updateInvestmentValue(id: string, value: number): Promise<InvestmentValue> {
@@ -1613,6 +1815,11 @@ export class MockRepository implements Repository {
       }
     }
 
+    const quantity =
+      input.type === 'transfer' && input.quantity != null
+        ? roundQuantity(input.quantity)
+        : null;
+
     const row: TransactionRow = {
       id,
       household_id: await this.householdId(input.householdId),
@@ -1622,6 +1829,7 @@ export class MockRepository implements Repository {
       account_id: input.accountId,
       to_account_id: input.type === 'transfer' ? input.toAccountId! : null,
       item_id: input.type === 'transfer' ? null : input.itemId!,
+      quantity,
       note: input.note ?? null,
       recurring_rule_id: input.recurringRuleId ?? null,
       recurring_month: input.recurringMonth ?? null,
@@ -1668,6 +1876,15 @@ export class MockRepository implements Repository {
       }
     }
 
+    const nextQuantity =
+      nextType === 'transfer'
+        ? updates.quantity !== undefined
+          ? updates.quantity != null
+            ? roundQuantity(updates.quantity)
+            : null
+          : (row.quantity ?? null)
+        : null;
+
     const updatedRow: TransactionRow = {
       ...row,
       type: nextType,
@@ -1676,6 +1893,7 @@ export class MockRepository implements Repository {
       account_id: nextAccountId,
       to_account_id: nextType === 'transfer' ? nextToAccountId : null,
       item_id: nextType === 'transfer' ? null : nextItemId,
+      quantity: nextQuantity,
       note: updates.note !== undefined ? updates.note : row.note,
       updated_by: updates.updatedBy ?? this.currentUserId,
       updated_at: new Date().toISOString(),

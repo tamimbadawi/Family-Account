@@ -18,8 +18,10 @@ import type {
   EnrichedSavingsGoal,
   Entry,
   EntryType,
+  GoldKarat,
   Household,
   InvestmentKind,
+  InvestmentUnit,
   InvestmentValue,
   Item,
   Member,
@@ -86,6 +88,7 @@ export interface CreateEntryInput {
   accountId: string;
   toAccountId?: string | null;
   toAmount?: number | null;
+  quantity?: number | null;
   itemId?: string | null;
   note?: string | null;
   recurringRuleId?: string | null;
@@ -121,6 +124,7 @@ export interface UpdateEntryInput {
   accountId?: string;
   toAccountId?: string | null;
   toAmount?: number | null;
+  quantity?: number | null;
   itemId?: string | null;
   note?: string | null;
   updatedBy?: string | null;
@@ -140,6 +144,9 @@ export interface CreateWalletInput {
   purpose?: WalletPurpose;
   investmentKind?: InvestmentKind | null;
   maturesOn?: string | null;
+  unit?: InvestmentUnit | null;
+  karat?: GoldKarat | null;
+  openingQuantity?: number | null;
 }
 
 export interface UpdateWalletInput {
@@ -154,6 +161,9 @@ export interface UpdateWalletInput {
   purpose?: WalletPurpose;
   investmentKind?: InvestmentKind | null;
   maturesOn?: string | null;
+  unit?: InvestmentUnit | null;
+  karat?: GoldKarat | null;
+  openingQuantity?: number | null;
 }
 
 export interface CreateCategoryInput {
@@ -287,8 +297,14 @@ export interface Repository {
   // Investments (M1)
   getInvestments(includeArchived?: boolean): Promise<EnrichedInvestment[]>;
   getInvestmentValues(accountId: string): Promise<InvestmentValue[]>;
-  addInvestmentValue(input: { id?: string; accountId: string; value: number; valuedOn?: string }): Promise<InvestmentValue>;
+  addInvestmentValue(input: { id?: string; accountId: string; value: number; unitPrice?: number | null; valuedOn?: string }): Promise<InvestmentValue>;
+  addInvestmentPrice(input: { accountId: string; unitPrice: number; valuedOn?: string }): Promise<InvestmentValue[]>;
   updateInvestmentValue(id: string, value: number): Promise<InvestmentValue>;
+  updateInvestmentPrice(id: string, unitPrice: number): Promise<InvestmentValue>;
+  trackByQuantity(
+    accountId: string,
+    input: { quantity: number; karat?: number | null }
+  ): Promise<{ account: Wallet; value: InvestmentValue }>;
   softDeleteInvestmentValue(id: string): Promise<void>;
   restoreInvestmentValue(id: string): Promise<void>;
 
