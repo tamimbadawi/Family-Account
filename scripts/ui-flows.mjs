@@ -78,6 +78,20 @@ async function typeAmount(page, digits) {
   for (const d of digits) await tap(page, d);
 }
 async function homeNumbers(page) {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const text = await page.locator('body').innerText();
+    const num = (re) => Number((text.match(re)?.[1] || '0').replace(/,/g, ''));
+    const numbers = {
+      spent: num(/(?:Spent this month|مصاريف الشهر)\s*([\d,]+)/),
+      moneyIn: num(/(?:Money in|دخل)\s*([\d,]+)/),
+      toSpend: num(/(?:To spend|للصرف)\s*([\d,]+)/),
+      saved: num(/(?:Saved|متحوّش)\s*([\d,]+)/),
+    };
+    if (numbers.toSpend > 0 && numbers.saved > 0 && numbers.spent > 0) {
+      return numbers;
+    }
+    await sleep(250);
+  }
   const text = await page.locator('body').innerText();
   const num = (re) => Number((text.match(re)?.[1] || '0').replace(/,/g, ''));
   return {
@@ -1480,6 +1494,8 @@ const FLOWS = {
 
     // 3. Click "+ Add investment"
     const addBtn = page.getByRole('button', { name: ar ? /\+ إضافة استثمار/ : /\+ Add investment/ }).first();
+    await addBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
     await assertUsable(page, addBtn, 'Add investment button');
     await addBtn.click();
     await sleep(600);
@@ -1553,6 +1569,8 @@ const FLOWS = {
 
     // 3. Click "+ Add investment"
     const addBtn = page.getByRole('button', { name: ar ? /\+ إضافة استثمار/ : /\+ Add investment/ }).first();
+    await addBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
     await assertUsable(page, addBtn, 'Add investment button');
     await addBtn.click();
     await sleep(600);
@@ -1799,6 +1817,8 @@ const FLOWS = {
 
     // 2. Click "+ Add investment"
     const addBtn = page.getByRole('button', { name: ar ? /\+ إضافة استثمار/ : /\+ Add investment/ }).first();
+    await addBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
     await assertUsable(page, addBtn, 'Add investment button');
     await addBtn.click();
     await sleep(600);
@@ -1857,6 +1877,8 @@ const FLOWS = {
 
     // 2. Click "Update price"
     const updateBtn = page.getByRole('button', { name: ar ? 'تحديث السعر' : 'Update price' }).first();
+    await updateBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
     await assertUsable(page, updateBtn, 'Update price button');
     await updateBtn.click();
     await sleep(600);
@@ -1918,6 +1940,8 @@ const FLOWS = {
 
     // 2. Click "Take out"
     const takeBtn = page.getByRole('button', { name: ar ? 'سحب' : 'Take out' }).first();
+    await takeBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
     await assertUsable(page, takeBtn, 'Take out button');
     await takeBtn.click();
     await sleep(600);

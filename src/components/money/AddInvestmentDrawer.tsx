@@ -192,13 +192,27 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
             </DrawerTitle>
           </DrawerHeader>
 
-          <form onSubmit={handleSave} className="space-y-3">
-            {/* 1. Kind selection */}
+          <form onSubmit={handleSave} className="space-y-2 [@media(min-height:740px)]:space-y-3">
+            {/* 1. Kind selection & Currency */}
             <div className="space-y-1">
-              <label className="text-caption font-semibold text-ink-muted">
-                {t('kind')}
-              </label>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-caption font-semibold text-ink-muted">
+                  {t('kind')}
+                </label>
+                {hasMultipleCurrencies && (
+                  <div className="w-28 shrink-0">
+                    <CurrencySelect
+                      value={selectedCurrency}
+                      onChange={(c) => {
+                        setSelectedCurrency(c);
+                        setPaidFrom('alreadyHave');
+                      }}
+                      className="h-8 w-full rounded-lg bg-surface-2 px-2 text-caption font-semibold"
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-6 gap-1">
                 {INVESTMENT_KINDS.map((k) => {
                   const info = INVESTMENT_KIND_MAP[k];
                   const Icon = info.icon;
@@ -207,15 +221,16 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
                     <button
                       key={k}
                       type="button"
+                      aria-label={t(info.messageKey)}
                       onClick={() => handleKindSelect(k)}
-                      className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl p-1.5 transition-transform active:scale-95 cursor-pointer text-center ${
+                      className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl p-1 transition-transform active:scale-95 cursor-pointer text-center ${
                         isSelected
                           ? 'bg-accent text-accent-ink ring-2 ring-accent'
                           : 'bg-surface-2 text-ink hover:bg-line/40'
                       }`}
                     >
                       <Icon className="size-4.5 shrink-0" />
-                      <span className="text-caption font-semibold leading-tight line-clamp-1">
+                      <span className="text-[11px] font-semibold leading-tight line-clamp-1">
                         {t(info.messageKey)}
                       </span>
                     </button>
@@ -224,52 +239,27 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
               </div>
             </div>
 
-            {/* Currency selector if family has multiple */}
-            {hasMultipleCurrencies && (
-              <div className="space-y-1">
-                <label className="text-caption font-semibold text-ink-muted">
-                  {tCommon('currency')}
-                </label>
-                <CurrencySelect
-                  value={selectedCurrency}
-                  onChange={(c) => {
-                    setSelectedCurrency(c);
-                    setPaidFrom('alreadyHave');
+            {/* 2. Name & Karat on the same row */}
+            <div className="flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <Input
+                  type="text"
+                  required
+                  value={effectiveName}
+                  onChange={(e) => {
+                    setCustomName(e.target.value);
                   }}
-                  className="h-11 w-full rounded-xl bg-surface-2 px-3 text-body"
+                  className="h-10 rounded-xl bg-surface-2 text-body"
                 />
               </div>
-            )}
-
-            {/* 2. Name field */}
-            <div className="space-y-1">
-              <label className="text-caption font-semibold text-ink-muted">
-                {t('name')}
-              </label>
-              <Input
-                type="text"
-                required
-                value={effectiveName}
-                onChange={(e) => {
-                  setCustomName(e.target.value);
-                }}
-                className="h-11 rounded-xl bg-surface-2 text-body"
-              />
-            </div>
-
-            {/* 3. Karat chips (for unit gold only) */}
-            {isUnitKind && kind === 'gold' && (
-              <div className="space-y-1">
-                <label className="text-caption font-semibold text-ink-muted">
-                  {t('karat')}
-                </label>
-                <div className="flex gap-2">
+              {isUnitKind && kind === 'gold' && (
+                <div className="flex gap-1 shrink-0">
                   {([18, 21, 24] as const).map((k) => (
                     <button
                       key={k}
                       type="button"
                       onClick={() => setKarat(k)}
-                      className={`flex-1 h-11 rounded-xl text-body font-semibold transition-transform active:scale-95 cursor-pointer ${
+                      className={`h-10 min-w-10 px-2 rounded-xl text-caption font-semibold transition-transform active:scale-95 cursor-pointer ${
                         karat === k
                           ? 'bg-accent text-accent-ink ring-2 ring-accent'
                           : 'bg-surface-2 text-ink hover:bg-line/40'
@@ -279,27 +269,27 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* 4. Number inputs & AmountPad */}
+            {/* 3. Number inputs & AmountPad */}
             {isUnitKind ? (
-              <div className="space-y-2">
+              <div className="space-y-1.5 [@media(min-height:740px)]:space-y-2">
                 <div className="grid grid-cols-2 gap-2">
                   {/* Box 1: Quantity */}
                   <button
                     type="button"
                     onClick={() => setActiveField('quantity')}
-                    className={`flex min-h-14 flex-col items-start justify-center rounded-xl p-2.5 text-start transition-transform active:scale-98 cursor-pointer ${
+                    className={`flex min-h-12 flex-col items-start justify-center rounded-xl px-2.5 py-1.5 text-start transition-transform active:scale-98 cursor-pointer ${
                       activeField === 'quantity'
                         ? 'bg-surface-2 ring-2 ring-accent'
                         : 'bg-surface-2/60 opacity-80'
                     }`}
                   >
-                    <span className="text-caption font-semibold text-ink-muted">
+                    <span className="text-caption font-semibold text-ink-muted leading-tight">
                       {kind === 'gold' ? t('howManyGrams') : t('howManyShares')}
                     </span>
-                    <span className="text-title font-bold tabular-nums text-ink">
+                    <span className="text-title font-bold tabular-nums text-ink leading-tight">
                       {quantityStr ? (
                         <>
                           {quantityStr}
@@ -317,16 +307,16 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
                   <button
                     type="button"
                     onClick={() => setActiveField('amount')}
-                    className={`flex min-h-14 flex-col items-start justify-center rounded-xl p-2.5 text-start transition-transform active:scale-98 cursor-pointer ${
+                    className={`flex min-h-12 flex-col items-start justify-center rounded-xl px-2.5 py-1.5 text-start transition-transform active:scale-98 cursor-pointer ${
                       activeField === 'amount'
                         ? 'bg-surface-2 ring-2 ring-accent'
                         : 'bg-surface-2/60 opacity-80'
                     }`}
                   >
-                    <span className="text-caption font-semibold text-ink-muted">
+                    <span className="text-caption font-semibold text-ink-muted leading-tight">
                       {t('whatDidYouPay')}
                     </span>
-                    <span className="text-title font-bold tabular-nums text-ink">
+                    <span className="text-title font-bold tabular-nums text-ink leading-tight">
                       {amountStr ? (
                         <>
                           {amountStr}
@@ -343,7 +333,7 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
 
                 {/* Per-unit price preview under boxes */}
                 {cleanQuantity > 0 && cleanAmount > 0 && (
-                  <p className="text-body font-semibold text-ink-muted text-center tabular-nums py-0.5">
+                  <p className="text-caption font-semibold text-ink-muted text-center tabular-nums py-0">
                     {kind === 'gold'
                       ? t('perGram', {
                           amount: money(Math.round((cleanAmount / cleanQuantity) * 100) / 100, locale, {
@@ -369,11 +359,11 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
                   }}
                 />
 
-                <div className="flex justify-center pt-0.5">
+                <div className="flex justify-center">
                   <button
                     type="button"
                     onClick={() => setKnowsQuantity(false)}
-                    className="min-h-11 py-1.5 text-body text-ink-muted hover:text-ink underline underline-offset-4 cursor-pointer"
+                    className="min-h-11 py-1 text-body text-ink-muted hover:text-ink underline underline-offset-4 cursor-pointer"
                   >
                     {kind === 'gold' ? t('dontKnowWeight') : t('dontKnowShares')}
                   </button>
@@ -381,9 +371,6 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
               </div>
             ) : (
               <div className="space-y-1.5">
-                <label className="text-caption font-semibold text-ink-muted">
-                  {t('howMuch')}
-                </label>
                 <AmountDisplay
                   value={amountStr}
                   type="transfer"
@@ -391,14 +378,14 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
                 />
                 <AmountPad value={amountStr} onChange={setAmountStr} />
                 {(kind === 'gold' || kind === 'stocks') && (
-                  <div className="flex justify-center pt-1">
+                  <div className="flex justify-center pt-0.5">
                     <button
                       type="button"
                       onClick={() => {
                         setKnowsQuantity(true);
                         setActiveField('quantity');
                       }}
-                      className="min-h-12 py-2 text-body text-ink-muted hover:text-ink underline underline-offset-4 cursor-pointer"
+                      className="min-h-11 py-1 text-body text-ink-muted hover:text-ink underline underline-offset-4 cursor-pointer"
                     >
                       {kind === 'gold' ? t('trackByWeight') : t('trackByShares')}
                     </button>
@@ -408,26 +395,24 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
             )}
 
             {/* 4. Paid from chooser */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <label className="text-caption font-semibold text-ink-muted">
                 {t('paidFrom')}
               </label>
-              <div className="grid grid-cols-2 gap-2">
-                {/* "I already had it" tile */}
+              <div className="flex flex-wrap gap-1.5">
+                {/* "I already had it" button */}
                 <button
                   type="button"
                   aria-pressed={paidFrom === 'alreadyHave'}
                   onClick={() => setPaidFrom('alreadyHave')}
-                  className={`flex min-h-14 items-center gap-2 rounded-2xl px-3 py-2 text-start transition-transform active:scale-95 cursor-pointer ${
+                  className={`flex min-h-12 items-center gap-1.5 rounded-xl px-3 py-1.5 text-start transition-transform active:scale-95 cursor-pointer ${
                     paidFrom === 'alreadyHave'
                       ? 'bg-accent text-accent-ink'
                       : 'bg-surface-2 text-ink'
                   }`}
                 >
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-body font-semibold leading-tight">
-                      {t('alreadyHave')}
-                    </span>
+                  <span className="text-body font-semibold leading-tight">
+                    {t('alreadyHave')}
                   </span>
                 </button>
 
@@ -441,25 +426,25 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
                       type="button"
                       aria-pressed={isSelected}
                       onClick={() => setPaidFrom(w.id)}
-                      className={`flex min-h-14 items-center gap-2 rounded-2xl px-3 py-2 text-start transition-transform active:scale-95 cursor-pointer ${
+                      className={`flex min-h-12 items-center gap-2 rounded-xl px-3 py-1.5 text-start transition-transform active:scale-95 cursor-pointer ${
                         isSelected
                           ? 'bg-accent text-accent-ink'
                           : 'bg-surface-2 text-ink'
                       }`}
                     >
-                      <CategoryIcon name={w.icon ?? 'wallet'} className="size-5 shrink-0" />
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-body font-semibold leading-tight break-words">
+                      <CategoryIcon name={w.icon ?? 'wallet'} className="size-4.5 shrink-0" />
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-body font-semibold leading-tight">
                           {walletName}
                         </span>
                         <span
-                          className={`block text-caption tabular-nums leading-tight ${
+                          className={`text-caption tabular-nums leading-tight ${
                             isSelected ? '' : 'text-ink-muted'
                           }`}
                         >
                           {money(w.balance, locale, { currency: w.currency })}
                         </span>
-                      </span>
+                      </div>
                     </button>
                   );
                 })}
