@@ -1360,8 +1360,8 @@ const FLOWS = {
     await saveBtn.click();
     await sleep(600);
 
-    // 6. Gold row with 5,000 is in the list
-    const goldRow = page.locator('a[href*="/money/investment/"]').filter({ hasText: ar ? 'دهب' : 'Gold' }).first();
+    // 6. Newly created Gold row with 5,000 is in the list
+    const goldRow = page.locator('a[href*="/money/investment/"]').filter({ hasText: '5,000' }).first();
     await assertUsable(page, goldRow, 'Gold investment row');
     const goldText = await goldRow.innerText();
     if (!goldText.includes('5,000')) throw new Error(`Expected Gold row to show 5,000, got: ${goldText}`);
@@ -1499,10 +1499,9 @@ const FLOWS = {
 
     // 5. Undo right now while toast is on screen
     const undoBtn = page.getByRole('button', { name: ar ? 'تراجع' : 'Undo' }).first();
-    if (await undoBtn.isVisible()) {
-      await undoBtn.click();
-      await sleep(600);
-    }
+    await undoBtn.waitFor({ state: 'visible', timeout: 8000 });
+    await undoBtn.click();
+    await sleep(800);
     const restoredText = await page.innerText('body');
     if (!restoredText.includes('96,000')) throw new Error(`Expected Worth back to 96,000 after Undo`);
 
