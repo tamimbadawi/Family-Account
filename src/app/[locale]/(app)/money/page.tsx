@@ -15,7 +15,7 @@ import { totalsByCurrency } from '@/lib/money/groups';
 import { money, pickName } from '@/lib/format';
 import { historyHref } from '@/lib/history/link';
 import { useEntrySheet } from '@/components/entry/EntrySheetContext';
-import { getWalletTypeIcon } from '@/components/wallets/OurMoneySheet';
+import { getWalletTypeIcon } from '@/components/wallets/wallet-type-icon';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

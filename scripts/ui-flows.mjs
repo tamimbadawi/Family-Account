@@ -677,6 +677,7 @@ const FLOWS = {
     }
   },
   async our_money(page, { locale }) {
+    // ── Reports overview page 2 ─────────────────────────────────────
     await page.goto(`${BASE}/${locale}/reports`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(800);
 
@@ -688,27 +689,52 @@ const FLOWS = {
       await sleep(400);
     }
 
-    // Click the wallet balances card to open OurMoneySheet
-    const walletCard = page.locator('h2').filter({ hasText: locale === 'ar' ? 'رصيد المحافظ' : 'Wallet balances' }).first();
-    await assertUsable(page, walletCard, 'wallet balances card');
-    await walletCard.click();
-    await sleep(500);
+    // The wallet balances card now shows 3 group rows (no single total, no pop-up).
+    // Verify the Spending row is visible.
+    const spendingLabel = locale === 'ar' ? 'الصرف' : 'Spending';
+    const spendingRow = page.getByText(spendingLabel, { exact: true }).first();
+    await assertUsable(page, spendingRow, 'Spending group row on wallet card');
 
-    const drawer = page.locator('[data-slot="drawer-content"]');
-    await drawer.waitFor({ state: 'visible', timeout: 5000 });
+    // Verify the Investments row exists.
+    const investmentsLabel = locale === 'ar' ? 'استثمارات' : 'Investments';
+    const investmentsRow = page.getByText(investmentsLabel, { exact: true }).first();
+    await assertUsable(page, investmentsRow, 'Investments group row on wallet card');
 
-    // Tap first wallet row inside sheet
-    const walletRow = drawer.locator('button').filter({ hasText: locale === 'ar' ? 'كاش' : 'Cash' }).first();
-    await assertUsable(page, walletRow, 'wallet row in OurMoneySheet');
-    await walletRow.click();
+    // Tap Spending → should land on /money
+    await spendingRow.click();
+    await page.waitForURL(`**/${locale}/money*`, { timeout: 10000 });
+    await sleep(400);
 
-    await page.waitForURL(`**\/history?wallet=*`, { timeout: 10000 });
-    await sleep(500);
-
-    if (!page.url().includes('history?wallet=')) {
-      throw new Error('Did not navigate to history filtered by wallet');
+    // Go back to Reports
+    await page.goto(`${BASE}/${locale}/reports`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(600);
+    if (await page2Dot.isVisible().catch(() => false)) {
+      await page2Dot.click();
+      await sleep(400);
     }
+
+    // Tap Investments → /money with saving tab
+    const investmentsRowAfter = page.getByText(investmentsLabel, { exact: true }).first();
+    await investmentsRowAfter.scrollIntoViewIfNeeded().catch(() => {});
+    await investmentsRowAfter.click();
+    await page.waitForURL(`**/${locale}/money*`, { timeout: 10000 });
+    await sleep(400);
+
+    // Go back once more and tap "View all" → /money
+    await page.goto(`${BASE}/${locale}/reports`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(600);
+    if (await page2Dot.isVisible().catch(() => false)) {
+      await page2Dot.click();
+      await sleep(400);
+    }
+    const viewAllLabel = locale === 'ar' ? 'عرض الكل' : 'View all';
+    const viewAllLink = page.getByText(viewAllLabel, { exact: true }).first();
+    await assertUsable(page, viewAllLink, '"View all" link');
+    await viewAllLink.click();
+    await page.waitForURL(`**/${locale}/money*`, { timeout: 10000 });
+    await sleep(400);
   },
+
 
   async update_balance(page, { locale }) {
     await page.goto(`${BASE}/${locale}/settings/wallets`, { waitUntil: 'networkidle', timeout: 45000 });
