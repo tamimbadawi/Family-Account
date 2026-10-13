@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
 
+const WINDOWS = process.platform === 'win32';
 const DIR = path.resolve('.ui-check');
 const STATE = path.join(DIR, 'server.json');
 const LOG = path.join(DIR, 'server.log');
@@ -34,7 +35,31 @@ function killTree(pid) {
     else process.kill(-pid, 'SIGTERM');
   } catch {}
 }
-const logTail = (lines) => (fs.existsSync(LOG) ? fs.readFileSync(LOG, 'utf8').split('\n').slice(-lines).join('\n') : '');
+const logTail = (lines) =>
+  [LOG, LOG + '.err'].filter((f) => fs.existsSync(f)).map((f) => fs.readFileSync(f, 'utf8')).join('\n').split('\n').slice(-lines).join('\n');
+const alive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+
+/**
+ * Starts `next <args>` so that it keeps running after this script ends, writing to the log; returns its process id.
+ * On Windows it goes through PowerShell's hidden Start-Process: a server started detached straight from Node opens
+ * an empty console window on screen, and one started as a plain child is ended together with this script.
+ */
+function launch(args) {
+  if (!WINDOWS) {
+    const out = fs.openSync(LOG, 'w');
+    const child = spawn(process.execPath, [NEXT, ...args], { detached: true, stdio: ['ignore', out, out], env: ENV });
+    child.unref();
+    return child.pid;
+  }
+  const q = (text) => `'${String(text).replace(/'/g, "''")}'`;
+  const command =
+    `(Start-Process -FilePath ${q(process.execPath)} -ArgumentList ${q([NEXT, ...args].map((a) => `"${a}"`).join(' '))} ` +
+    `-WorkingDirectory ${q(process.cwd())} -WindowStyle Hidden -RedirectStandardOutput ${q(LOG)} ` +
+    `-RedirectStandardError ${q(LOG + '.err')} -PassThru).Id | Out-File -Encoding ascii ${q(LOG + '.pid')}`;
+  // No pipes to PowerShell: the server would inherit them and this call would wait for the server to end.
+  spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', command], { env: ENV, stdio: 'ignore', windowsHide: true });
+  try { return Number(fs.readFileSync(LOG + '.pid', 'utf8').trim()) || 0; } catch { return 0; }
+}
 
 const BUILT = path.join(DIR, 'server-built.json');
 const NEXT = path.resolve('node_modules/next/dist/bin/next');
@@ -81,17 +106,15 @@ export async function ensureBuiltServer() {
   }
   const port = await freePort();
   const url = `http://localhost:${port}`;
-  const out = fs.openSync(LOG, 'w');
-  const child = spawn(process.execPath, [NEXT, 'start', '-p', String(port)], { detached: true, windowsHide: true, stdio: ['ignore', out, out], env: ENV });
-  child.unref();
+  const pid = launch(['start', '-p', String(port)]);
   const deadline = Date.now() + 30_000;
   while (Date.now() < deadline && !(await answers(url, 2000))) await sleep(250);
   if (!(await answers(url, 2000))) {
-    killTree(child.pid);
+    killTree(pid);
     console.error(`The built app did not start. Last lines of ${LOG}:\n${logTail(40)}`);
     process.exit(1);
   }
-  fs.writeFileSync(BUILT, JSON.stringify({ url, pid: child.pid, version }));
+  fs.writeFileSync(BUILT, JSON.stringify({ url, pid, version }));
   return { base: url, fresh: true };
 }
 
@@ -124,20 +147,16 @@ export async function ensureServer(warmRoutes = []) {
   try { JSON.parse(fs.readFileSync(manifest, 'utf8')); } catch { fs.rmSync(manifest, { force: true }); }
   const port = await freePort();
   const url = `http://localhost:${port}`;
-  const out = fs.openSync(LOG, 'w');
-  const child = spawn(process.execPath, [NEXT, 'dev', '-p', String(port)], { detached: true, windowsHide: true, stdio: ['ignore', out, out], env: ENV });
-  let exited = false;
-  child.once('exit', () => { exited = true; });
-  child.unref();
+  const pid = launch(['dev', '-p', String(port)]);
 
   const deadline = Date.now() + 90_000;
-  while (Date.now() < deadline && !exited && !(await answers(url, 2000))) await sleep(250);
-  if (exited || !(await answers(url, 2000))) {
-    killTree(child.pid);
+  while (Date.now() < deadline && alive(pid) && !(await answers(url, 2000))) await sleep(250);
+  if (!(await answers(url, 2000))) {
+    killTree(pid);
     console.error(`The dev server did not start. Last lines of ${LOG}:\n${logTail(40)}`);
     process.exit(1);
   }
-  const state = { url, pid: child.pid, startedAt: new Date().toISOString(), warmed: [] };
+  const state = { url, pid, startedAt: new Date().toISOString(), warmed: [] };
   fs.writeFileSync(STATE, JSON.stringify(state));
   await warm(state, warmRoutes);
   return { base: url, fresh: true };
