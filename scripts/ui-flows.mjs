@@ -1267,7 +1267,10 @@ const FLOWS = {
     const guideBtn = page.locator('button').filter({ hasText: ar ? 'فلوسنا' : 'Our money' }).first();
     await assertUsable(page, guideBtn, 'Our money guide item');
     await guideBtn.click();
-    await sleep(1000);
+    await page.waitForURL((url) => url.pathname === `/${locale}` || url.pathname === `/${locale}/`, { timeout: 10000 });
+    const bubble = page.locator('[data-tour-overlay] [role="dialog"]:not(.pointer-events-none)');
+    await bubble.waitFor({ state: 'visible', timeout: 10000 });
+    await sleep(600);
 
     // 4. Step 1: toSpend on Home ("/")
     const step1Heading = page.locator('#tour-title').filter({ hasText: ar ? 'جاهز للصرف 💵' : 'Ready to spend 💵' });
@@ -1283,7 +1286,9 @@ const FLOWS = {
     const nextBtn2 = page.getByRole('button', { name: ar ? 'التالي' : 'Next' }).first();
     await assertUsable(page, nextBtn2, 'Next button step 2');
     await nextBtn2.click();
-    await sleep(1000);
+    await page.waitForURL(`**\/money*`, { timeout: 10000 });
+    await bubble.waitFor({ state: 'visible', timeout: 10000 });
+    await sleep(600);
 
     // 6. Step 3: tabs on /money
     const step3Heading = page.locator('#tour-title').filter({ hasText: ar ? 'ناحيتين 👀' : 'Two sides 👀' });

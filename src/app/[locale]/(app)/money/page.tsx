@@ -140,14 +140,14 @@ function MoneyContent() {
         <div
           role="tablist"
           data-tour="money-tabs"
-          className="inline-flex h-12 w-full items-center rounded-2xl bg-surface-2 p-1 select-none"
+          className="inline-flex h-14 w-full items-center rounded-2xl bg-surface-2 p-1 select-none"
         >
           <button
             type="button"
             role="tab"
             aria-selected={activeTab === 'spending'}
             onClick={() => router.replace('/money?tab=spending')}
-            className={`flex h-10 flex-1 items-center justify-center rounded-xl text-body font-semibold transition-all ${
+            className={`flex h-12 flex-1 items-center justify-center rounded-xl text-body font-semibold transition-all ${
               activeTab === 'spending'
                 ? 'bg-surface shadow-card text-ink'
                 : 'text-ink-muted hover:text-ink'
@@ -160,7 +160,7 @@ function MoneyContent() {
             role="tab"
             aria-selected={activeTab === 'saving'}
             onClick={() => router.replace('/money?tab=saving')}
-            className={`flex h-10 flex-1 items-center justify-center rounded-xl text-body font-semibold transition-all ${
+            className={`flex h-12 flex-1 items-center justify-center rounded-xl text-body font-semibold transition-all ${
               activeTab === 'saving'
                 ? 'bg-surface shadow-card text-ink'
                 : 'text-ink-muted hover:text-ink'
