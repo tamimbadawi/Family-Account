@@ -312,6 +312,42 @@ const FLOWS = {
     await assertUsable(page, page.getByText('Food · Test Bank').first(), 'the entry saved on the new bank');
   },
 
+  async entry_pickers(page) {
+    await openSheet(page);
+
+    // Open wallet picker and pick a bank
+    await tap(page, 'Wallet');
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('button', { name: /^Bank/ }).click();
+    await page.getByText('Which bank?').waitFor({ timeout: 8000 });
+    const bankOption = dialog.getByRole('button', { name: 'NBE', exact: true });
+    await assertUsable(page, bankOption, 'bank option NBE');
+    await bankOption.click();
+    await sleep(400);
+
+    // Switch type to Transfer ("Move")
+    await tap(page, 'Move');
+    await sleep(400);
+
+    // Open the "from" wallet picker
+    await tap(page, 'From');
+    await sleep(400);
+
+    // Verify the three group headings exist
+    const transferDialog = page.getByRole('dialog');
+    const spendingHeading = transferDialog.getByText('Spending', { exact: true });
+    const goalsHeading = transferDialog.getByText('Saving goals', { exact: true });
+    const investmentsHeading = transferDialog.getByText('Investments', { exact: true });
+
+    await assertUsable(page, spendingHeading, 'Spending group heading');
+    await assertUsable(page, goalsHeading, 'Saving goals group heading');
+    await assertUsable(page, investmentsHeading, 'Investments group heading');
+
+    // Close it
+    await page.keyboard.press('Escape');
+    await sleep(350);
+  },
+
   async reports_tabs(page, { locale }) {
     await page.goto(`${BASE}/${locale}/reports`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(800);
