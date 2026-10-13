@@ -155,6 +155,10 @@ export class LiveRepository extends MockRepository {
     if (this.watchingAuth) return;
     this.watchingAuth = true;
     this.client().auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        this.currentUserId = '';
+        return;
+      }
       if (!session || (event !== 'SIGNED_IN' && event !== 'TOKEN_REFRESHED')) return;
       this.currentUserId = session.user.id;
       // Supabase asks not to call it from inside this callback (it holds the auth lock)
@@ -165,6 +169,7 @@ export class LiveRepository extends MockRepository {
   /** Sign-out: nothing of the family stays on the phone. */
   async clearCache(): Promise<void> {
     this.opened = null;
+    this.currentUserId = '';
     await clearLocalCopy(this.db);
   }
 

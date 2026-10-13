@@ -120,11 +120,36 @@ export class MockRepository implements Repository {
    * Who is "signed in" on this phone in sample mode. New entries and edits are stamped with it,
    * the way the database stamps auth.uid() in live mode (set_txn_audit). Defaults to the owner.
    */
-  currentUserId: string;
+  private _currentUserId: string;
+  private userIdListeners = new Set<(userId: string | null) => void>();
+
+  get currentUserId(): string {
+    return this._currentUserId;
+  }
+
+  set currentUserId(value: string) {
+    if (this._currentUserId !== value) {
+      this._currentUserId = value;
+      for (const listener of this.userIdListeners) {
+        try {
+          listener(value || null);
+        } catch (err) {
+          console.error('[MockRepository] userId listener error', err);
+        }
+      }
+    }
+  }
+
+  onUserIdChange(listener: (userId: string | null) => void): () => void {
+    this.userIdListeners.add(listener);
+    return () => {
+      this.userIdListeners.delete(listener);
+    };
+  }
 
   constructor(customDb?: FamilyAccountsDB, currentUserId: string = USER_MAMA_ID) {
     this.db = customDb ?? defaultDb;
-    this.currentUserId = currentUserId;
+    this._currentUserId = currentUserId;
   }
 
   // ---------- Write hooks (LiveRepository overrides these to save to Supabase first) ----------

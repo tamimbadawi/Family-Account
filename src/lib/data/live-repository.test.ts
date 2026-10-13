@@ -202,4 +202,46 @@ describe('LiveRepository pull without a session', () => {
     expect(await db.accounts.count()).toBe(1);
     expect((await db.meta.get('householdId'))?.value).toBe(HID);
   });
+
+  it('notifies onUserIdChange subscribers when currentUserId updates (e.g. auth state changes)', async () => {
+    const db = new FamilyAccountsDB(`test-live-userid-${Math.random().toString(36).slice(2, 9)}`);
+    let authCallback: ((event: string, session: { user: { id: string } } | null) => void) | null = null;
+    const client = {
+      auth: {
+        getSession: async () => ({ data: { session: null } }),
+        onAuthStateChange: (cb: (event: string, session: { user: { id: string } } | null) => void) => {
+          authCallback = cb;
+        },
+      },
+      from: () => ({ select: () => ({ abortSignal: async () => ({ data: [], error: null }) }) }),
+    };
+
+    const repo = new LiveRepository(db, () => client as never);
+    const seenUserIds: (string | null)[] = [];
+    const unsubscribe = repo.onUserIdChange((id) => {
+      seenUserIds.push(id);
+    });
+
+    expect(repo.currentUserId).toBe('');
+    vi.stubGlobal('window', {});
+    await repo.ensureSeeded();
+
+    // Session arrives late via onAuthStateChange
+    if (authCallback) {
+      (authCallback as (event: string, session: { user: { id: string } } | null) => void)('SIGNED_IN', {
+        user: { id: 'user_late_admin' },
+      });
+    }
+    expect(repo.currentUserId).toBe('user_late_admin');
+    expect(seenUserIds).toEqual(['user_late_admin']);
+
+    // Sign out clears it
+    if (authCallback) {
+      (authCallback as (event: string, session: { user: { id: string } } | null) => void)('SIGNED_OUT', null);
+    }
+    expect(repo.currentUserId).toBe('');
+    expect(seenUserIds).toEqual(['user_late_admin', null]);
+
+    unsubscribe();
+  });
 });

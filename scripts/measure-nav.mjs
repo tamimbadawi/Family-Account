@@ -1,13 +1,12 @@
 import { chromium } from 'playwright-core';
 
-const BASE = 'http://localhost:3007';
-const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const BASE = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
+const CHROME = process.env.CHROME_PATH;
 
 async function main() {
-  const browser = await chromium.launch({
-    executablePath: CHROME,
-    headless: true,
-  });
+  const browser = await chromium.launch(
+    CHROME ? { executablePath: CHROME, headless: true } : { headless: true, channel: 'chrome' }
+  );
 
   const ctx = await browser.newContext({
     viewport: { width: 390, height: 844 },

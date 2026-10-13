@@ -8,7 +8,7 @@
 // =========================================================
 
 import { useLiveQuery } from 'dexie-react-hooks';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { mockRepository } from './mock-repository';
 import { LiveRepository } from './live-repository';
 import { getLastNMonths } from '@/lib/reports/months';
@@ -191,7 +191,20 @@ export function useRepository(): Repository {
 /** ID of the user signed in on this phone (null if not known or not signed in). */
 export function useCurrentUserId(): string | null {
   const repo = useRepository();
-  return repo.currentUserId ?? null;
+
+  const subscribe = React.useCallback(
+    (onStoreChange: () => void) => {
+      if (typeof repo.onUserIdChange !== 'function') return () => {};
+      return repo.onUserIdChange(() => onStoreChange());
+    },
+    [repo]
+  );
+
+  const getSnapshot = React.useCallback(() => {
+    return repo.currentUserId || null;
+  }, [repo]);
+
+  return useSyncExternalStore(subscribe, getSnapshot, () => null);
 }
 
 // ---------- Live Query Hooks ----------
