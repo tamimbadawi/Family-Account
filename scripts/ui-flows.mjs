@@ -49,6 +49,8 @@ const reportsMessages = {
   ar: JSON.parse(fs.readFileSync(path.resolve('messages/ar/reports.json'), 'utf8')),
 };
 
+// UI_FAST=1 (set by `npm run ui:feature`): only FAIL lines are printed.
+const FAST = process.env.UI_FAST === '1';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const btn = (page, name) => page.getByRole('button', { name, exact: true }).or(page.getByRole('radio', { name, exact: true })).first();
 
@@ -1181,7 +1183,7 @@ const jobs = names.flatMap((name) => {
 let failures = 0;
 const started = Date.now();
 const queue = [...jobs];
-await Promise.all(Array.from({ length: 4 }, async () => {
+await Promise.all(Array.from({ length: Number(process.env.UI_PARALLEL || 4) }, async () => {
   while (queue.length) {
     const { name, locale, profile } = queue.shift();
     const [w, h] = profile.vp;
@@ -1213,10 +1215,11 @@ await Promise.all(Array.from({ length: 4 }, async () => {
     }
     if (error) failures++;
     const label = MULTI_LOCALE_FLOW_NAMES.includes(name) ? `${name} ${locale}` : name;
-    console.log(`${error ? 'FAIL' : 'ok  '} ${label} ${w}x${h}${error ? ' -> ' + error : ''}`);
+    if (!FAST || error) console.log(`${error ? 'FAIL' : 'ok  '} ${label} ${w}x${h}${error ? ' -> ' + error : ''}`);
     await ctx.close();
   }
 }));
 await browser.close();
+fs.writeFileSync(path.resolve('.ui-check/last-flows.json'), JSON.stringify({ runs: jobs.length, failed: failures }));
 console.log(`\n${failures ? failures + ' flow run(s) failed' : 'all flows ok'} — ${jobs.length} runs in ${((Date.now() - started) / 1000).toFixed(0)}s`);
 process.exit(failures ? 1 : 0);
