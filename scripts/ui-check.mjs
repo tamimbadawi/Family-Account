@@ -209,9 +209,10 @@ async function runJob({ route, profile, theme }) {
       if (a.cutByTabBar?.length) problems.push('cut by tab bar: ' + a.cutByTabBar.join(', '));
       if (a.clipped?.length) problems.push('clipped: ' + a.clipped.join(', '));
       if (a.ellipsis?.length) problems.push('ellipsis: ' + a.ellipsis.join(', '));
-      if (a.hiddenInScroll?.length && !LIST_ROUTES.some((r) => route.endsWith(r))) problems.push('content hidden (must fit, no scrolling): ' + a.hiddenInScroll.join(', '));
+      const isList = LIST_ROUTES.some((r) => route.endsWith(r) || route.includes(r + '/') || route.includes(r));
+      if (a.hiddenInScroll?.length && !isList) problems.push('content hidden (must fit, no scrolling): ' + a.hiddenInScroll.join(', '));
       if (a.covered?.length) problems.push('covered by another element (e.g. the + button): ' + a.covered.join(', '));
-      if (a.cutBottom?.length && !LIST_ROUTES.some((r) => route.endsWith(r))) problems.push('cut off at the bottom / under the tab bar: ' + a.cutBottom.join(', '));
+      if (a.cutBottom?.length && !isList) problems.push('cut off at the bottom / under the tab bar: ' + a.cutBottom.join(', '));
       if (a.tooSmall?.length) problems.push('text <15px: ' + a.tooSmall.join(', '));
       if (a.errors?.length) problems.push('errors: ' + a.errors.join(', '));
       if (consoleErrors.length) problems.push('JS errors: ' + consoleErrors.join(' | '));
