@@ -13,6 +13,8 @@ import type {
   Household,
   HouseholdMemberRow,
   HouseholdRow,
+  InvestmentValue,
+  InvestmentValueRow,
   Item,
   ItemRow,
   Member,
@@ -98,6 +100,9 @@ export function toWallet(row: AccountRow): Wallet {
     color: row.color,
     sortOrder: row.sort_order,
     isArchived: Boolean(row.is_archived),
+    purpose: row.purpose ?? 'spending',
+    investmentKind: row.investment_kind ?? null,
+    maturesOn: row.matures_on ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -116,6 +121,9 @@ export function toAccountRow(w: Wallet): AccountRow {
     color: w.color,
     sort_order: w.sortOrder,
     is_archived: w.isArchived,
+    purpose: w.purpose ?? 'spending',
+    investment_kind: w.investmentKind ?? null,
+    matures_on: w.maturesOn ?? null,
     created_at: w.createdAt,
     updated_at: w.updatedAt,
   };
@@ -401,3 +409,34 @@ export function toSavingsGoalRow(g: SavingsGoal): SavingsGoalRow {
     updated_at: g.updatedAt,
   };
 }
+
+// ---------- Investment Value ----------
+
+export function toInvestmentValue(row: InvestmentValueRow): InvestmentValue {
+  return {
+    id: row.id,
+    householdId: row.household_id,
+    accountId: row.account_id,
+    value: roundMoney(Number(row.value)),
+    valuedOn: row.valued_on,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    deletedAt: row.deleted_at,
+  };
+}
+
+export function toInvestmentValueRow(v: InvestmentValue): InvestmentValueRow {
+  return {
+    id: v.id,
+    household_id: v.householdId,
+    account_id: v.accountId,
+    value: roundMoney(v.value),
+    valued_on: v.valuedOn,
+    created_by: v.createdBy,
+    created_at: v.createdAt,
+    updated_at: v.updatedAt,
+    deleted_at: v.deletedAt,
+  };
+}
+

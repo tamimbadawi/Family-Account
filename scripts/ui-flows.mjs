@@ -49,7 +49,10 @@ const reportsMessages = {
   ar: JSON.parse(fs.readFileSync(path.resolve('messages/ar/reports.json'), 'utf8')),
 };
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// UI_FAST=1 (set by `npm run ui:feature`): only FAIL lines are printed.
+const FAST = process.env.UI_FAST === '1';
+// The fixed waits are for animations; with animations off (FAST) a third of the wait is enough.
+const sleep = (ms) => new Promise((r) => setTimeout(r, FAST ? Math.max(120, ms * 0.35) : ms));
 const btn = (page, name) => page.getByRole('button', { name, exact: true }).or(page.getByRole('radio', { name, exact: true })).first();
 
 /** Visible, inside the viewport and not covered by anything else at its centre. */
@@ -77,7 +80,12 @@ async function typeAmount(page, digits) {
 async function homeNumbers(page) {
   const text = await page.locator('body').innerText();
   const num = (re) => Number((text.match(re)?.[1] || '0').replace(/,/g, ''));
-  return { spent: num(/Spent this month\s*([\d,]+)/), moneyIn: num(/Money in ([\d,]+)/) };
+  return {
+    spent: num(/(?:Spent this month|مصاريف الشهر)\s*([\d,]+)/),
+    moneyIn: num(/(?:Money in|دخل)\s*([\d,]+)/),
+    toSpend: num(/(?:To spend|للصرف)\s*([\d,]+)/),
+    saved: num(/(?:Saved|متحوّش)\s*([\d,]+)/),
+  };
 }
 async function openSheet(page, isAr = false) {
   await tap(page, isAr ? 'إضافة' : 'Add entry');
@@ -91,6 +99,14 @@ async function assertOnePopup(page, amountText) {
   if (shown !== amountText) throw new Error(`amount shows "${shown}" (should be "${amountText}")`);
   if (await btn(page, "Next").count()) throw new Error("a Next step is back; everything should be in one popup");
   await assertUsable(page, page.getByRole("button", { name: /^(Save|Saved|Choose a category|Choose Sub \/ Save)$/ }).last(), "Save button without scrolling");
+}
+/** A tap on a total opens a sheet, or goes to History showing the entries behind it. */
+async function sheetOrEntries(page, drawer) {
+  const opened = await Promise.any([
+    drawer.waitFor({ state: 'visible', timeout: 5000 }),
+    page.waitForURL(/\/history/, { timeout: 5000 }),
+  ]).then(() => true, () => false);
+  if (!opened) throw new Error('nothing opened after tapping a total (no sheet, no entries list)');
 }
 async function saveButton(page) {
   return page.getByRole('button', { name: /^(Save|Saved|Choose Sub \/ Save|حفظ|تم الحفظ|اختار الفرع \/ حفظ)$/ }).last();
@@ -296,6 +312,42 @@ const FLOWS = {
     await assertUsable(page, page.getByText('Food · Test Bank').first(), 'the entry saved on the new bank');
   },
 
+  async entry_pickers(page) {
+    await openSheet(page);
+
+    // Open wallet picker and pick a bank
+    await tap(page, 'Wallet');
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('button', { name: /^Bank/ }).click();
+    await page.getByText('Which bank?').waitFor({ timeout: 8000 });
+    const bankOption = dialog.getByRole('button', { name: 'NBE', exact: true });
+    await assertUsable(page, bankOption, 'bank option NBE');
+    await bankOption.click();
+    await sleep(400);
+
+    // Switch type to Transfer ("Move")
+    await tap(page, 'Move');
+    await sleep(400);
+
+    // Open the "from" wallet picker
+    await tap(page, 'From');
+    await sleep(400);
+
+    // Verify the three group headings exist
+    const transferDialog = page.getByRole('dialog');
+    const spendingHeading = transferDialog.getByText('Spending', { exact: true });
+    const goalsHeading = transferDialog.getByText('Saving goals', { exact: true });
+    const investmentsHeading = transferDialog.getByText('Investments', { exact: true });
+
+    await assertUsable(page, spendingHeading, 'Spending group heading');
+    await assertUsable(page, goalsHeading, 'Saving goals group heading');
+    await assertUsable(page, investmentsHeading, 'Investments group heading');
+
+    // Close it
+    await page.keyboard.press('Escape');
+    await sleep(350);
+  },
+
   async reports_tabs(page, { locale }) {
     await page.goto(`${BASE}/${locale}/reports`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(800);
@@ -407,7 +459,7 @@ const FLOWS = {
     await seeAllOverview.click();
     await sleep(500);
     const drawer1 = page.locator('[data-slot="drawer-content"]');
-    await drawer1.waitFor({ state: 'visible', timeout: 5000 });
+    await sheetOrEntries(page, drawer1);
     await page.keyboard.press('Escape');
     await sleep(500);
 
@@ -419,7 +471,7 @@ const FLOWS = {
     await cell.click();
     await sleep(500);
     const drawer2 = page.locator('[data-slot="drawer-content"]');
-    await drawer2.waitFor({ state: 'visible', timeout: 5000 });
+    await sheetOrEntries(page, drawer2);
     await page.keyboard.press('Escape');
     await sleep(500);
 
@@ -431,7 +483,7 @@ const FLOWS = {
     await seeAllTvL.click();
     await sleep(500);
     const drawer3 = page.locator('[data-slot="drawer-content"]');
-    await drawer3.waitFor({ state: 'visible', timeout: 5000 });
+    await sheetOrEntries(page, drawer3);
     await page.keyboard.press('Escape');
     await sleep(500);
 
@@ -444,7 +496,7 @@ const FLOWS = {
     await seeAllBig.click();
     await sleep(500);
     const drawer4 = page.locator('[data-slot="drawer-content"]');
-    await drawer4.waitFor({ state: 'visible', timeout: 5000 });
+    await sheetOrEntries(page, drawer4);
     await page.keyboard.press('Escape');
     await sleep(500);
 
@@ -456,7 +508,7 @@ const FLOWS = {
     await dayBtn.click();
     await sleep(500);
     const drawer5 = page.locator('[data-slot="drawer-content"]');
-    await drawer5.waitFor({ state: 'visible', timeout: 5000 });
+    await sheetOrEntries(page, drawer5);
     await page.keyboard.press('Escape');
     await sleep(500);
 
@@ -468,7 +520,7 @@ const FLOWS = {
     await subRow.click();
     await sleep(500);
     const drawer6 = page.locator('[data-slot="drawer-content"]');
-    await drawer6.waitFor({ state: 'visible', timeout: 5000 });
+    await sheetOrEntries(page, drawer6);
     await page.keyboard.press('Escape');
     await sleep(500);
   },
@@ -582,7 +634,49 @@ const FLOWS = {
       await page.evaluate(() => window.scrollTo(0, 0));
 
       // Test interactive controls per report
+      const moneyMsgs = {
+        en: { toSpend: 'To spend', saved: 'Saved', spending: 'Spending', saving: 'Saving' },
+        ar: { toSpend: 'للصرف', saved: 'متحوّش', spending: 'الصرف', saving: 'التحويش' },
+      }[locale];
+
+      if (rId === 'net-worth') {
+        const toSpendLabel = page.getByText(moneyMsgs.toSpend).first();
+        await assertUsable(page, toSpendLabel, `To spend label on net-worth (${locale}/${size})`);
+        const savedLabel = page.getByText(moneyMsgs.saved).first();
+        await assertUsable(page, savedLabel, `Saved label on net-worth (${locale}/${size})`);
+
+        const forbiddenTotal = locale === 'ar' ? 'إجمالي الفلوس' : 'Total net worth';
+        const totalCount = await page.getByText(forbiddenTotal).count();
+        if (totalCount > 0) {
+          throw new Error(`Total net worth found on net-worth (${locale}/${size})`);
+        }
+      }
+
       if (rId === 'balance-over-time') {
+        // Opens on Spending by default
+        const spendingTab = page.getByRole('tab', { name: moneyMsgs.spending });
+        await assertUsable(page, spendingTab, `Spending tab on balance-over-time (${locale}/${size})`);
+        const isSpendingSelected = await spendingTab.getAttribute('aria-selected');
+        if (isSpendingSelected !== 'true') {
+          throw new Error(`balance-over-time did not open on Spending (${locale}/${size})`);
+        }
+
+        // Switches to Saving
+        const savingTab = page.getByRole('tab', { name: moneyMsgs.saving });
+        await assertUsable(page, savingTab, `Saving tab on balance-over-time (${locale}/${size})`);
+        await savingTab.click();
+        await sleep(300);
+        const isSavingSelected = await savingTab.getAttribute('aria-selected');
+        if (isSavingSelected !== 'true') {
+          throw new Error(`balance-over-time failed to switch to Saving (${locale}/${size})`);
+        }
+        const savingNote = page.getByText(reportsMessages[locale].library.savingPutInNote);
+        await assertUsable(page, savingNote, `Saving put in note on balance-over-time (${locale}/${size})`);
+
+        // Switch back to spending
+        await spendingTab.click();
+        await sleep(300);
+
         const p12m = page.getByRole('button', { name: reportsMessages[locale].library.last12Months });
         await assertUsable(page, p12m, `Last 12 months button on ${rId} (${locale}/${size})`);
         await p12m.click();
@@ -625,6 +719,7 @@ const FLOWS = {
     }
   },
   async our_money(page, { locale }) {
+    // ── Reports overview page 2 ─────────────────────────────────────
     await page.goto(`${BASE}/${locale}/reports`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(800);
 
@@ -636,27 +731,87 @@ const FLOWS = {
       await sleep(400);
     }
 
-    // Click the wallet balances card to open OurMoneySheet
-    const walletCard = page.locator('h2').filter({ hasText: locale === 'ar' ? 'رصيد المحافظ' : 'Wallet balances' }).first();
-    await assertUsable(page, walletCard, 'wallet balances card');
-    await walletCard.click();
-    await sleep(500);
+    // The wallet balances card now shows 3 group rows (no single total, no pop-up).
+    const spendingLabel = locale === 'ar' ? 'الصرف' : 'Spending';
+    const goalsLabel = locale === 'ar' ? 'أهداف التحويش' : 'Saving goals';
+    const investmentsLabel = locale === 'ar' ? 'استثمارات' : 'Investments';
+    const savingTabLabel = locale === 'ar' ? 'التحويش' : 'Saving';
 
-    const drawer = page.locator('[data-slot="drawer-content"]');
-    await drawer.waitFor({ state: 'visible', timeout: 5000 });
+    const spendingRow = page.getByText(spendingLabel, { exact: true }).first();
+    await assertUsable(page, spendingRow, 'Spending group row on wallet card');
 
-    // Tap first wallet row inside sheet
-    const walletRow = drawer.locator('button').filter({ hasText: locale === 'ar' ? 'كاش' : 'Cash' }).first();
-    await assertUsable(page, walletRow, 'wallet row in OurMoneySheet');
-    await walletRow.click();
+    const goalsRow = page.getByText(goalsLabel, { exact: true }).first();
+    await assertUsable(page, goalsRow, 'Saving goals group row on wallet card');
 
-    await page.waitForURL(`**\/history?wallet=*`, { timeout: 10000 });
-    await sleep(500);
+    const investmentsRow = page.getByText(investmentsLabel, { exact: true }).first();
+    await assertUsable(page, investmentsRow, 'Investments group row on wallet card');
 
-    if (!page.url().includes('history?wallet=')) {
-      throw new Error('Did not navigate to history filtered by wallet');
+    // Tap Spending → should land on /money with spending tab selected
+    await spendingRow.click();
+    await page.waitForURL(`**/${locale}/money*`, { timeout: 10000 });
+    await sleep(400);
+    const spendingTab = page.getByRole('tab', { name: spendingLabel });
+    await assertUsable(page, spendingTab, 'Spending tab on /money');
+    if ((await spendingTab.getAttribute('aria-selected')) !== 'true') {
+      throw new Error('Spending tab not selected after tapping Spending row');
     }
+
+    // Go back to Reports
+    await page.goto(`${BASE}/${locale}/reports`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(600);
+    if (await page2Dot.isVisible().catch(() => false)) {
+      await page2Dot.click();
+      await sleep(400);
+    }
+
+    // Tap Saving goals → /money?tab=saving, assert Saving tab is selected
+    const goalsRowAfter = page.getByText(goalsLabel, { exact: true }).first();
+    await goalsRowAfter.scrollIntoViewIfNeeded().catch(() => {});
+    await goalsRowAfter.click();
+    await page.waitForURL(`**/${locale}/money*`, { timeout: 10000 });
+    await sleep(400);
+    const savingTabAfterGoals = page.getByRole('tab', { name: savingTabLabel });
+    await assertUsable(page, savingTabAfterGoals, 'Saving tab on /money after goals');
+    if ((await savingTabAfterGoals.getAttribute('aria-selected')) !== 'true') {
+      throw new Error('Saving tab not selected after tapping Saving goals row');
+    }
+
+    // Go back to Reports
+    await page.goto(`${BASE}/${locale}/reports`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(600);
+    if (await page2Dot.isVisible().catch(() => false)) {
+      await page2Dot.click();
+      await sleep(400);
+    }
+
+    // Tap Investments → /money?tab=saving, assert Saving tab is selected
+    const investmentsRowAfter = page.getByText(investmentsLabel, { exact: true }).first();
+    await investmentsRowAfter.scrollIntoViewIfNeeded().catch(() => {});
+    await investmentsRowAfter.click();
+    await page.waitForURL(`**/${locale}/money*`, { timeout: 10000 });
+    await sleep(400);
+    const savingTabAfterInvest = page.getByRole('tab', { name: savingTabLabel });
+    await assertUsable(page, savingTabAfterInvest, 'Saving tab on /money after investments');
+    if ((await savingTabAfterInvest.getAttribute('aria-selected')) !== 'true') {
+      throw new Error('Saving tab not selected after tapping Investments row');
+    }
+
+    // Go back once more and tap "View all" → /money
+    await page.goto(`${BASE}/${locale}/reports`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(600);
+    if (await page2Dot.isVisible().catch(() => false)) {
+      await page2Dot.click();
+      await sleep(400);
+    }
+    const viewAllLabel = locale === 'ar' ? 'عرض الكل' : 'View all';
+    const viewAllLink = page.getByText(viewAllLabel, { exact: true }).first();
+    await viewAllLink.scrollIntoViewIfNeeded().catch(() => {});
+    await assertUsable(page, viewAllLink, '"View all" link');
+    await viewAllLink.click();
+    await page.waitForURL(`**/${locale}/money*`, { timeout: 10000 });
+    await sleep(400);
   },
+
 
   async update_balance(page, { locale }) {
     await page.goto(`${BASE}/${locale}/settings/wallets`, { waitUntil: 'networkidle', timeout: 45000 });
@@ -695,9 +850,12 @@ const FLOWS = {
     await page.goto(`${BASE}/${locale}/settings`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(800);
 
-    const downloadBtn = page.locator('[role="button"]').filter({
-      hasText: locale === 'ar' ? 'تنزيل بياناتي' : 'Download my data',
-    }).first();
+    const downloadBtn = page.getByRole('button', { name: locale === 'ar' ? 'تنزيل بياناتي' : 'Download my data' }).first();
+    // The button lives under "More settings", which starts closed
+    if (!(await downloadBtn.isVisible())) {
+      await page.getByRole('button', { name: new RegExp(locale === 'ar' ? 'إعدادات تانية' : 'More settings') }).first().click();
+      await sleep(400);
+    }
     await assertUsable(page, downloadBtn, `Download my data button (${locale}/${size})`);
 
     const [download] = await Promise.all([
@@ -1025,9 +1183,10 @@ const FLOWS = {
     // 1. Start from Home to initialize page and locale
     await page.goto(`${BASE}/${locale}`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(1000);
+    const homeBefore = await homeNumbers(page);
 
-    // 2. Visit Settings > Goals
-    await page.goto(`${BASE}/${locale}/settings/goals`, { waitUntil: 'networkidle', timeout: 45000 });
+    // 2. Visit Money > Goals
+    await page.goto(`${BASE}/${locale}/money/goals`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(1000);
     const heading = page.getByRole('heading', { name: ar ? 'أهداف الادخار' : 'Savings goals' }).first();
     await assertUsable(page, heading, 'Savings goals page heading');
@@ -1057,14 +1216,17 @@ const FLOWS = {
 
     // 6. Verify goal card appears
     const goalCardTitle = page.getByRole('heading', { name: ar ? 'عمرة العائلة' : 'Family Trip' }).first();
+    const goalCard = page.locator('div.rounded-card').filter({ has: goalCardTitle }).first();
+    await goalCard.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(400);
     await assertUsable(page, goalCardTitle, 'Goal card title');
 
     // 7. Verify progress bar is visible
-    const progress = page.locator('[role="progressbar"]').first();
+    const progress = goalCard.locator('[role="progressbar"]').first();
     await assertUsable(page, progress, 'Goal progress bar');
 
     // 7b. Add money to the goal: choose the wallet it comes from, key in 500, save
-    const addMoneyBtn = page.getByRole('button', { name: ar ? 'إضافة مبلغ' : 'Add money' }).first();
+    const addMoneyBtn = goalCard.getByRole('button', { name: ar ? 'إضافة مبلغ' : 'Add money' }).first();
     await assertUsable(page, addMoneyBtn, 'Add money button');
     await addMoneyBtn.click();
     await sleep(600);
@@ -1078,11 +1240,33 @@ const FLOWS = {
     await assertUsable(page, addToGoalBtn, 'Save button');
     await addToGoalBtn.click();
     await sleep(1500);
-    const savedLine = page.getByText(/500/).first();
+    await goalCard.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(400);
+    const savedLine = goalCard.getByText(/500/).first();
     await assertUsable(page, savedLine, 'saved amount on the goal card after adding money');
 
+    // Verify Home numbers: To spend goes down by 500, Saved goes up by 500, Spent this month unchanged
+    await page.goto(`${BASE}/${locale}`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(1000);
+    const homeAfter = await homeNumbers(page);
+    if (homeAfter.toSpend !== homeBefore.toSpend - 500) {
+      throw new Error(`To spend did not go down by 500 (${homeBefore.toSpend} -> ${homeAfter.toSpend})`);
+    }
+    if (homeAfter.saved !== homeBefore.saved + 500) {
+      throw new Error(`Saved did not go up by 500 (${homeBefore.saved} -> ${homeAfter.saved})`);
+    }
+    if (homeAfter.spent !== homeBefore.spent) {
+      throw new Error(`Spent this month changed on transfer (${homeBefore.spent} -> ${homeAfter.spent})`);
+    }
+    // Return to goals manager to finish flow
+    await page.goto(`${BASE}/${locale}/money/goals`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(1000);
+
     // 7c. Take some back out: a kind note shows, choose where it goes, key in 200, save
-    const takeBtn = page.getByRole('button', { name: ar ? 'سحب' : 'Take out', exact: true }).first();
+    const returnGoalCard = page.locator('div.rounded-card').filter({ has: page.getByRole('heading', { name: ar ? 'عمرة العائلة' : 'Family Trip' }) }).first();
+    await returnGoalCard.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(400);
+    const takeBtn = returnGoalCard.getByRole('button', { name: ar ? 'سحب' : 'Take out', exact: true }).first();
     await assertUsable(page, takeBtn, 'Take out button');
     await takeBtn.click();
     await sleep(600);
@@ -1095,10 +1279,13 @@ const FLOWS = {
     await assertUsable(page, takeFromGoalBtn, 'Take from goal button');
     await takeFromGoalBtn.click();
     await sleep(1500);
-    await assertUsable(page, page.getByText(/300/).first(), 'saved amount on the goal card after taking money out');
+    await returnGoalCard.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(400);
+    const remainingLine = returnGoalCard.getByText(/300/).first();
+    await assertUsable(page, remainingLine, 'saved amount on the goal card after taking money out');
 
     // 8. Stop the goal
-    const stopBtn = page.getByRole('button', { name: ar ? /إيقاف/ : /Stop/ }).first();
+    const stopBtn = returnGoalCard.getByRole('button', { name: ar ? /إيقاف/ : /Stop/ }).first();
     await assertUsable(page, stopBtn, 'Stop goal button');
     await stopBtn.click();
     await sleep(800);
@@ -1141,6 +1328,402 @@ const FLOWS = {
     const toastElem = page.locator('[data-sonner-toast]').first();
     await assertUsable(page, toastElem, 'Currencies saved toast');
   },
+
+  async money_page(page, { locale }) {
+    const ar = locale === 'ar';
+    // 1. From Home tap "To spend"
+    await page.goto(`${BASE}/${locale}`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    const toSpendTile = page.locator('a[href*="/money?tab=spending"]').first();
+    await assertUsable(page, toSpendTile, 'To spend tile');
+    await toSpendTile.click();
+    await page.waitForURL(`**\/money*`, { timeout: 10000 });
+    await sleep(600);
+
+    // 2. The page shows "Ready to spend" and the Cash row
+    const readyToSpend = page.getByText(ar ? 'جاهز للصرف' : 'Ready to spend').first();
+    await assertUsable(page, readyToSpend, 'Ready to spend label');
+    const cashRow = page.locator('button').filter({ hasText: ar ? 'كاش' : 'Cash' }).first();
+    await assertUsable(page, cashRow, 'Cash row');
+
+    // 3. Tap Saving
+    const savingTab = page.getByRole('tab', { name: ar ? 'التحويش' : 'Saving' });
+    await assertUsable(page, savingTab, 'Saving tab');
+    await savingTab.click();
+    await sleep(600);
+
+    // 4. The two sample goals are shown
+    const goal1 = page.getByText(ar ? 'رحلة الفيوم' : 'Fayoum trip').first();
+    const goal2 = page.getByText(ar ? 'عربية جديدة' : 'New car').first();
+    await assertUsable(page, goal1, 'Sample goal 1');
+    await assertUsable(page, goal2, 'Sample goal 2');
+
+    // 5. Tap "New goal"
+    const newGoalBtn = page.locator('a[href*="/money/goals?new=1"]').first();
+    await assertUsable(page, newGoalBtn, 'New goal button');
+    await newGoalBtn.click();
+    await page.waitForURL(`**\/money/goals*`, { timeout: 10000 });
+    await sleep(800);
+
+    // 6. The Add-goal drawer is open
+    const drawer = page.locator('[data-slot="drawer-content"]').last();
+    await drawer.waitFor({ state: 'visible', timeout: 5000 });
+    const nameInput = drawer.getByPlaceholder(ar ? 'مثال: رحلة العائلة' : 'e.g. Family Trip').first();
+    await assertUsable(page, nameInput, 'Goal name input');
+
+    // 7. Close it
+    await page.keyboard.press('Escape');
+    await sleep(600);
+
+    // 8. Back returns to Home
+    const backBtn = page.locator('a[href*="/money?tab=saving"]').first();
+    await assertUsable(page, backBtn, 'Back link to /money?tab=saving');
+    await backBtn.click();
+    await page.waitForURL(`**\/money*`, { timeout: 10000 });
+    await sleep(500);
+
+    const homeBack = page.getByRole('link', { name: ar ? 'رجوع' : 'Back' }).first();
+    await assertUsable(page, homeBack, 'Back link to Home');
+    await homeBack.click();
+    await page.waitForURL(`${BASE}/${locale}`, { timeout: 10000 });
+    await sleep(500);
+  },
+
+  async help_money(page, { locale }) {
+    const ar = locale === 'ar';
+    // 1. Visit /money
+    await page.goto(`${BASE}/${locale}/money`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    // 2. Open ? Help sheet
+    const helpBtn = page.locator('[data-tour="help-button"]').first();
+    await assertUsable(page, helpBtn, 'Help button on /money');
+    await helpBtn.click();
+    await sleep(600);
+
+    // 3. Verify ? button on /money lists "Our money" first
+    const guideBtn = page.locator('button').filter({ hasText: ar ? 'فلوسنا' : 'Our money' }).first();
+    await assertUsable(page, guideBtn, 'Our money guide item');
+    await guideBtn.click();
+    await page.waitForURL((url) => url.pathname === `/${locale}` || url.pathname === `/${locale}/`, { timeout: 10000 });
+    const bubble = page.locator('[data-tour-overlay] [role="dialog"]:not(.pointer-events-none)');
+    await bubble.waitFor({ state: 'visible', timeout: 10000 });
+    await sleep(600);
+
+    // 4. Step 1: toSpend on Home ("/")
+    const step1Heading = page.locator('#tour-title').filter({ hasText: ar ? 'جاهز للصرف 💵' : 'Ready to spend 💵' });
+    await assertUsable(page, step1Heading, 'Step 1: toSpend title');
+    const nextBtn1 = page.getByRole('button', { name: ar ? 'التالي' : 'Next' }).first();
+    await assertUsable(page, nextBtn1, 'Next button step 1');
+    await nextBtn1.click();
+    await sleep(600);
+
+    // 5. Step 2: saved on Home ("/")
+    const step2Heading = page.locator('#tour-title').filter({ hasText: ar ? 'على جنب 🐷' : 'Put aside 🐷' });
+    await assertUsable(page, step2Heading, 'Step 2: saved title');
+    const nextBtn2 = page.getByRole('button', { name: ar ? 'التالي' : 'Next' }).first();
+    await assertUsable(page, nextBtn2, 'Next button step 2');
+    await nextBtn2.click();
+    await page.waitForURL(`**\/money*`, { timeout: 10000 });
+    await bubble.waitFor({ state: 'visible', timeout: 10000 });
+    await sleep(600);
+
+    // 6. Step 3: tabs on /money
+    const step3Heading = page.locator('#tour-title').filter({ hasText: ar ? 'ناحيتين 👀' : 'Two sides 👀' });
+    await assertUsable(page, step3Heading, 'Step 3: tabs title');
+    const nextBtn3 = page.getByRole('button', { name: ar ? 'التالي' : 'Next' }).first();
+    await assertUsable(page, nextBtn3, 'Next button step 3');
+    await nextBtn3.click();
+    await sleep(600);
+
+    // 7. Step 4: goals on /money
+    const step4Heading = page.locator('#tour-title').filter({ hasText: ar ? 'أهداف التحويش 🎯' : 'Saving goals 🎯' });
+    await assertUsable(page, step4Heading, 'Step 4: goals title');
+    const nextBtn4 = page.getByRole('button', { name: ar ? 'التالي' : 'Next' }).first();
+    await assertUsable(page, nextBtn4, 'Next button step 4');
+    await nextBtn4.click();
+    await sleep(600);
+
+    // 8. Step 5: investments on /money
+    const step5Heading = page.locator('#tour-title').filter({ hasText: ar ? 'الاستثمارات 🪙' : 'Investments 🪙' });
+    await assertUsable(page, step5Heading, 'Step 5: investments title');
+    const nextBtn5 = page.getByRole('button', { name: ar ? 'التالي' : 'Next' }).first();
+    await assertUsable(page, nextBtn5, 'Next button step 5');
+    await nextBtn5.click();
+    await sleep(600);
+
+    // 9. Step 6: value on /money
+    const step6Heading = page.locator('#tour-title').filter({ hasText: ar ? 'قيمتها كام دلوقتي؟ 📈' : 'What is it worth? 📈' });
+    await assertUsable(page, step6Heading, 'Step 6: value title');
+    const doneBtn = page.getByRole('button', { name: ar ? 'فهمت! 🎉' : 'Got it! 🎉' }).first();
+    await assertUsable(page, doneBtn, 'Done button step 6');
+    await doneBtn.click();
+    await sleep(600);
+
+    // 8. Verify guide is closed
+    if ((await page.locator('#tour-title').count()) > 0) {
+      throw new Error('Tour overlay did not close');
+    }
+  },
+
+  async investment_add(page, { locale }) {
+    const ar = locale === 'ar';
+    // 1. Read Home numbers
+    await page.goto(`${BASE}/${locale}`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    const before = await homeNumbers(page);
+
+    // 2. Go to Saving tab on /money
+    await page.goto(`${BASE}/${locale}/money?tab=saving`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    // 3. Click "+ Add investment"
+    const addBtn = page.getByRole('button', { name: ar ? /\+ إضافة استثمار/ : /\+ Add investment/ }).first();
+    await assertUsable(page, addBtn, 'Add investment button');
+    await addBtn.click();
+    await sleep(600);
+
+    const drawer = page.locator('[data-slot="drawer-content"]').last();
+    await drawer.waitFor({ state: 'visible', timeout: 5000 });
+
+    // 4. Gold tile is selected by default; type 5000 on pad
+    await typeAmount(page, ['5', '0', '0', '0']);
+    await sleep(300);
+
+    // 5. "I already had it" is selected by default; save
+    const saveBtn = drawer.getByRole('button', { name: ar ? 'حفظ' : 'Save' }).first();
+    await saveBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, saveBtn, 'Save investment button');
+    await saveBtn.click();
+    await sleep(600);
+
+    // 6. Newly created Gold row with 5,000 is in the list
+    const goldRow = page.locator('a[href*="/money/investment/"]').filter({ hasText: '5,000' }).first();
+    await goldRow.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, goldRow, 'Gold investment row');
+    const goldText = await goldRow.innerText();
+    if (!goldText.includes('5,000')) throw new Error(`Expected Gold row to show 5,000, got: ${goldText}`);
+
+    // 7. Go back to Home
+    const backLink = page.getByRole('link', { name: ar ? 'رجوع' : 'Back' }).first();
+    await assertUsable(page, backLink, 'Back to Home link');
+    await backLink.click();
+    await page.waitForURL(`${BASE}/${locale}`, { timeout: 10000 });
+    await sleep(600);
+
+    // 8. Home "Saved" went up by 5,000, "To spend" did not change
+    const after = await homeNumbers(page);
+    if (after.saved !== before.saved + 5000) {
+      throw new Error(`Expected Saved to increase by 5000: was ${before.saved}, now ${after.saved}`);
+    }
+    if (after.toSpend !== before.toSpend) {
+      throw new Error(`Expected To spend unchanged: was ${before.toSpend}, now ${after.toSpend}`);
+    }
+
+    // 9. Undo removes it
+    const undoBtn = page.getByRole('button', { name: ar ? 'تراجع' : 'Undo' }).first();
+    if (await undoBtn.isVisible()) {
+      await undoBtn.click();
+      await sleep(600);
+      const afterUndo = await homeNumbers(page);
+      if (afterUndo.saved !== before.saved) {
+        throw new Error(`Expected Saved after Undo to be ${before.saved}, got ${afterUndo.saved}`);
+      }
+    }
+  },
+
+  async investment_paid(page, { locale }) {
+    const ar = locale === 'ar';
+    // 1. Read Home numbers
+    await page.goto(`${BASE}/${locale}`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    const before = await homeNumbers(page);
+
+    // 2. Go to Saving tab on /money
+    await page.goto(`${BASE}/${locale}/money?tab=saving`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    // 3. Click "+ Add investment"
+    const addBtn = page.getByRole('button', { name: ar ? /\+ إضافة استثمار/ : /\+ Add investment/ }).first();
+    await assertUsable(page, addBtn, 'Add investment button');
+    await addBtn.click();
+    await sleep(600);
+
+    const drawer = page.locator('[data-slot="drawer-content"]').last();
+    await drawer.waitFor({ state: 'visible', timeout: 5000 });
+
+    // 4. Type 5000 on pad
+    await typeAmount(page, ['5', '0', '0', '0']);
+    await sleep(300);
+
+    // 5. Select a bank account from Paid from (not "alreadyHave")
+    const bankOption = drawer.locator('button[aria-pressed]').filter({ hasNotText: ar ? 'موجود عندي من قبل كده' : 'I already had it' }).first();
+    await bankOption.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, bankOption, 'Bank option in paid from');
+    await bankOption.click();
+    await sleep(300);
+
+    // 6. Save
+    const saveBtn = drawer.getByRole('button', { name: ar ? 'حفظ' : 'Save' }).first();
+    await saveBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, saveBtn, 'Save investment button');
+    await saveBtn.click();
+    await sleep(600);
+
+    // 7. Go back to Home
+    const backLink = page.getByRole('link', { name: ar ? 'رجوع' : 'Back' }).first();
+    await assertUsable(page, backLink, 'Back to Home link');
+    await backLink.click();
+    await page.waitForURL(`${BASE}/${locale}`, { timeout: 10000 });
+    await sleep(600);
+
+    // 8. "To spend" goes DOWN by 5,000, "Saved" UP by 5,000, "Spent this month" unchanged
+    const after = await homeNumbers(page);
+    if (after.toSpend !== before.toSpend - 5000) {
+      throw new Error(`Expected To spend down by 5000: was ${before.toSpend}, now ${after.toSpend}`);
+    }
+    if (after.saved !== before.saved + 5000) {
+      throw new Error(`Expected Saved up by 5000: was ${before.saved}, now ${after.saved}`);
+    }
+    if (after.spent !== before.spent) {
+      throw new Error(`Expected Spent this month unchanged: was ${before.spent}, now ${after.spent}`);
+    }
+
+    // 9. Undo removes it
+    const undoBtn = page.getByRole('button', { name: ar ? 'تراجع' : 'Undo' }).first();
+    if (await undoBtn.isVisible()) {
+      await undoBtn.click();
+      await sleep(600);
+    }
+  },
+
+  async investment_value(page, { locale }) {
+    const ar = locale === 'ar';
+    // 1. Read Home numbers
+    await page.goto(`${BASE}/${locale}`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    const beforeHome = await homeNumbers(page);
+
+    // 2. Open sample Gold
+    await page.goto(`${BASE}/${locale}/money/investment/aaaaaaaa-0000-0000-0000-0000000000e1`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    // 3. Update value -> 100000 -> Save
+    const updateBtn = page.getByRole('button', { name: ar ? 'تحديث القيمة' : 'Update value' }).first();
+    await assertUsable(page, updateBtn, 'Update value button');
+    await updateBtn.click();
+    await sleep(600);
+
+    const drawer = page.locator('[data-slot="drawer-content"]').last();
+    await drawer.waitFor({ state: 'visible', timeout: 5000 });
+
+    await typeAmount(page, ['1', '0', '0', '0', '0', '0']);
+    await sleep(300);
+
+    const saveBtn = drawer.getByRole('button', { name: ar ? 'حفظ' : 'Save' }).first();
+    await saveBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, saveBtn, 'Save value button');
+    await saveBtn.click();
+    await sleep(600);
+
+    // 4. Verify Worth now 100,000, You put in 80,000, It grew by 20,000
+    const pageText = await page.innerText('body');
+    if (!pageText.includes('100,000')) throw new Error(`Expected Worth now 100,000 in page text`);
+    if (!pageText.includes('80,000')) throw new Error(`Expected You put in 80,000 in page text`);
+    if (!pageText.includes('20,000')) throw new Error(`Expected It grew by 20,000 in page text`);
+
+    // 5. Undo right now while toast is on screen
+    const undoBtn = page.getByRole('button', { name: ar ? 'تراجع' : 'Undo' }).first();
+    await undoBtn.waitFor({ state: 'visible', timeout: 8000 });
+    await undoBtn.click();
+    await sleep(800);
+    const restoredText = await page.innerText('body');
+    if (!restoredText.includes('96,000')) throw new Error(`Expected Worth back to 96,000 after Undo`);
+
+    // 6. Home "Spent this month" and "Money in" unchanged
+    await page.goto(`${BASE}/${locale}`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(600);
+    const afterHome = await homeNumbers(page);
+    if (afterHome.spent !== beforeHome.spent) {
+      throw new Error(`Expected Spent unchanged: was ${beforeHome.spent}, now ${afterHome.spent}`);
+    }
+    if (afterHome.moneyIn !== beforeHome.moneyIn) {
+      throw new Error(`Expected Money in unchanged: was ${beforeHome.moneyIn}, now ${afterHome.moneyIn}`);
+    }
+  },
+
+  async investment_take(page, { locale }) {
+    const ar = locale === 'ar';
+    // 1. Open sample Gold
+    await page.goto(`${BASE}/${locale}/money/investment/aaaaaaaa-0000-0000-0000-0000000000e1`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+
+    // 2. Click "Take out"
+    const takeBtn = page.getByRole('button', { name: ar ? 'سحب' : 'Take out' }).first();
+    await assertUsable(page, takeBtn, 'Take out button');
+    await takeBtn.click();
+    await sleep(600);
+
+    const drawer = page.locator('[data-slot="drawer-content"]').last();
+    await drawer.waitFor({ state: 'visible', timeout: 5000 });
+
+    // 3. Type amount above worth (200000 > 96000)
+    await typeAmount(page, ['2', '0', '0', '0', '0', '0']);
+    await sleep(300);
+
+    // 4. Save button is disabled and "only has" line is shown
+    const saveBtn = drawer.getByRole('button', { name: ar ? 'حفظ' : 'Save' }).first();
+    const disabled = await saveBtn.isDisabled();
+    if (!disabled) throw new Error('Expected save button to be disabled for amount > worth');
+    const onlyHasEl = drawer.locator('p').filter({ hasText: ar ? 'الاستثمار ده فيه' : 'This investment only has' });
+    await assertUsable(page, onlyHasEl, 'Only has message');
+
+    // 5. Clear amount via backspace keys
+    const bsBtn = drawer.getByRole('button', { name: ar ? 'امسح آخر رقم' : 'Delete last digit' }).first();
+    await assertUsable(page, bsBtn, 'Backspace button');
+    for (let i = 0; i < 6; i++) {
+      await bsBtn.click();
+      await sleep(50);
+    }
+    await sleep(200);
+
+    // 6. Type valid amount 1000
+    await typeAmount(page, ['1', '0', '0', '0']);
+    await sleep(300);
+
+    // 7. Pick destination spending wallet
+    const walletChoice = drawer.locator('button[aria-pressed]').first();
+    await walletChoice.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, walletChoice, 'Destination wallet choice');
+    const walletText = await walletChoice.innerText();
+    const balanceBefore = Number((walletText.match(/[\d,]+/)?.[0] || '0').replace(/,/g, ''));
+    await walletChoice.click();
+    await sleep(200);
+
+    // 8. Save
+    await saveBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await sleep(200);
+    await assertUsable(page, saveBtn, 'Save take-out button');
+    await saveBtn.click();
+    await sleep(600);
+
+    // 9. Go to Settings -> Wallets and verify chosen wallet balance went up by 1,000
+    await page.goto(`${BASE}/${locale}/settings/wallets`, { waitUntil: 'networkidle', timeout: 45000 });
+    await sleep(800);
+    const walletsText = await page.innerText('body');
+    const expectedNewBal = balanceBefore + 1000;
+    const formatted = new Intl.NumberFormat('en-US').format(expectedNewBal);
+    if (!walletsText.includes(formatted)) {
+      throw new Error(`Expected wallet balance to increase by 1000 to ${formatted}`);
+    }
+  },
 };
 
 const MULTI_LOCALE_FLOW_NAMES = [
@@ -1158,6 +1741,12 @@ const MULTI_LOCALE_FLOW_NAMES = [
   'recurring_entries',
   'savings_goals',
   'currencies',
+  'money_page',
+  'help_money',
+  'investment_add',
+  'investment_paid',
+  'investment_value',
+  'investment_take',
 ];
 const LOCALES = ['en', 'ar'];
 
@@ -1181,11 +1770,11 @@ const jobs = names.flatMap((name) => {
 let failures = 0;
 const started = Date.now();
 const queue = [...jobs];
-await Promise.all(Array.from({ length: 4 }, async () => {
+await Promise.all(Array.from({ length: Number(process.env.UI_PARALLEL || 4) }, async () => {
   while (queue.length) {
     const { name, locale, profile } = queue.shift();
     const [w, h] = profile.vp;
-    const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: profile.ua });
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: profile.ua, reducedMotion: FAST ? 'reduce' : 'no-preference' });
     const page = await ctx.newPage();
     await page.addInitScript(() => {
       const style = document.createElement('style');
@@ -1213,10 +1802,11 @@ await Promise.all(Array.from({ length: 4 }, async () => {
     }
     if (error) failures++;
     const label = MULTI_LOCALE_FLOW_NAMES.includes(name) ? `${name} ${locale}` : name;
-    console.log(`${error ? 'FAIL' : 'ok  '} ${label} ${w}x${h}${error ? ' -> ' + error : ''}`);
+    if (!FAST || error) console.log(`${error ? 'FAIL' : 'ok  '} ${label} ${w}x${h}${error ? ' -> ' + error : ''}`);
     await ctx.close();
   }
 }));
 await browser.close();
+fs.writeFileSync(path.resolve('.ui-check/last-flows.json'), JSON.stringify({ runs: jobs.length, failed: failures }));
 console.log(`\n${failures ? failures + ' flow run(s) failed' : 'all flows ok'} — ${jobs.length} runs in ${((Date.now() - started) / 1000).toFixed(0)}s`);
 process.exit(failures ? 1 : 0);

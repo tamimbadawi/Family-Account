@@ -15,12 +15,15 @@ import {
   toSubcategoryRow,
   toTransactionRow,
   toWallet,
+  toInvestmentValue,
+  toInvestmentValueRow,
 } from './mappers';
 import type {
   AccountRow,
   CategoryRow,
   HouseholdMemberRow,
   HouseholdRow,
+  InvestmentValueRow,
   ItemRow,
   SubcategoryRow,
   TransactionRow,
@@ -87,6 +90,9 @@ describe('mappers', () => {
       color: '#0F766E',
       sort_order: 1,
       is_archived: false,
+      purpose: 'spending',
+      investment_kind: null,
+      matures_on: null,
       created_at: '2026-01-01T00:00:00.000Z',
       updated_at: '2026-01-01T00:00:00.000Z',
     };
@@ -94,7 +100,32 @@ describe('mappers', () => {
     expect(domain.openingBalance).toBe(5000.5);
     expect(domain.nameAr).toBe('كاش');
     expect(domain.currency).toBe('EGP');
+    expect(domain.purpose).toBe('spending');
+    expect(domain.investmentKind).toBeNull();
+    expect(domain.maturesOn).toBeNull();
     expect(toAccountRow(domain)).toEqual(row);
+  });
+
+  it('row without purpose maps to spending', () => {
+    const legacyRow: AccountRow = {
+      id: 'w-legacy',
+      household_id: 'h-1',
+      name_ar: null,
+      name_en: 'Old Bank',
+      type: 'bank',
+      opening_balance: 1000,
+      currency: 'EGP',
+      icon: null,
+      color: null,
+      sort_order: 0,
+      is_archived: false,
+      created_at: '2026-01-01T00:00:00.000Z',
+      updated_at: '2026-01-01T00:00:00.000Z',
+    };
+    const wallet = toWallet(legacyRow);
+    expect(wallet.purpose).toBe('spending');
+    expect(wallet.investmentKind).toBeNull();
+    expect(wallet.maturesOn).toBeNull();
   });
 
   it('converts category row to domain and back', () => {
@@ -175,4 +206,32 @@ describe('mappers', () => {
     expect(domain.photoPath).toBe('h-1/t-1.jpg');
     expect(toTransactionRow(domain)).toEqual(row);
   });
+
+  it('converts investment value row to domain and back', () => {
+    const row: InvestmentValueRow = {
+      id: 'iv-1',
+      household_id: 'h-1',
+      account_id: 'w-inv',
+      value: 96000.5,
+      valued_on: '2026-10-10',
+      created_by: 'u-1',
+      created_at: '2026-10-10T12:00:00.000Z',
+      updated_at: '2026-10-10T12:00:00.000Z',
+      deleted_at: null,
+    };
+    const domain = toInvestmentValue(row);
+    expect(domain).toEqual({
+      id: 'iv-1',
+      householdId: 'h-1',
+      accountId: 'w-inv',
+      value: 96000.5,
+      valuedOn: '2026-10-10',
+      createdBy: 'u-1',
+      createdAt: '2026-10-10T12:00:00.000Z',
+      updatedAt: '2026-10-10T12:00:00.000Z',
+      deletedAt: null,
+    });
+    expect(toInvestmentValueRow(domain)).toEqual(row);
+  });
 });
+

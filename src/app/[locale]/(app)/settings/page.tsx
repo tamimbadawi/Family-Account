@@ -15,7 +15,6 @@ import {
   Repeat,
   SlidersHorizontal,
   Smartphone,
-  Target,
   Trash2,
   Users,
   Wallet,
@@ -176,22 +175,6 @@ export default function SettingsPage() {
             </div>
             <span className="text-body font-semibold text-ink">
               {t('recurring')}
-            </span>
-          </div>
-          <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />
-        </Link>
-
-        {/* Savings Goals */}
-        <Link
-          href="/settings/goals"
-          className="flex min-h-[48px] items-center justify-between px-3.5 py-2.5 [@media(max-height:700px)]:py-1 transition-colors hover:bg-surface-2/40 active:bg-surface-2 select-none"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-income-soft text-income">
-              <Target className="size-4.5" />
-            </div>
-            <span className="text-body font-semibold text-ink">
-              {t('goals')}
             </span>
           </div>
           <ChevronRight className="size-5 text-ink-muted rtl:rotate-180" />

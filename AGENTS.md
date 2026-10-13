@@ -89,7 +89,7 @@ src/lib/reports     pivot() and report helpers — pure, unit-tested
 ## 7. Definition of done (every step)
 
 1. `npm run build`, `npm run lint`, `npm run typecheck`, `npm test` all pass.
-2. Run **`npm run ui:check`** (headless, see /design-review; never the IDE browser) and the **quick /design-review** on every screen you touched (390×844, `/en` light and `/ar` light). Fix what it finds. The full matrix runs once in A8.
+2. Never use the IDE browser or a browser subagent to check UI. While building, run **`npm run ui:feature`** after every UI change (it checks only the screens and flows your changes touch) and fix every FAIL line. When the feature is finished, run **`npm run ui:site`** once (every screen, size, theme and language, plus every flow) and paste its summary line and every FAIL line into the PR description. A PR with any FAIL line is not done. Details: `.agents/rules/05-ui-testing.md`.
 3. Commit on your step branch with a clear message (`feat(entry): amount pad and category picker`), push the branch, and open a pull request into `main` using the PR template.
 4. Put the one-line notes (what changed, anything deferred) in the PR description. There is no Vercel preview URL: only `main` deploys, and the GitHub CI build is the check. **Do not edit `docs/PROGRESS.md`.** Where a workflow says "tick PROGRESS.md" or "commit and push", this rule replaces it.
 5. Report back in one or two lines (step, PR link, open questions), then **continue with the next step in your queue** (`docs/ORCHESTRATION.md` §2). Stop only when your queue is done or every remaining step is BLOCKED.

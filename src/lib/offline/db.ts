@@ -11,6 +11,7 @@ import type {
   CategoryRow,
   HouseholdMemberRow,
   HouseholdRow,
+  InvestmentValueRow,
   ItemRow,
   MetaRow,
   OutboxRow,
@@ -43,6 +44,7 @@ export class FamilyAccountsDB extends Dexie {
   budgets!: Table<BudgetRow, string>;
   recurring_rules!: Table<RecurringRuleRow, string>;
   savings_goals!: Table<SavingsGoalRow, string>;
+  investment_values!: Table<InvestmentValueRow, string>;
 
   constructor(dbName: string = getDbName()) {
     super(dbName);
@@ -80,6 +82,11 @@ export class FamilyAccountsDB extends Dexie {
     // v5 · savings goals linked to wallets (R4).
     this.version(5).stores({
       savings_goals: 'id, household_id, wallet_id, is_archived, updated_at',
+    });
+
+    // v6 · investment values (M1).
+    this.version(6).stores({
+      investment_values: 'id, household_id, account_id, updated_at',
     });
   }
 }

@@ -37,6 +37,7 @@ export const SYNCED_HOUSEHOLD_TABLES = [
   'budgets',
   'recurring_rules',
   'savings_goals',
+  'investment_values',
   'household_members',
 ] as const;
 

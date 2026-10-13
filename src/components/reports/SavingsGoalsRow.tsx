@@ -32,7 +32,7 @@ export function SavingsGoalsRow({ className = '' }: { className?: string }) {
 
   return (
     <Link
-      href={hasGoals ? '/reports/r/savings-goals' : '/settings/goals'}
+      href={hasGoals ? '/reports/r/savings-goals' : '/money/goals'}
       className={`flex min-h-14 items-center gap-3 rounded-card bg-surface px-3.5 py-2 shadow-card transition-colors active:bg-surface-2 select-none ${className}`}
     >
       <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-income-soft text-income">

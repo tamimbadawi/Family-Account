@@ -73,12 +73,18 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
   // Initial values
   const defaultType = editingEntry ? editingEntry.type : initialGoalId ? 'transfer' : (initialType ?? 'expense');
   const defaultAmount = editingEntry ? String(editingEntry.amount) : '';
+  const spendingWallets = React.useMemo(
+    () => (wallets ?? []).filter((w) => !w.isArchived && (w.purpose ?? 'spending') === 'spending'),
+    [wallets]
+  );
+  const defaultSpendingWallet = spendingWallets[0] ?? null;
+
   const defaultWalletId = editingEntry
     ? editingEntry.accountId
-    : (wallets?.[0]?.id ?? null);
+    : (defaultSpendingWallet?.id ?? null);
   const defaultToWalletId = editingEntry
     ? (editingEntry.toAccountId ?? null)
-    : (wallets && wallets.length > 1 ? wallets[1].id : null);
+    : (wallets?.find((w) => !w.isArchived && w.id !== defaultSpendingWallet?.id)?.id ?? null);
   const defaultOccurredOn = editingEntry
     ? editingEntry.occurredOn
     : getLocalDateString(new Date());
@@ -155,10 +161,12 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
   // Wallets may still be loading at mount: once they arrive, preselect them for a new entry.
   // Only fills empty slots, so the user's choice and an edited entry's wallets are never replaced.
   if (!editingEntry && wallets && wallets.length > 0) {
-    const fromId = selectedWalletId ?? wallets[0].id;
-    if (selectedWalletId === null) setSelectedWalletId(fromId);
+    const spending = wallets.filter((w) => !w.isArchived && (w.purpose ?? 'spending') === 'spending');
+    const firstSpendingId = spending[0]?.id ?? null;
+    const fromId = selectedWalletId ?? firstSpendingId;
+    if (selectedWalletId === null && fromId) setSelectedWalletId(fromId);
     if (selectedToWalletId === null) {
-      const other = wallets.find((w) => w.id !== fromId);
+      const other = wallets.find((w) => !w.isArchived && w.id !== fromId);
       if (other) setSelectedToWalletId(other.id);
     }
   }
@@ -411,7 +419,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
       {isGoal ? (
         goals && goals.length === 0 ? (
           <Link
-            href="/settings/goals"
+            href="/money/goals"
             onClick={onClose}
             className="flex min-h-12 items-center justify-center rounded-2xl bg-accent-soft px-4 text-center text-body font-semibold text-accent"
           >
@@ -425,6 +433,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
               value={fromWalletId}
               onChange={setSelectedWalletId}
               exclude={selectedGoal?.walletId}
+              grouped
             />
             <div className="flex size-12 shrink-0 items-center justify-center text-ink-muted">
               <ArrowRight className="size-5 rtl:rotate-180" />
@@ -436,7 +445,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
         <div className="flex items-center gap-2">
           {/* Both pickers list every wallet: choosing the one already on the other side swaps them,
               so money can move bank → cash as easily as cash → bank */}
-          <WalletSelect label={t('from')} value={selectedWalletId} onChange={pickFromWallet} />
+          <WalletSelect label={t('from')} value={selectedWalletId} onChange={pickFromWallet} grouped />
           <button
             type="button"
             onClick={swapWallets}
@@ -445,7 +454,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
           >
             <ArrowRight className="size-5 rtl:rotate-180" />
           </button>
-          <WalletSelect label={t('to')} value={selectedToWalletId} onChange={pickToWallet} />
+          <WalletSelect label={t('to')} value={selectedToWalletId} onChange={pickToWallet} grouped />
         </div>
       ) : (
         <div data-tour="entry-category" className="rounded-2xl">
