@@ -1,2 +1,13 @@
 @import "tailwindcss";
 @import "./tokens.css";
+
+body {
+  min-height: var(--app-h, 100dvh);
+}
+
+.app-shell-h {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  height: var(--app-h, 100dvh);
+}

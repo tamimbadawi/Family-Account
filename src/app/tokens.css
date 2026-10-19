@@ -147,7 +147,7 @@ body {
   color: var(--ink);
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
-  min-height: 100dvh;
+  min-height: var(--app-h, 100dvh);
 }
 .tabular-nums, [data-amount] { font-variant-numeric: tabular-nums; }
 

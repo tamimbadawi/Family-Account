@@ -275,7 +275,7 @@ export default function JoinPage() {
   );
 
   const shell = (title: string, subtitle: string, form: React.ReactNode) => (
-    <div className="mx-auto flex h-dvh max-w-[520px] flex-col justify-between overflow-hidden bg-canvas px-6 pt-[max(env(safe-area-inset-top,0px),1.5rem)] pb-[max(env(safe-area-inset-bottom,0px),1.5rem)] text-ink select-none">
+    <div className="mx-auto flex app-shell-h max-w-[520px] flex-col justify-between overflow-hidden bg-canvas px-6 pt-[max(env(safe-area-inset-top,0px),1.5rem)] pb-[max(env(safe-area-inset-bottom,0px),1.5rem)] text-ink select-none">
       <div className="flex flex-col items-center text-center mt-2">
         <div className="relative size-20 overflow-hidden rounded-[22px] bg-surface shadow-card">
           <Image src="/icons/icon-1024.png" alt={tAuth('appName')} width={80} height={80} priority className="size-full object-cover" />

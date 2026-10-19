@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { SerwistProvider } from '@serwist/turbopack/react';
 import { SwUpdater } from '@/components/layout/SwUpdater';
+import { ViewportHeight } from '@/components/layout/ViewportHeight';
 import { IBM_Plex_Sans_Arabic } from 'next/font/google';
 import { type Locale, routing } from '@/i18n/routing';
 import { STARTUP_IMAGES } from '../startup-images';
@@ -70,6 +71,12 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'} className={ibmPlexArabic.variable}>
       <head>
+        <script
+          id="viewport-height-init"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var h=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;if(h){document.documentElement.style.setProperty('--app-h',h+'px');}}catch(e){}})();`,
+          }}
+        />
         {STARTUP_IMAGES.map((img) => (
           <link
             key={img.url}
@@ -86,6 +93,7 @@ export default async function LocaleLayout({
             disable={process.env.NODE_ENV !== 'production'}
           >
             <SwUpdater />
+            <ViewportHeight />
             {children}
           </SerwistProvider>
         </NextIntlClientProvider>

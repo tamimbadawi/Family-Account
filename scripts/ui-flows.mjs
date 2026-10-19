@@ -21,9 +21,11 @@ const IPHONE_PROFILES = [
 ];
 const ANDROID_PROFILES = [
   { name: 'android-mid', os: 'android', vp: [412, 915], ua: ANDROID_UA },
+  { name: 'android-compact', os: 'android', vp: [360, 740], ua: ANDROID_UA },
   { name: 'android-budget', os: 'android', vp: [360, 640], ua: ANDROID_UA },
   { name: 'android-tall', os: 'android', vp: [360, 800], ua: ANDROID_UA },
   { name: 'android-browser', os: 'android', vp: [412, 700], ua: ANDROID_UA },
+  { name: 'foldable-inner', os: 'android', vp: [840, 900], ua: ANDROID_UA },
 ];
 const ALL_PROFILES = [...IPHONE_PROFILES, ...ANDROID_PROFILES];
 const KEYBOARD_PROFILE = { name: 'iphone-kbd', os: 'ios', vp: [390, 420], ua: IPHONE_UA };
@@ -67,6 +69,20 @@ async function assertUsable(page, locator, what) {
     return top && (el === top || el.contains(top) || top.contains(el)) ? 'ok' : 'covered by ' + (top?.tagName + '.' + String(top?.className).slice(0, 40));
   });
   if (ok !== 'ok') throw new Error(`${what}: ${ok}`);
+}
+
+/** Asserts that <nav aria-label="App navigation"> is within visible viewport: bottom <= window.innerHeight and top >= 0 */
+async function assertNavBar(page, stage = '') {
+  const err = await page.evaluate(() => {
+    const nav = document.querySelector('nav[aria-label="App navigation"]');
+    if (!nav) return null;
+    const r = nav.getBoundingClientRect();
+    const vh = window.innerHeight;
+    if (r.bottom > vh + 1) return `bottom edge (${Math.round(r.bottom)}px) > window.innerHeight (${vh}px)`;
+    if (r.top < -1) return `top edge (${Math.round(r.top)}px) < 0`;
+    return null;
+  });
+  if (err) throw new Error(`TabBar offscreen ${stage ? '(' + stage + ')' : ''}: ${err}`);
 }
 async function tap(page, name) {
   const b = btn(page, name);
@@ -245,6 +261,7 @@ const FLOWS = {
     await tap(page, 'Supermarket');
     await page.getByLabel('Add a receipt photo').setInputFiles({ name: 'receipt.jpg', mimeType: 'image/jpeg', buffer: jpeg });
     const thumb = btn(page, 'View receipt photo');
+    await thumb.evaluate((el) => el.scrollIntoView({ block: 'center' })).catch(() => {});
     await assertUsable(page, thumb, 'photo thumbnail');
     await assertOnePopup(page, '120'); // the photo chip still fits with Save on screen
     const width = await thumb.locator('img').evaluate((img) => img.naturalWidth);
@@ -2078,7 +2095,24 @@ await Promise.all(Array.from({ length: Number(process.env.UI_PARALLEL || 4) }, a
         await page.goto(BASE + '/en', { waitUntil: 'networkidle', timeout: 45000 });
         await sleep(1200);
       }
+      await assertNavBar(page, 'after load');
+      if (w === 412 && h === 915) {
+        await page.setViewportSize({ width: 840, height: 900 });
+        await sleep(150);
+        await assertNavBar(page, 'after unfold to 840x900');
+        await page.setViewportSize({ width: w, height: h });
+        await sleep(150);
+        await assertNavBar(page, 'after fold back to 412x915');
+      } else if (w === 840 && h === 900) {
+        await page.setViewportSize({ width: 412, height: 915 });
+        await sleep(150);
+        await assertNavBar(page, 'after fold to 412x915');
+        await page.setViewportSize({ width: w, height: h });
+        await sleep(150);
+        await assertNavBar(page, 'after unfold back to 840x900');
+      }
       await FLOWS[name](page, { locale, vp: [w, h] });
+      await assertNavBar(page, 'after flow');
       if (jsErrors.length) throw new Error('JS errors: ' + jsErrors.join(' | '));
     } catch (e) {
       error = e.message.split('\n')[0].slice(0, 220);

@@ -22,11 +22,13 @@ const ALL_PROFILES = [
   // iPhone profiles
   { name: 'iphone', os: 'ios', w: 390, h: 844, ua: IPHONE_UA },
   { name: 'iphone-se', os: 'ios', w: 375, h: 667, ua: IPHONE_UA },
-  // Android Chrome profiles: common mid-range (412x915), small budget (360x640), tall narrow (360x800), browser viewport (412x700)
+  // Android Chrome profiles: common mid-range / foldable outer (412x915), small budget (360x640), compact (360x740), tall narrow (360x800), browser viewport (412x700), foldable inner (840x900)
   { name: 'android-mid', os: 'android', w: 412, h: 915, ua: ANDROID_UA },
+  { name: 'android-compact', os: 'android', w: 360, h: 740, ua: ANDROID_UA },
   { name: 'android-budget', os: 'android', w: 360, h: 640, ua: ANDROID_UA },
   { name: 'android-tall', os: 'android', w: 360, h: 800, ua: ANDROID_UA },
   { name: 'android-browser', os: 'android', w: 412, h: 700, ua: ANDROID_UA },
+  { name: 'foldable-inner', os: 'android', w: 840, h: 900, ua: ANDROID_UA },
 ];
 
 // UI_FAST=1 (set by `npm run ui:feature`): quicker wait, a screenshot only for a failing screen, only FAIL lines printed.
@@ -76,7 +78,17 @@ fs.mkdirSync(OUT, { recursive: true });
 function audit() {
   const vh = innerHeight;
   const se = document.scrollingElement;
-  const nav = [...document.querySelectorAll('nav')].find((n) => n.getBoundingClientRect().bottom >= vh - 2);
+  const appNav = document.querySelector('nav[aria-label="App navigation"]');
+  let navOffscreen = null;
+  if (appNav) {
+    const nr = appNav.getBoundingClientRect();
+    if (nr.bottom > vh + 1) {
+      navOffscreen = `tab bar bottom (${Math.round(nr.bottom)}px) > window.innerHeight (${vh}px)`;
+    } else if (nr.top < -1) {
+      navOffscreen = `tab bar top (${Math.round(nr.top)}px) < 0`;
+    }
+  }
+  const nav = appNav || [...document.querySelectorAll('nav')].find((n) => n.getBoundingClientRect().bottom >= vh - 2);
   const barTop = nav ? nav.getBoundingClientRect().top : vh;
   const visible = (e) => e.offsetParent !== null && e.getBoundingClientRect().height > 0;
   // Any element that directly holds text (the app uses divs for most text, not only p/span).
@@ -163,6 +175,7 @@ function audit() {
     covered: uniq(covered),
     cutBottom: uniq(cutBottom),
     errors: uniq(errors),
+    navOffscreen,
   };
 }
 
@@ -204,6 +217,53 @@ async function runJob({ route, profile, theme }) {
       const a = await page.evaluate(audit).catch((e) => ({ errors: ['audit: ' + e.message] }));
       const name = `${route.replace(/^\//, '').replace(/[/?&=]/g, '_') || 'root'}__${w}x${h}__${theme}.png`;
       const problems = [];
+      if (a.navOffscreen) problems.push(a.navOffscreen);
+
+      // Layout assertion: check <nav aria-label="App navigation"> right after first paint
+      const navFirstPaint = await page.evaluate(() => {
+        const nav = document.querySelector('nav[aria-label="App navigation"]');
+        if (!nav) return null;
+        const r = nav.getBoundingClientRect();
+        const vh = window.innerHeight;
+        if (r.bottom > vh + 1) return `tab bar at first paint: bottom (${Math.round(r.bottom)}px) > window.innerHeight (${vh}px)`;
+        if (r.top < -1) return `tab bar at first paint: top (${Math.round(r.top)}px) < 0`;
+        return null;
+      }).catch(() => null);
+      if (navFirstPaint) problems.push(navFirstPaint);
+
+      // Check after a viewport resize between the outer and inner sizes (simulates fold/unfold)
+      if (w === 412 && h === 915) {
+        await page.setViewportSize({ width: 840, height: 900 });
+        await page.waitForTimeout(100);
+        const navUnfold = await page.evaluate(() => {
+          const nav = document.querySelector('nav[aria-label="App navigation"]');
+          if (!nav) return null;
+          const r = nav.getBoundingClientRect();
+          const vh = window.innerHeight;
+          if (r.bottom > vh + 1) return `tab bar after unfold to 840x900: bottom (${Math.round(r.bottom)}px) > innerHeight (${vh}px)`;
+          if (r.top < -1) return `tab bar after unfold to 840x900: top (${Math.round(r.top)}px) < 0`;
+          return null;
+        }).catch(() => null);
+        if (navUnfold) problems.push(navUnfold);
+        await page.setViewportSize({ width: w, height: h });
+        await page.waitForTimeout(100);
+      } else if (w === 840 && h === 900) {
+        await page.setViewportSize({ width: 412, height: 915 });
+        await page.waitForTimeout(100);
+        const navFold = await page.evaluate(() => {
+          const nav = document.querySelector('nav[aria-label="App navigation"]');
+          if (!nav) return null;
+          const r = nav.getBoundingClientRect();
+          const vh = window.innerHeight;
+          if (r.bottom > vh + 1) return `tab bar after fold to 412x915: bottom (${Math.round(r.bottom)}px) > innerHeight (${vh}px)`;
+          if (r.top < -1) return `tab bar after fold to 412x915: top (${Math.round(r.top)}px) < 0`;
+          return null;
+        }).catch(() => null);
+        if (navFold) problems.push(navFold);
+        await page.setViewportSize({ width: w, height: h });
+        await page.waitForTimeout(100);
+      }
+
       if (a.pageScrolls) problems.push('PAGE SCROLLS');
       if (a.sideScroll) problems.push('SIDEWAYS SCROLL');
       if (a.cutByTabBar?.length) problems.push('cut by tab bar: ' + a.cutByTabBar.join(', '));

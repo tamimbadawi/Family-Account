@@ -22,9 +22,9 @@ export default function AppLayout({
     <RepositoryProvider>
       <EntrySheetProvider>
         <TourProvider>
-        <div className="mx-auto flex h-dvh max-w-[520px] flex-col overflow-hidden bg-canvas text-ink relative shadow-2xl">
           <Toaster position="bottom-center" />
-          <UpdatingPill />
+          <div className="mx-auto flex app-shell-h max-w-[520px] flex-col overflow-hidden bg-canvas text-ink shadow-2xl">
+            <UpdatingPill />
           <Header />
           
           <main className="flex-1 min-h-0 flex flex-col overflow-hidden relative">

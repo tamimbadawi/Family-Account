@@ -7,7 +7,7 @@ import { Toaster } from '@/components/ui/sonner';
  */
 export default function OperatorLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto flex h-dvh max-w-[720px] flex-col overflow-hidden bg-canvas text-ink">
+    <div className="mx-auto flex app-shell-h max-w-[720px] flex-col overflow-hidden bg-canvas text-ink">
       <Toaster position="bottom-center" />
       {children}
     </div>
