@@ -10,6 +10,7 @@ import {
   useCategoryTotals,
   useMembers,
   useBudgetProgress,
+  useHousehold,
 } from '@/lib/data/provider';
 import { BudgetAlert } from '@/components/budgets/BudgetAlert';
 import { budgetWarnings } from '@/lib/reports/budgets';
@@ -21,6 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { MoneyTiles } from '@/components/wallets/MoneyTiles';
 import { SampleDataBadge } from '@/components/layout/SampleDataBadge';
+import { CurrencyToggle } from '@/components/ui/currency-toggle';
 import { money, pickName } from '@/lib/format';
 import { useSignedInName } from '@/lib/auth/use-signed-in-name';
 import { historyHref } from '@/lib/history/link';
@@ -52,8 +54,19 @@ export default function HomePage() {
 
   // Queries
   const members = useMembers();
-  const summary = useMonthSummary(currentMonth);
-  const topCategories = useCategoryTotals(currentMonth, 'expense', 'category');
+  const household = useHousehold();
+  const householdCurrencies = React.useMemo(() => {
+    return household?.currencies && household.currencies.length > 0
+      ? household.currencies
+      : [household?.currency ?? 'EGP'];
+  }, [household]);
+  const [selectedCurrency, setSelectedCurrency] = React.useState<string | null>(null);
+  const activeCurrency =
+    selectedCurrency && householdCurrencies.includes(selectedCurrency)
+      ? selectedCurrency
+      : householdCurrencies[0] ?? 'EGP';
+  const summary = useMonthSummary(currentMonth, activeCurrency);
+  const topCategories = useCategoryTotals(currentMonth, 'expense', 'category', undefined, activeCurrency);
   const entries = useEntries({ limit: 3 });
   const budgetProgress = useBudgetProgress(currentMonth);
   const warnings = React.useMemo(() => budgetWarnings(budgetProgress ?? []), [budgetProgress]);
@@ -145,8 +158,14 @@ export default function HomePage() {
         <span className="min-w-0 truncate text-body font-medium text-ink-muted">
           {greeting}
         </span>
-        {/* The 48px tap area overlaps the space around the line instead of making it taller */}
-        <SampleDataBadge className="-my-3" />
+        <div className="flex items-center gap-1.5 shrink-0">
+          <CurrencyToggle
+            currencies={householdCurrencies}
+            value={activeCurrency}
+            onChange={setSelectedCurrency}
+          />
+          <SampleDataBadge className="-my-3" />
+        </div>
       </div>
 
       {/* 2. Hero Card */}
@@ -156,15 +175,15 @@ export default function HomePage() {
             {tHome('spentThisMonth')}
           </span>
           <div className="mt-0.5 text-display sm:text-hero font-bold tabular-nums text-expense leading-tight">
-            {money(summary?.expense ?? 0, locale)}
+            {money(summary?.expense ?? 0, locale, { currency: activeCurrency })}
           </div>
           <div className="mt-1 flex items-center gap-2 text-caption text-ink-muted font-medium">
             <span>
-              {tHome('incomeShort', { amount: money(summary?.income ?? 0, locale) })}
+              {tHome('incomeShort', { amount: money(summary?.income ?? 0, locale, { currency: activeCurrency }) })}
             </span>
             <span>·</span>
             <span>
-              {tHome('leftShort', { amount: money(netAmount, locale) })}
+              {tHome('leftShort', { amount: money(netAmount, locale, { currency: activeCurrency }) })}
             </span>
           </div>
         </Card>
@@ -211,7 +230,7 @@ export default function HomePage() {
                     {name}
                   </span>
                   <span className="text-caption font-bold tabular-nums text-expense">
-                    {money(cat.total, locale, { compact: true })}
+                    {money(cat.total, locale, { compact: true, currency: activeCurrency })}
                   </span>
                 </Link>
               );

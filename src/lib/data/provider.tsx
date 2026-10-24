@@ -238,29 +238,29 @@ export function useEntry(id: string | null | undefined): EnrichedEntry | null | 
   );
 }
 
-export function useMonthSummary(month: string): MonthSummary | undefined {
+export function useMonthSummary(month: string, currency?: string): MonthSummary | undefined {
   const repo = useRepository();
 
   return useLiveQuery(
     async () => {
       if (typeof window === 'undefined') return undefined;
-      return repo.monthSummary(month);
+      return repo.monthSummary(month, currency);
     },
-    [repo, month],
+    [repo, month, currency],
     undefined
   );
 }
 
-export function useSixMonthSummary(endMonth: string): MonthSummary[] | undefined {
+export function useSixMonthSummary(endMonth: string, currency?: string): MonthSummary[] | undefined {
   const repo = useRepository();
 
   return useLiveQuery(
     async () => {
       if (typeof window === 'undefined') return undefined;
       const months = getLastNMonths(endMonth, 6);
-      return Promise.all(months.map((m) => repo.monthSummary(m)));
+      return Promise.all(months.map((m) => repo.monthSummary(m, currency)));
     },
-    [repo, endMonth],
+    [repo, endMonth, currency],
     undefined
   );
 }
@@ -269,16 +269,17 @@ export function useCategoryTotals(
   month: string,
   kind: CategoryKind,
   level: CategoryLevel,
-  parentId?: string
+  parentId?: string,
+  currency?: string
 ): CategoryTotal[] | undefined {
   const repo = useRepository();
 
   return useLiveQuery(
     async () => {
       if (typeof window === 'undefined') return [];
-      return repo.categoryTotals(month, kind, level, parentId);
+      return repo.categoryTotals(month, kind, level, parentId, currency);
     },
-    [repo, month, kind, level, parentId],
+    [repo, month, kind, level, parentId, currency],
     undefined
   );
 }

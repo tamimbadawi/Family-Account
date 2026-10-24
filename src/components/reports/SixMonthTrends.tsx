@@ -19,12 +19,14 @@ import { useIsClient } from './useIsClient';
 
 export interface SixMonthTrendsProps {
   selectedMonth: string;
+  currency?: string;
   onSelectMonth?: (month: string) => void;
   className?: string;
 }
 
 export function SixMonthTrends({
   selectedMonth,
+  currency,
   onSelectMonth,
   className = '',
 }: SixMonthTrendsProps) {
@@ -33,7 +35,7 @@ export function SixMonthTrends({
   const isRtl = locale.startsWith('ar');
   const isClient = useIsClient();
 
-  const summaries = useSixMonthSummary(selectedMonth);
+  const summaries = useSixMonthSummary(selectedMonth, currency);
 
   const chartData = React.useMemo(() => {
     if (!summaries) return [];
@@ -126,13 +128,13 @@ export function SixMonthTrends({
                         <div className="flex items-center justify-between gap-4">
                           <span className="text-ink-muted">{t('spent')}:</span>
                           <span className="font-bold tabular-nums text-expense">
-                            {money(data.spent, locale)}
+                            {money(data.spent, locale, { currency })}
                           </span>
                         </div>
                         <div className="flex items-center justify-between gap-4">
                           <span className="text-ink-muted">{t('income')}:</span>
                           <span className="font-bold tabular-nums text-income">
-                            {money(data.income, locale)}
+                            {money(data.income, locale, { currency })}
                           </span>
                         </div>
                         <div className="flex items-center justify-between gap-4 pt-1 border-t border-line font-medium">
@@ -142,7 +144,7 @@ export function SixMonthTrends({
                               data.net >= 0 ? 'text-ink' : 'text-expense'
                             }`}
                           >
-                            {money(data.net, locale)}
+                            {money(data.net, locale, { currency })}
                           </span>
                         </div>
                       </div>

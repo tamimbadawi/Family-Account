@@ -1,5 +1,7 @@
 'use client';
 
+import * as React from 'react';
+
 import { useLocale, useTranslations } from 'next-intl';
 import { ChevronRight } from 'lucide-react';
 import { money } from '@/lib/format';
@@ -22,7 +24,28 @@ export function SummaryCard({
 }) {
   const t = useTranslations('history');
   const locale = useLocale();
-  const { spent, received, count, item } = summary;
+  const { spent, received, count, item, spentTotals, receivedTotals } = summary;
+
+  const spentFormatted = React.useMemo(() => {
+    if (!spentTotals || spentTotals.length === 0) {
+      return money(spent, locale);
+    }
+    return spentTotals
+      .map((t) => money(t.amount, locale, { currency: t.currency }))
+      .join(' + ');
+  }, [spentTotals, spent, locale]);
+
+  const receivedFormatted = React.useMemo(() => {
+    if (!receivedTotals || receivedTotals.length === 0) {
+      return money(received, locale);
+    }
+    return receivedTotals
+      .map((t) => money(t.amount, locale, { currency: t.currency }))
+      .join(' + ');
+  }, [receivedTotals, received, locale]);
+
+  const hasSpent = spentTotals ? spentTotals.length > 0 && spentTotals.some((t) => t.amount > 0) : spent > 0;
+  const hasReceived = receivedTotals ? receivedTotals.length > 0 && receivedTotals.some((t) => t.amount > 0) : received > 0;
 
   return (
     <div className="mx-5 mt-3 rounded-card bg-surface p-4 shadow-card select-none" data-history-summary aria-label={t('summaryLabel')}>
@@ -43,17 +66,17 @@ export function SummaryCard({
       </div>
 
       <div className="mt-2 space-y-1">
-        {(spent > 0 || received === 0) && (
+        {(hasSpent || !hasReceived) && (
           <div className="flex items-baseline justify-between gap-3">
             <span className="text-body text-ink">{t('expenses')}</span>
-            <span className="text-title font-bold tabular-nums text-expense">{money(spent, locale)}</span>
+            <span className="text-title font-bold tabular-nums text-expense">{spentFormatted}</span>
           </div>
         )}
-        {received > 0 && (
+        {hasReceived && (
           <div className="flex items-baseline justify-between gap-3">
             <span className="text-body text-ink">{t('incomes')}</span>
-            <span className={`${spent > 0 ? 'text-heading' : 'text-title'} font-bold tabular-nums text-income`}>
-              +{money(received, locale)}
+            <span className={`${hasSpent ? 'text-heading' : 'text-title'} font-bold tabular-nums text-income`}>
+              +{receivedFormatted}
             </span>
           </div>
         )}

@@ -275,7 +275,8 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
     ? Boolean(fromWalletId && toWalletId && fromWalletId !== toWalletId)
     : Boolean(selectedWalletId);
 
-  const canSave = numericAmount > 0 && hasWallets && (isTransfer || hasItem) && !isSubmitting;
+  const walletCurrencyMatches = isTransfer || !selectedWallet || (selectedWallet.currency || 'EGP') === currentCurrency;
+  const canSave = numericAmount > 0 && hasWallets && walletCurrencyMatches && (isTransfer || hasItem) && !isSubmitting;
 
   // Soft warning once an expense brings its budget to 80% or more this month (the fullest one only)
   const warnAboutBudget = async (entryId: string) => {
@@ -525,7 +526,12 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
         ) : (
           <>
             {!isTransfer && (
-              <WalletSelect label={t('wallet')} value={selectedWalletId} onChange={setSelectedWalletId} />
+              <WalletSelect
+                label={t('wallet')}
+                value={selectedWalletId}
+                onChange={setSelectedWalletId}
+                currency={currentCurrency}
+              />
             )}
             <DateChip value={occurredOn} onChange={setOccurredOn} />
             <NoteChip value={note} onChange={setNote} isOpen={false} onOpenChange={setIsNoteOpen} />

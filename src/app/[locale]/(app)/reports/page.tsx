@@ -11,7 +11,8 @@ import { WalletBalancesCard } from '@/components/reports/WalletBalancesCard';
 import { SavingsGoalsRow } from '@/components/reports/SavingsGoalsRow';
 import { BreakdownTab } from '@/components/reports/BreakdownTab';
 import { AllReportsTab } from '@/components/reports/AllReportsTab';
-import { useMonthSummary } from '@/lib/data/provider';
+import { useMonthSummary, useHousehold } from '@/lib/data/provider';
+import { CurrencyToggle } from '@/components/ui/currency-toggle';
 import type { CategoryTotal } from '@/lib/data/types';
 import { useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/card';
@@ -46,7 +47,18 @@ function ReportsContent() {
   const [donutData, setDonutData] = React.useState<CategoryTotal[]>([]);
   const [donutTotal, setDonutTotal] = React.useState(0);
 
-  const summary = useMonthSummary(selectedMonth);
+  const household = useHousehold();
+  const householdCurrencies = React.useMemo(() => {
+    return household?.currencies && household.currencies.length > 0
+      ? household.currencies
+      : [household?.currency ?? 'EGP'];
+  }, [household]);
+  const [selectedCurrency, setSelectedCurrency] = React.useState<string | null>(null);
+  const activeCurrency =
+    selectedCurrency && householdCurrencies.includes(selectedCurrency)
+      ? selectedCurrency
+      : householdCurrencies[0] ?? 'EGP';
+  const summary = useMonthSummary(selectedMonth, activeCurrency);
 
   const handleCategoryDataLoaded = React.useCallback(
     (data: CategoryTotal[], total: number) => {
@@ -139,11 +151,20 @@ function ReportsContent() {
             {pageIndex === 0 ? (
               /* PAGE 1: MonthSwitcher, HeroCard, Donut, Top 3 Categories + See All */
               <div className="w-full space-y-1">
-                {/* Month Switcher */}
-                <MonthSwitcher
-                  month={selectedMonth}
-                  onMonthChange={setSelectedMonth}
-                />
+                {/* Month Switcher & Currency Toggle */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <MonthSwitcher
+                      month={selectedMonth}
+                      onMonthChange={setSelectedMonth}
+                    />
+                  </div>
+                  <CurrencyToggle
+                    currencies={householdCurrencies}
+                    value={activeCurrency}
+                    onChange={setSelectedCurrency}
+                  />
+                </div>
 
                 {/* Hero Totals Card */}
                 {summary ? (
@@ -151,6 +172,7 @@ function ReportsContent() {
                     spent={summary.expense}
                     income={summary.income}
                     net={summary.net}
+                    currency={activeCurrency}
                     month={selectedMonth}
                   />
                 ) : (
@@ -167,6 +189,7 @@ function ReportsContent() {
                     data={donutData}
                     total={donutTotal || summary?.expense || 0}
                     height={112}
+                    currency={activeCurrency}
                     isLoading={summary === undefined}
                     onSelect={(id) => router.push(historyHref({ type: 'expense', month: selectedMonth, categoryId: id }))}
                   />
@@ -176,6 +199,7 @@ function ReportsContent() {
                 <RankedCategories
                   month={selectedMonth}
                   kind="expense"
+                  currency={activeCurrency}
                   onDataLoaded={handleCategoryDataLoaded}
                 />
 
@@ -196,6 +220,7 @@ function ReportsContent() {
 
                 <SixMonthTrends
                   selectedMonth={selectedMonth}
+                  currency={activeCurrency}
                   onSelectMonth={setSelectedMonth}
                 />
 

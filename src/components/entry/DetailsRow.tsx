@@ -28,6 +28,7 @@ export interface WalletSelectProps {
   exclude?: string | null;
   label: string;
   grouped?: boolean;
+  currency?: string;
 }
 
 // The entry sheet underneath pulls focus back to itself (tapping a text field here would close the picker), and
@@ -38,7 +39,7 @@ const OPTION =
   'flex h-14 w-full items-center gap-3 rounded-2xl px-4 text-body font-semibold transition-transform active:scale-95 cursor-pointer';
 
 /** Wallet chip ("Cash ▾"). Picking Bank asks which bank, and a new bank can be added by name right there. */
-export function WalletSelect({ value, onChange, exclude, label, grouped = false }: WalletSelectProps) {
+export function WalletSelect({ value, onChange, exclude, label, grouped = false, currency }: WalletSelectProps) {
   const locale = useLocale();
   const t = useTranslations('entry');
   const tMoney = useTranslations('money');
@@ -54,11 +55,14 @@ export function WalletSelect({ value, onChange, exclude, label, grouped = false 
 
   const wallets = React.useMemo(() => {
     let list = allWallets.filter((w) => !exclude || w.id !== exclude);
+    if (currency) {
+      list = list.filter((w) => (w.currency || 'EGP') === currency || w.id === value);
+    }
     if (!grouped) {
       list = list.filter((w) => (w.purpose ?? 'spending') === 'spending' || w.id === value);
     }
     return list;
-  }, [allWallets, exclude, grouped, value]);
+  }, [allWallets, exclude, grouped, value, currency]);
 
   const current = allWallets.find((w) => w.id === value);
   const banks = wallets.filter((w) => w.type === 'bank');
@@ -102,7 +106,7 @@ export function WalletSelect({ value, onChange, exclude, label, grouped = false 
         nameAr: name,
         nameEn: name,
         icon: 'building-2',
-        currency: current?.currency,
+        currency: currency ?? current?.currency,
       });
       pick(created.id);
     } catch (err) {

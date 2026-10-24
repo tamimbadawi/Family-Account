@@ -9,8 +9,8 @@ const bread = { categoryId: 'c1', subcategoryId: 's1', itemId: 'i1' };
 
 describe('summarize', () => {
   it('is empty for no entries', () => {
-    expect(summarize(undefined)).toEqual({ spent: 0, received: 0, count: 0, item: null });
-    expect(summarize([])).toEqual({ spent: 0, received: 0, count: 0, item: null });
+    expect(summarize(undefined)).toEqual({ spent: 0, received: 0, spentTotals: [], receivedTotals: [], count: 0, item: null });
+    expect(summarize([])).toEqual({ spent: 0, received: 0, spentTotals: [], receivedTotals: [], count: 0, item: null });
   });
 
   it('adds money out and money in, rounded to 2 dp, and leaves moves out', () => {
@@ -32,5 +32,20 @@ describe('summarize', () => {
 
   it('names no item when the entries are different items', () => {
     expect(summarize([entry(bread), entry({ ...bread, itemId: 'i2' })]).item).toBeNull();
+  });
+
+  it('groups spent and received by currency without mixing currencies', () => {
+    const s = summarize([
+      entry({ amount: 100, accountCurrency: 'EGP', ...bread }),
+      entry({ amount: 20, accountCurrency: 'USD', ...bread }),
+      entry({ type: 'income', amount: 50, accountCurrency: 'USD' }),
+    ]);
+    expect(s.spentTotals).toEqual([
+      { currency: 'EGP', amount: 100 },
+      { currency: 'USD', amount: 20 },
+    ]);
+    expect(s.receivedTotals).toEqual([
+      { currency: 'USD', amount: 50 },
+    ]);
   });
 });
