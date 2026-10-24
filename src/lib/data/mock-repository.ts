@@ -2026,15 +2026,25 @@ export class MockRepository implements Repository {
     return result;
   }
 
-  async monthSummary(month: string): Promise<MonthSummary> {
-    const txs = await this.db.transactions
-      .filter((t) => t.deleted_at === null && t.occurred_on.startsWith(month))
-      .toArray();
+  async monthSummary(month: string, currency?: string): Promise<MonthSummary> {
+    const [txs, accounts, household] = await Promise.all([
+      this.db.transactions
+        .filter((t) => t.deleted_at === null && t.occurred_on.startsWith(month))
+        .toArray(),
+      this.db.accounts.toArray(),
+      this.getHousehold(),
+    ]);
+
+    const targetCurrency = currency ?? household?.currencies?.[0] ?? household?.currency ?? 'EGP';
+    const accMap = new Map(accounts.map((a) => [a.id, a.currency || 'EGP']));
 
     let income = 0;
     let expense = 0;
 
     for (const t of txs) {
+      const txCurrency = accMap.get(t.account_id) ?? 'EGP';
+      if (txCurrency !== targetCurrency) continue;
+
       if (t.type === 'income') {
         income += Number(t.amount);
       } else if (t.type === 'expense') {
@@ -2044,6 +2054,7 @@ export class MockRepository implements Repository {
 
     return {
       month,
+      currency: targetCurrency,
       income: roundMoney(income),
       expense: roundMoney(expense),
       net: roundMoney(income - expense),
@@ -2054,9 +2065,10 @@ export class MockRepository implements Repository {
     month: string,
     kind: CategoryKind,
     level: CategoryLevel,
-    parentId?: string
+    parentId?: string,
+    currency?: string
   ): Promise<CategoryTotal[]> {
-    const [txs, items, subcategories, categories] = await Promise.all([
+    const [txs, items, subcategories, categories, accounts, household] = await Promise.all([
       this.db.transactions
         .filter(
           (t) =>
@@ -2069,7 +2081,12 @@ export class MockRepository implements Repository {
       this.db.items.toArray(),
       this.db.subcategories.toArray(),
       this.db.categories.toArray(),
+      this.db.accounts.toArray(),
+      this.getHousehold(),
     ]);
+
+    const targetCurrency = currency ?? household?.currencies?.[0] ?? household?.currency ?? 'EGP';
+    const accMap = new Map(accounts.map((a) => [a.id, a.currency || 'EGP']));
 
     const itemMap = new Map(items.map((i) => [i.id, i]));
     const subMap = new Map(subcategories.map((s) => [s.id, s]));
@@ -2088,6 +2105,8 @@ export class MockRepository implements Repository {
 
     const enrichedList: EnrichedTx[] = [];
     for (const t of txs) {
+      const txCurrency = accMap.get(t.account_id) ?? 'EGP';
+      if (txCurrency !== targetCurrency) continue;
       if (!t.item_id) continue;
       const item = itemMap.get(t.item_id);
       if (!item) continue;

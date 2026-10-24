@@ -88,6 +88,18 @@ describe('budgetProgress', () => {
     expect(list.map((p) => p.budget.id)).toEqual(['b', 'a']);
     expect(budgetWarnings(list).map((p) => p.budget.id)).toEqual(['b']);
   });
+
+  it('does not count foreign currency entries towards an EGP budget', () => {
+    const list = budgetProgress(
+      [budget({ id: 'food', amount: 1000 })],
+      [
+        expense(300, { accountCurrency: 'EGP' }),
+        expense(50, { accountCurrency: 'USD' }),
+      ],
+      '2026-10',
+    );
+    expect(list[0].spent).toBe(300);
+  });
 });
 
 describe('budgetTotals', () => {

@@ -12,12 +12,13 @@ export interface HeroTotalsCardProps {
   spent: number;
   income: number;
   net: number;
+  currency?: string;
   /** 'YYYY-MM': tapping a total opens that month's entries in History. */
   month?: string;
   className?: string;
 }
 
-export function HeroTotalsCard({ spent, income, net, month, className = '' }: HeroTotalsCardProps) {
+export function HeroTotalsCard({ spent, income, net, currency, month, className = '' }: HeroTotalsCardProps) {
   const locale = useLocale();
   const t = useTranslations('reports');
 
@@ -37,7 +38,7 @@ export function HeroTotalsCard({ spent, income, net, month, className = '' }: He
             net >= 0 ? 'text-ink' : 'text-expense'
           }`}
         >
-          {money(animatedNet, locale)}
+          {money(animatedNet, locale, { currency })}
         </div>
       </Link>
 
@@ -49,7 +50,7 @@ export function HeroTotalsCard({ spent, income, net, month, className = '' }: He
             {t('spent')}
           </span>
           <span className="text-body font-bold tabular-nums text-expense leading-snug">
-            {money(animatedSpent, locale)}
+            {money(animatedSpent, locale, { currency })}
           </span>
         </Link>
 
@@ -59,7 +60,7 @@ export function HeroTotalsCard({ spent, income, net, month, className = '' }: He
             {t('income')}
           </span>
           <span className="text-body font-bold tabular-nums text-income leading-snug">
-            {money(animatedIncome, locale)}
+            {money(animatedIncome, locale, { currency })}
           </span>
         </Link>
       </div>

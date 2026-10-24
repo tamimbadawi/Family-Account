@@ -324,6 +324,7 @@ describe('MockRepository with fake-indexeddb', () => {
     const summary = await runInLiveQuery(() => freshRepo.monthSummary('2026-10'));
     expect(summary).toEqual({
       month: '2026-10',
+      currency: 'EGP',
       income: 0,
       expense: 0,
       net: 0,
@@ -892,6 +893,45 @@ describe('MockRepository with fake-indexeddb', () => {
       await expect(repo.setHouseholdCurrencies(['EGP', 'EGP'])).rejects.toThrow('Choose one or two currencies');
       await expect(repo.setHouseholdCurrencies(['EG'])).rejects.toThrow('Choose one or two currencies');
       await expect(repo.setHouseholdCurrencies(['123'])).rejects.toThrow('Choose one or two currencies');
+    });
+
+
+    it('calculates monthSummary and categoryTotals separately per currency without mixing', async () => {
+      // Create a USD wallet
+      const usdWallet = await repo.addWallet({
+        nameAr: 'محفظة دولار',
+        nameEn: 'USD Wallet',
+        type: 'cash',
+        currency: 'USD',
+      });
+      // Add a USD expense
+      const items = await repo.recentItems();
+      const cat = await repo.categoryTotals('2026-10', 'expense', 'category', undefined, 'EGP');
+      const egpExpenseBefore = cat.reduce((sum, c) => sum + c.total, 0);
+
+      await repo.addEntry({
+        type: 'expense',
+        amount: 50,
+        occurredOn: '2026-10-15',
+        accountId: usdWallet.id,
+        itemId: items[0]?.item.id ?? null,
+      });
+
+      const egpSummary = await repo.monthSummary('2026-10', 'EGP');
+      const usdSummary = await repo.monthSummary('2026-10', 'USD');
+
+      expect(egpSummary.currency).toBe('EGP');
+      expect(usdSummary.currency).toBe('USD');
+      expect(usdSummary.expense).toBe(50);
+      expect(usdSummary.net).toBe(-50);
+
+      const egpCatAfter = await repo.categoryTotals('2026-10', 'expense', 'category', undefined, 'EGP');
+      const egpExpenseAfter = egpCatAfter.reduce((sum, c) => sum + c.total, 0);
+      expect(egpExpenseAfter).toBe(egpExpenseBefore); // USD expense did NOT contaminate EGP category totals
+
+      const usdCat = await repo.categoryTotals('2026-10', 'expense', 'category', undefined, 'USD');
+      const usdTotal = usdCat.reduce((sum, c) => sum + c.total, 0);
+      expect(usdTotal).toBe(50);
     });
 
     it('refuses to remove a currency that a wallet still uses', async () => {
