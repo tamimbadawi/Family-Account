@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { ChevronDown } from 'lucide-react';
 import type { EntryType } from '@/lib/data/types';
 import { formatExpression, hasOperator, previewValue } from '@/lib/format/expression';
 import { currencySymbol } from '@/lib/format';
@@ -12,6 +13,8 @@ export interface AmountDisplayProps {
   placeholder?: string;
   className?: string;
   currency?: string;
+  onCurrencyChange?: () => void;
+  canChangeCurrency?: boolean;
 }
 
 // Format value with thousands separators while preserving typing state (dot, trailing zeros)
@@ -42,6 +45,8 @@ export function AmountDisplay({
   placeholder = '0',
   className = '',
   currency: currencyProp,
+  onCurrencyChange,
+  canChangeCurrency = false,
 }: AmountDisplayProps) {
   const locale = useLocale();
   const t = useTranslations('entry');
@@ -86,7 +91,19 @@ export function AmountDisplay({
         >
           {displayStr}
         </span>
-        <span className="text-caption font-medium text-ink-muted">{currency}</span>
+        {canChangeCurrency ? (
+          <button
+            type="button"
+            onClick={onCurrencyChange}
+            aria-label={t('changeCurrency')}
+            className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-2.5 py-1 text-caption font-semibold text-accent transition-transform active:scale-95 cursor-pointer hover:bg-surface-3 shadow-xs"
+          >
+            <span>{currency}</span>
+            <ChevronDown className="size-3.5 opacity-70" aria-hidden="true" />
+          </button>
+        ) : (
+          <span className="text-caption font-medium text-ink-muted">{currency}</span>
+        )}
       </div>
     </div>
   );

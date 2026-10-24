@@ -69,7 +69,7 @@ describe('budgetWarningsForEntry', () => {
       (s, e) => s + e.amount,
       0,
     );
-    const budget = Math.round((spent + 100) / 0.85);
+    const budget = Math.round((spent + 50) / 0.8);
     await repo.addBudget({ categoryId: category.id, subcategoryId: group.id, amount: budget });
     const entry = await repo.addEntry({ type: 'expense', amount: 100, occurredOn: localISODate(), accountId: WALLET_CASH_ID, itemId: item.id });
     const [warning] = await budgetWarningsForEntry(repo, entry.id, 'en');

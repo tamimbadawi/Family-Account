@@ -145,7 +145,7 @@ export default function RecentlyDeletedPage() {
                         <span>{formatDay(entry.occurredOn, locale)}</span>
                         <span>·</span>
                         <span className="tabular-nums font-medium text-ink">
-                          {money(entry.amount, locale)}
+                          {money(entry.amount, locale, { currency: entry.accountCurrency ?? undefined })}
                         </span>
                       </div>
                     </div>

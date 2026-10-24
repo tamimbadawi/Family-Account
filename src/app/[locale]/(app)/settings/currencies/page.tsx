@@ -38,11 +38,37 @@ export default function CurrenciesPage() {
   const secondCurrency = overrideSecond !== null ? overrideSecond : defaultSecond;
   const hasChanges = mainCurrency !== defaultMain || secondCurrency !== defaultSecond;
 
+  const handleMainChange = (nextMain: string) => {
+    if (!nextMain || nextMain === mainCurrency) return;
+    setOverrideMain(nextMain);
+    setOverrideSecond(mainCurrency);
+  };
+
   const handleSave = async () => {
     if (saving) return;
     setSaving(true);
     try {
-      await repo.setHouseholdCurrencies(secondCurrency ? [mainCurrency, secondCurrency] : [mainCurrency]);
+      const finalCurrencies = secondCurrency ? [mainCurrency, secondCurrency] : [mainCurrency];
+      await repo.setHouseholdCurrencies(finalCurrencies);
+
+      // Ensure each active family currency has at least one spending wallet
+      const wallets = await repo.getWallets(true);
+      for (const cur of finalCurrencies) {
+        const hasSpending = wallets.some(
+          (w) => !w.isArchived && (w.purpose ?? 'spending') === 'spending' && w.currency === cur
+        );
+        if (!hasSpending) {
+          await repo.addWallet({
+            type: 'cash',
+            nameAr: `كاش (${cur})`,
+            nameEn: `Cash (${cur})`,
+            icon: 'banknote',
+            currency: cur,
+            openingBalance: 0,
+          });
+        }
+      }
+
       setOverrideMain(null);
       setOverrideSecond(null);
       toast.success(t('currenciesSaved'));
@@ -85,7 +111,7 @@ export default function CurrenciesPage() {
               <label htmlFor="main-currency" className="text-body font-semibold text-ink">
                 {t('mainCurrency')}
               </label>
-              <CurrencySelect id="main-currency" value={mainCurrency} exclude={secondCurrency} onChange={setOverrideMain} />
+              <CurrencySelect id="main-currency" value={mainCurrency} onChange={handleMainChange} />
             </div>
 
             <div className="space-y-1.5">

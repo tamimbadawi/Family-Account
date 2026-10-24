@@ -191,6 +191,7 @@ export interface RecurringRule {
 }
 
 export interface EnrichedRecurringRule extends RecurringRule {
+  accountCurrency?: string | null;
   accountNameAr?: string | null;
   accountNameEn?: string | null;
   toAccountNameAr?: string | null;
