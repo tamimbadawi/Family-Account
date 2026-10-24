@@ -167,6 +167,7 @@ function ReportsContent() {
                     data={donutData}
                     total={donutTotal || summary?.expense || 0}
                     height={112}
+                    isLoading={summary === undefined}
                     onSelect={(id) => router.push(historyHref({ type: 'expense', month: selectedMonth, categoryId: id }))}
                   />
                 </Card>

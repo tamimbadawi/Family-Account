@@ -100,11 +100,33 @@ export class LiveRepository extends MockRepository {
    * First open on a device: waits for the whole household to download. Later opens show the
    * copy straight away and refresh it in the background.
    */
+  /**
+   * Safe wrapper around getSession() with a 3-second timeout.
+   * Prevents indefinite lock-ups on iOS WebKit when waking from sleep or background.
+   */
+  private async getSessionWithTimeout(timeoutMs = 3000): Promise<{ data: { session: { user: { id: string } } | null } }> {
+    try {
+      const result = await Promise.race([
+        this.client().auth.getSession(),
+        new Promise<{ data: { session: null } }>((resolve) =>
+          setTimeout(() => {
+            console.warn('[auth] getSession timed out; keeping local copy');
+            resolve({ data: { session: null } });
+          }, timeoutMs)
+        ),
+      ]);
+      return result as { data: { session: { user: { id: string } } | null } };
+    } catch (err) {
+      console.warn('[auth] getSession failed:', err);
+      return { data: { session: null } };
+    }
+  }
+
   override async ensureSeeded(): Promise<void> {
     if (typeof window === 'undefined') return;
     this.watchAuth();
     this.opened ??= (async () => {
-      const { data } = await this.client().auth.getSession();
+      const { data } = await this.getSessionWithTimeout(3000);
       this.currentUserId = data.session?.user.id ?? '';
       const hasCopy = Boolean((await this.db.meta.get('householdId'))?.value);
       if (hasCopy) {
@@ -135,7 +157,7 @@ export class LiveRepository extends MockRepository {
   async refresh(): Promise<void> {
     if (offline()) return;
     this.pulling ??= (async () => {
-      const { data } = await this.client().auth.getSession();
+      const { data } = await this.getSessionWithTimeout(3000);
       const userId = data.session?.user.id;
       if (!userId) {
         console.warn('[sync] no session yet; pull skipped, the copy on the phone is kept');
