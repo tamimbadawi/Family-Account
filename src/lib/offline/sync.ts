@@ -103,7 +103,7 @@ export async function pull(db: FamilyAccountsDB, source: PullSource, now = new D
   const known = await meta<string>(db, 'householdId');
 
   if (!household?.id) {
-    if (known) await clearLocalCopy(db);
+    console.warn('[sync] no household returned from server; pull skipped, local copy kept');
     return null;
   }
   const householdId = household.id;
