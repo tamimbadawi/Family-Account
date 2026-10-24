@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
-import { useRepository, useWallets, useWalletBalances } from '@/lib/data/provider';
+import { useRepository, useWallets, useWalletBalances, useHousehold } from '@/lib/data/provider';
 import { useSaveError } from '@/components/ui/use-save-error';
 import type { Wallet, WalletType } from '@/lib/data/types';
 import { currencySymbol, money, normalizeDigits, pickName } from '@/lib/format';
@@ -41,6 +41,10 @@ export default function WalletManagerPage() {
   const tWallets = useTranslations('wallets');
   const repo = useRepository();
   const saveError = useSaveError();
+  const household = useHousehold();
+  const currencies = React.useMemo(() => {
+    return household?.currencies ?? (household?.currency ? [household.currency] : ['EGP']);
+  }, [household]);
 
   const [showArchived, setShowArchived] = React.useState(false);
 
@@ -73,6 +77,7 @@ export default function WalletManagerPage() {
   const [nameAr, setNameAr] = React.useState('');
   const [nameEn, setNameEn] = React.useState('');
   const [walletType, setWalletType] = React.useState<WalletType>('cash');
+  const [walletCurrency, setWalletCurrency] = React.useState<string>('EGP');
   const [openingBalanceStr, setOpeningBalanceStr] = React.useState('0');
   const [color, setColor] = React.useState('#15803D');
   const [icon, setIcon] = React.useState('wallet');
@@ -82,6 +87,7 @@ export default function WalletManagerPage() {
     setNameAr('');
     setNameEn('');
     setWalletType('cash');
+    setWalletCurrency(currencies[0] ?? 'EGP');
     setOpeningBalanceStr('0');
     setColor('#15803D');
     setIcon('wallet');
@@ -93,6 +99,7 @@ export default function WalletManagerPage() {
     setNameAr(wallet.nameAr || '');
     setNameEn(wallet.nameEn || '');
     setWalletType(wallet.type);
+    setWalletCurrency(wallet.currency || currencies[0] || 'EGP');
     setOpeningBalanceStr(String(wallet.openingBalance || 0));
     setColor(wallet.color || '#15803D');
     setIcon(wallet.icon || 'wallet');
@@ -155,6 +162,7 @@ export default function WalletManagerPage() {
           openingBalance,
           color,
           icon,
+          currency: walletCurrency,
         });
       }
 
@@ -259,11 +267,16 @@ export default function WalletManagerPage() {
                       <CategoryIcon name={wallet.icon || 'wallet'} className="size-5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-body font-semibold text-ink leading-snug">
-                        {name}
+                      <div className="text-body font-semibold text-ink leading-snug flex items-center gap-1.5">
+                        <span className="truncate">{name}</span>
+                        {wallet.currency && (
+                          <span className="shrink-0 text-caption font-medium text-ink-muted">
+                            ({wallet.currency})
+                          </span>
+                        )}
                       </div>
                       <div className="text-caption text-ink-muted tabular-nums">
-                        {money(currentBal, locale)}
+                        {money(currentBal, locale, { currency: wallet.currency })}
                       </div>
                     </div>
                   </div>
@@ -357,10 +370,36 @@ export default function WalletManagerPage() {
               </div>
             </div>
 
+            {/* Wallet Currency (when family has multiple currencies) */}
+            {currencies.length > 1 && (
+              <div className="space-y-1">
+                <label className="text-caption font-semibold text-ink-muted">
+                  {t('currencies')}
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {currencies.map((cur) => (
+                    <button
+                      key={cur}
+                      type="button"
+                      disabled={Boolean(editingWallet)}
+                      onClick={() => setWalletCurrency(cur)}
+                      className={`h-11 rounded-xl text-caption font-semibold transition-all cursor-pointer ${
+                        walletCurrency === cur
+                          ? 'bg-accent text-accent-ink shadow-sm'
+                          : 'bg-surface-2 text-ink-muted hover:text-ink'
+                      } ${editingWallet ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    >
+                      {cur} · {currencySymbol(cur, locale)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Opening Balance */}
             <div className="space-y-1">
               <label className="text-caption font-semibold text-ink-muted">
-                {t('openingBalance')} ({currencySymbol(editingWallet?.currency, locale)})
+                {t('openingBalance')} ({currencySymbol(editingWallet ? editingWallet.currency : walletCurrency, locale)})
               </label>
               <input
                 type="text"

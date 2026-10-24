@@ -97,7 +97,13 @@ export function WalletSelect({ value, onChange, exclude, label, grouped = false 
     const name = newBank.trim();
     if (!name) return;
     try {
-      const created = await repo.addWallet({ type: 'bank', nameAr: name, nameEn: name, icon: 'building-2' });
+      const created = await repo.addWallet({
+        type: 'bank',
+        nameAr: name,
+        nameEn: name,
+        icon: 'building-2',
+        currency: current?.currency,
+      });
       pick(created.id);
     } catch (err) {
       saveError(err);
@@ -113,6 +119,15 @@ export function WalletSelect({ value, onChange, exclude, label, grouped = false 
     >
       <CategoryIcon name={w.icon} className={`size-5 shrink-0 ${w.id === value ? 'text-accent-ink' : 'text-accent'}`} />
       <span className="min-w-0 flex-1 truncate text-start">{nameOf(w)}</span>
+      {w.currency && (
+        <span
+          className={`shrink-0 text-caption font-semibold px-2 py-0.5 rounded-full ${
+            w.id === value ? 'bg-accent-ink/20 text-accent-ink' : 'bg-surface-3 text-ink-muted'
+          }`}
+        >
+          {w.currency}
+        </span>
+      )}
       {goalWalletIds.has(w.id) && !grouped && (
         <span className={`shrink-0 text-caption font-medium ${w.id === value ? 'text-accent-ink' : 'text-ink-muted'}`}>{t('savingsGoal')}</span>
       )}

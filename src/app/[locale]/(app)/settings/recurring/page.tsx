@@ -164,7 +164,7 @@ export default function RecurringSettingsPage() {
                         {rule.note ? ` · ${rule.note}` : ''}
                       </div>
                       <div className="text-body font-bold text-ink tabular-nums mt-1 leading-tight">
-                        {money(rule.amount, locale)}
+                        {money(rule.amount, locale, { currency: rule.accountCurrency ?? undefined })}
                       </div>
                     </div>
                   </div>

@@ -13,7 +13,7 @@ import type {
   Item,
   Subcategory,
 } from '@/lib/data/types';
-import { useRepository, useSavingsGoals, useWallets } from '@/lib/data/provider';
+import { useHousehold, useRepository, useSavingsGoals, useWallets } from '@/lib/data/provider';
 import { Link } from '@/i18n/navigation';
 import { useSaveError } from '@/components/ui/use-save-error';
 import { validateEntry } from '@/lib/validation/entry';
@@ -105,11 +105,47 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
     : null;
 
   // Form State
+  const household = useHousehold();
+  const householdCurrencies = React.useMemo(() => {
+    return household?.currencies ?? (household?.currency ? [household.currency] : ['EGP']);
+  }, [household]);
+
   const [type, setType] = React.useState<EntryType>(defaultType);
   const [amountStr, setAmountStr] = React.useState(defaultAmount);
   const [selectedWalletId, setSelectedWalletId] = React.useState<string | null>(defaultWalletId);
   const [selectedToWalletId, setSelectedToWalletId] = React.useState<string | null>(defaultToWalletId);
   const selectedWallet = wallets?.find((w) => w.id === selectedWalletId);
+  const canChangeCurrency = householdCurrencies.length > 1;
+  const currentCurrency = selectedWallet?.currency ?? householdCurrencies[0] ?? 'EGP';
+
+  const handleToggleCurrency = async () => {
+    if (householdCurrencies.length <= 1) return;
+    const currentIndex = householdCurrencies.indexOf(currentCurrency);
+    const nextIndex = (currentIndex + 1) % householdCurrencies.length;
+    const targetCurrency = householdCurrencies[nextIndex]!;
+
+    const matchingWallet = wallets?.find(
+      (w) => !w.isArchived && (w.purpose ?? 'spending') === 'spending' && w.currency === targetCurrency
+    );
+
+    if (matchingWallet) {
+      setSelectedWalletId(matchingWallet.id);
+    } else {
+      try {
+        const created = await repo.addWallet({
+          type: 'cash',
+          nameAr: `كاش (${targetCurrency})`,
+          nameEn: `Cash (${targetCurrency})`,
+          icon: 'banknote',
+          currency: targetCurrency,
+          openingBalance: 0,
+        });
+        setSelectedWalletId(created.id);
+      } catch (err) {
+        saveError(err);
+      }
+    }
+  };
 
   // "Goal": a move from a wallet into a savings goal's wallet. Saved as a normal transfer, so the books balance.
   const [isGoal, setIsGoal] = React.useState(Boolean(initialGoalId));
@@ -162,7 +198,9 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
   // Only fills empty slots, so the user's choice and an edited entry's wallets are never replaced.
   if (!editingEntry && wallets && wallets.length > 0) {
     const spending = wallets.filter((w) => !w.isArchived && (w.purpose ?? 'spending') === 'spending');
-    const firstSpendingId = spending[0]?.id ?? null;
+    const mainCur = householdCurrencies[0];
+    const preferredSpending = spending.find((w) => w.currency === mainCur) ?? spending[0];
+    const firstSpendingId = preferredSpending?.id ?? null;
     const fromId = selectedWalletId ?? firstSpendingId;
     if (selectedWalletId === null && fromId) setSelectedWalletId(fromId);
     if (selectedToWalletId === null) {
@@ -412,7 +450,14 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
 
       {/* Amount, with the chosen main category (and group) beside it */}
       <div className="flex items-center gap-2">
-        <AmountDisplay value={amountStr} type={type} currency={selectedWallet?.currency} className="min-w-0 flex-1" />
+        <AmountDisplay
+          value={amountStr}
+          type={type}
+          currency={currentCurrency}
+          canChangeCurrency={canChangeCurrency}
+          onCurrencyChange={handleToggleCurrency}
+          className="min-w-0 flex-1"
+        />
         <div ref={setBreadcrumbSlot} className="flex max-w-[56%] shrink-0 empty:hidden" />
       </div>
 

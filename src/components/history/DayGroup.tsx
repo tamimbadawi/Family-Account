@@ -5,6 +5,7 @@ import { useLocale } from 'next-intl';
 import type { EnrichedEntry } from '@/lib/data/types';
 import { EntryRow } from '@/components/entry/EntryRow';
 import { formatDay, money } from '@/lib/format';
+import { totalsByCurrency } from '@/lib/money/groups';
 
 export interface DayGroupProps {
   date: string; // 'YYYY-MM-DD'
@@ -21,33 +22,36 @@ export function DayGroup({
 }: DayGroupProps) {
   const locale = useLocale();
 
-  // Compute day total depending on active filter or entries
-  const totalExpense = entries
+  const expenseItems = entries
     .filter((e) => e.type === 'expense')
-    .reduce((sum, e) => sum + e.amount, 0);
+    .map((e) => ({ currency: e.accountCurrency || 'EGP', amount: e.amount }));
 
-  const totalIncome = entries
+  const incomeItems = entries
     .filter((e) => e.type === 'income')
-    .reduce((sum, e) => sum + e.amount, 0);
+    .map((e) => ({ currency: e.accountCurrency || 'EGP', amount: e.amount }));
+
+  const expenseTotals = totalsByCurrency(expenseItems);
+  const incomeTotals = totalsByCurrency(incomeItems);
+
+  const formatList = (totals: { currency: string; amount: number }[], prefix = '') =>
+    totals.map((t) => `${prefix}${money(t.amount, locale, { currency: t.currency })}`).join(' + ');
 
   let formattedTotal = '';
   let totalClass = 'text-ink';
 
   if (filter === 'expense') {
-    formattedTotal = money(totalExpense, locale);
+    formattedTotal = formatList(expenseTotals);
   } else if (filter === 'income') {
-    formattedTotal = `+${money(totalIncome, locale)}`;
+    formattedTotal = formatList(incomeTotals, '+');
     totalClass = 'text-income';
   } else {
-    // All filter: if there are expenses, show total expenses; if only income, show income
-    if (totalExpense > 0 && totalIncome === 0) {
-      formattedTotal = money(totalExpense, locale);
-    } else if (totalIncome > 0 && totalExpense === 0) {
-      formattedTotal = `+${money(totalIncome, locale)}`;
+    if (expenseTotals.length > 0 && incomeTotals.length === 0) {
+      formattedTotal = formatList(expenseTotals);
+    } else if (incomeTotals.length > 0 && expenseTotals.length === 0) {
+      formattedTotal = formatList(incomeTotals, '+');
       totalClass = 'text-income';
-    } else if (totalExpense > 0 && totalIncome > 0) {
-      // Net or expenses: show expenses for day total
-      formattedTotal = money(totalExpense, locale);
+    } else if (expenseTotals.length > 0 && incomeTotals.length > 0) {
+      formattedTotal = formatList(expenseTotals);
     } else {
       formattedTotal = '';
     }

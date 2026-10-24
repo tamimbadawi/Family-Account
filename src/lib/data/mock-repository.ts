@@ -975,6 +975,7 @@ export class MockRepository implements Repository {
 
       return {
         ...rule,
+        accountCurrency: acc?.currency ?? null,
         accountNameAr: acc?.name_ar ?? null,
         accountNameEn: acc?.name_en ?? null,
         toAccountNameAr: toAcc?.name_ar ?? null,
