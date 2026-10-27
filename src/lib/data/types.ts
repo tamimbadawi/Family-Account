@@ -248,7 +248,8 @@ export interface Budget {
   householdId: string;
   categoryId: string;
   subcategoryId: string | null;
-  amount: number; // per month, EGP
+  amount: number; // per month
+  currency?: string;
   /** A starter budget the app added for a new family; false once the family changes it. */
   isStarter: boolean;
   isArchived: boolean;
@@ -260,6 +261,7 @@ export interface Budget {
 
 export interface MonthSummary {
   month: string; // 'YYYY-MM'
+  currency?: string;
   income: number;
   expense: number;
   net: number;

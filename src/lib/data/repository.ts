@@ -327,12 +327,13 @@ export interface Repository {
 
   // Aggregations & Reports
   recentItems(limit?: number): Promise<RecentItem[]>;
-  monthSummary(month: string): Promise<MonthSummary>;
+  monthSummary(month: string, currency?: string): Promise<MonthSummary>;
   categoryTotals(
     month: string,
     kind: CategoryKind,
     level: CategoryLevel,
-    parentId?: string
+    parentId?: string,
+    currency?: string
   ): Promise<CategoryTotal[]>;
   entriesForPivot(period: PivotPeriod | { startDate: string; endDate: string }): Promise<PivotEntry[]>;
   syncStatus(): Promise<SyncStatus>;

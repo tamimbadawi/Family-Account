@@ -21,6 +21,7 @@ import { DONUT_PALETTE } from './CategoryDonut';
 export interface RankedCategoriesProps {
   month: string;
   kind?: CategoryKind;
+  currency?: string;
   onDataLoaded?: (data: CategoryTotal[], total: number) => void;
   className?: string;
 }
@@ -28,6 +29,7 @@ export interface RankedCategoriesProps {
 export function RankedCategories({
   month,
   kind = 'expense',
+  currency,
   onDataLoaded,
   className = '',
 }: RankedCategoriesProps) {
@@ -50,7 +52,7 @@ export function RankedCategories({
   });
 
   // Query root categories for main card
-  const rootTotals = useCategoryTotals(month, kind, 'category');
+  const rootTotals = useCategoryTotals(month, kind, 'category', undefined, currency);
 
   // Query drilled-down data for sheet
   const parentId =
@@ -60,7 +62,7 @@ export function RankedCategories({
       ? drill.subcategoryId
       : undefined;
 
-  const sheetTotals = useCategoryTotals(month, kind, drill.level, parentId);
+  const sheetTotals = useCategoryTotals(month, kind, drill.level, parentId, currency);
 
   // Search inside "All categories": find a category, group or item by name, with its total this month
   const [query, setQuery] = React.useState('');
@@ -230,7 +232,7 @@ export function RankedCategories({
 
                 {/* Amount - text-body (17px) tabular-nums */}
                 <span className="text-body font-bold tabular-nums text-expense shrink-0">
-                  {money(item.total, locale)}
+                  {money(item.total, locale, { currency })}
                 </span>
               </div>
             );
@@ -394,7 +396,7 @@ export function RankedCategories({
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className={`text-body font-bold tabular-nums ${kind === 'income' ? 'text-income' : 'text-expense'}`}>
-                          {money(hit.total, locale)}
+                          {money(hit.total, locale, { currency })}
                         </span>
                         <ChevronRight className="size-4 text-ink-faint rtl:rotate-180" />
                       </div>
@@ -489,7 +491,7 @@ export function RankedCategories({
 
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-body font-bold tabular-nums text-expense">
-                        {money(item.total, locale)}
+                        {money(item.total, locale, { currency })}
                       </span>
                       <ChevronRight className="size-4 text-ink-faint rtl:rotate-180" />
                     </div>

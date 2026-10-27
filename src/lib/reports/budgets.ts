@@ -22,6 +22,7 @@ export interface BudgetEntryLike {
   itemId?: string | null;
   categoryId?: string | null;
   subcategoryId?: string | null;
+  accountCurrency?: string | null;
 }
 
 export interface BudgetProgress {
@@ -80,6 +81,9 @@ export function budgetThresholdCross(
 export function budgetCovers(budget: Budget, entry: BudgetEntryLike): boolean {
   if (entry.type !== 'expense') return false;
   if (entry.itemId === ITEM_EXPENSE_BALANCE_CORRECTION_ID) return false;
+  const budgetCur = budget.currency || 'EGP';
+  const entryCur = entry.accountCurrency || 'EGP';
+  if (entryCur !== budgetCur) return false;
   if (budget.subcategoryId) return entry.subcategoryId === budget.subcategoryId;
   return entry.categoryId === budget.categoryId;
 }
