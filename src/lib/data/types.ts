@@ -184,6 +184,7 @@ export interface RecurringRule {
   toAccountId: string | null;
   itemId: string | null;
   note: string | null;
+  isSubscription?: boolean;
   isArchived: boolean;
   createdBy: string | null;
   createdAt: string;
@@ -191,6 +192,7 @@ export interface RecurringRule {
 }
 
 export interface EnrichedRecurringRule extends RecurringRule {
+  accountCurrency?: string | null;
   accountNameAr?: string | null;
   accountNameEn?: string | null;
   toAccountNameAr?: string | null;
@@ -443,6 +445,7 @@ export interface RecurringRuleRow {
   to_account_id: string | null;
   item_id: string | null;
   note: string | null;
+  is_subscription?: boolean;
   is_archived: boolean;
   created_by: string | null;
   created_at: string;

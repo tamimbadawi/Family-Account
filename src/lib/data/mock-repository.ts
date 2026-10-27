@@ -5,6 +5,7 @@
 // =========================================================
 
 import { localISODate, setDefaultCurrency } from '../format';
+import { convertAmount } from '../currency/converter';
 import type { Table } from 'dexie';
 import { db as defaultDb, FamilyAccountsDB } from '../offline/db';
 import {
@@ -597,6 +598,107 @@ export class MockRepository implements Repository {
     setDefaultCurrency(clean[0]);
   }
 
+  async convertHouseholdCurrency(targetCurrency: string, exchangeRate: number): Promise<void> {
+    await this.ensureSeeded();
+    const hid = await this.householdId();
+    const target = targetCurrency.trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(target)) {
+      throw new Error('Invalid currency code');
+    }
+    if (!Number.isFinite(exchangeRate) || exchangeRate <= 0) {
+      throw new Error('Invalid exchange rate');
+    }
+
+    const household = await this.db.households.get(hid);
+    const oldCurrency = household?.currency || 'EGP';
+
+    await this.db.transaction(
+      'rw',
+      [
+        this.db.households,
+        this.db.accounts,
+        this.db.transactions,
+        this.db.savings_goals,
+        this.db.recurring_rules,
+        this.db.budgets,
+        this.db.investment_values,
+      ],
+      async () => {
+        // 1. Update household
+        await this.db.households.update(hid, {
+          currency: target,
+          currencies: [target],
+        });
+        setDefaultCurrency(target);
+
+        // 2. Convert all wallets
+        const wallets = await this.db.accounts.where('household_id').equals(hid).toArray();
+        for (const w of wallets) {
+          const wCur = w.currency || oldCurrency;
+          const rate = wCur === target ? 1 : exchangeRate;
+          const opening = convertAmount(w.opening_balance ?? 0, rate);
+
+          let nameAr = w.name_ar;
+          let nameEn = w.name_en;
+          if (nameAr && nameAr.includes(`(${wCur})`)) {
+            nameAr = nameAr.replace(`(${wCur})`, `(${target})`);
+          }
+          if (nameEn && nameEn.includes(`(${wCur})`)) {
+            nameEn = nameEn.replace(`(${wCur})`, `(${target})`);
+          }
+
+          await this.db.accounts.update(w.id, {
+            currency: target,
+            opening_balance: opening,
+            name_ar: nameAr,
+            name_en: nameEn,
+          });
+        }
+
+        // 3. Convert all transactions
+        const txs = await this.db.transactions.where('household_id').equals(hid).toArray();
+        for (const tx of txs) {
+          await this.db.transactions.update(tx.id, {
+            amount: convertAmount(tx.amount, exchangeRate),
+          });
+        }
+
+        // 4. Convert all savings goals
+        const goals = await this.db.savings_goals.where('household_id').equals(hid).toArray();
+        for (const g of goals) {
+          await this.db.savings_goals.update(g.id, {
+            target_amount: convertAmount(g.target_amount, exchangeRate),
+          });
+        }
+
+        // 5. Convert recurring rules
+        const recurring = await this.db.recurring_rules.where('household_id').equals(hid).toArray();
+        for (const r of recurring) {
+          await this.db.recurring_rules.update(r.id, {
+            amount: convertAmount(r.amount, exchangeRate),
+          });
+        }
+
+        // 6. Convert budgets
+        const budgets = await this.db.budgets.where('household_id').equals(hid).toArray();
+        for (const b of budgets) {
+          await this.db.budgets.update(b.id, {
+            amount: convertAmount(b.amount, exchangeRate),
+          });
+        }
+
+        // 7. Convert investment values
+        const invValues = await this.db.investment_values.where('household_id').equals(hid).toArray();
+        for (const iv of invValues) {
+          await this.db.investment_values.update(iv.id, {
+            value: convertAmount(iv.value, exchangeRate),
+            unit_price: iv.unit_price != null ? convertAmount(iv.unit_price, exchangeRate) : null,
+          });
+        }
+      }
+    );
+  }
+
   async getMembers(): Promise<Member[]> {
     const rows = await this.db.household_members.toArray();
     return rows.map(toMember);
@@ -975,6 +1077,7 @@ export class MockRepository implements Repository {
 
       return {
         ...rule,
+        accountCurrency: acc?.currency ?? null,
         accountNameAr: acc?.name_ar ?? null,
         accountNameEn: acc?.name_en ?? null,
         toAccountNameAr: toAcc?.name_ar ?? null,
@@ -1046,6 +1149,7 @@ export class MockRepository implements Repository {
       to_account_id: input.type === 'transfer' ? input.toAccountId ?? null : null,
       item_id: input.type === 'transfer' ? null : input.itemId ?? null,
       note: input.note ?? null,
+      is_subscription: input.isSubscription ?? false,
       is_archived: false,
       created_by: input.createdBy ?? this.currentUserId,
       created_at: now,
@@ -1059,6 +1163,25 @@ export class MockRepository implements Repository {
     await this.ensureSeeded();
     await this.patch('recurring_rules', id, { is_archived: archive, updated_at: new Date().toISOString() });
   }
+
+  async updateRecurringRule(id: string, updates: Partial<CreateRecurringRuleInput>): Promise<RecurringRule> {
+    await this.ensureSeeded();
+    const existing = await this.db.recurring_rules.get(id);
+    if (!existing) throw new Error('Recurring rule ' + id + ' not found');
+    const patch: Partial<RecurringRuleRow> = { updated_at: new Date().toISOString() };
+    if (updates.amount !== undefined) patch.amount = roundMoney(updates.amount);
+    if (updates.note !== undefined) patch.note = updates.note;
+    if (updates.isSubscription !== undefined) patch.is_subscription = updates.isSubscription;
+    if (updates.accountId !== undefined) patch.account_id = updates.accountId;
+    if (updates.toAccountId !== undefined) patch.to_account_id = updates.toAccountId;
+    if (updates.itemId !== undefined) patch.item_id = updates.itemId;
+    if (updates.frequency !== undefined) patch.frequency = updates.frequency;
+    if (updates.interval !== undefined) patch.interval = updates.interval;
+    if (updates.endDate !== undefined) patch.end_date = updates.endDate;
+    const updated = await this.patch('recurring_rules', id, patch);
+    return toRecurringRule(updated as RecurringRuleRow);
+  }
+
 
   async processDueRecurringRules(currentDate?: string): Promise<number> {
     const today = currentDate ?? localISODate();

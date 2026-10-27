@@ -119,7 +119,7 @@ describe('pull()', () => {
     expect(await db.transactions.count()).toBe(1);
   });
 
-  it('empties the copy when the person is no longer in a family, or joins another one', async () => {
+  it('keeps the copy when the server returns no household, and only clears when joining another one', async () => {
     await pull(db, fakeSource({ transactions: [entry('t1', '2026-10-07T10:00:00Z')] }).source);
     expect(await db.transactions.count()).toBe(1);
 
@@ -127,8 +127,10 @@ describe('pull()', () => {
     expect(await db.transactions.count()).toBe(0);
     expect((await db.households.toArray()).map((h) => h.id)).toEqual([H2]);
 
+    // When the server returns no household (e.g. waking/reconnecting/expired token), keep the local copy
     expect(await pull(db, fakeSource({}, '').source)).toBeNull();
-    expect(await db.households.count()).toBe(0);
+    expect(await db.households.count()).toBe(1);
+    expect((await db.households.toArray()).map((h) => h.id)).toEqual([H2]);
   });
 
   it('pages through more than 1000 rows', async () => {

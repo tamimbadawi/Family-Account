@@ -14,7 +14,9 @@
     "ui:flows": "node scripts/ui-flows.mjs",
     "ui:feature": "node scripts/ui.mjs feature",
     "ui:site": "node scripts/ui.mjs site",
-    "ui:stop": "node scripts/ui.mjs stop"
+    "ui:stop": "node scripts/ui.mjs stop",
+    "calc:fund-estimates": "python scripts/data-fund-estimates.py",
+    "calc:data-integrity": "python scripts/data-integrity.py"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

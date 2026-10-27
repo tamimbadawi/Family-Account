@@ -12,18 +12,49 @@ import { useSaveError } from '@/components/ui/use-save-error';
 import { AmountDisplay } from '@/components/entry/AmountDisplay';
 import { AmountPad } from '@/components/entry/AmountPad';
 import { FutureDateField } from '@/components/entry/DetailsRow';
-import { CurrencySelect } from '@/components/family/CurrencySelect';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { localISODate, money, normalizeDigits, pickName } from '@/lib/format';
 import type { InvestmentKind } from '@/lib/data/types';
 import { INVESTMENT_KINDS, INVESTMENT_KIND_MAP } from './investment-kind';
 
+export interface InitialInvestmentData {
+  kind?: InvestmentKind;
+  name?: string;
+  amount?: number;
+}
+
 interface AddInvestmentDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialData?: InitialInvestmentData | null;
 }
 
-export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerProps) {
+export function AddInvestmentDrawer({ open, onOpenChange, initialData }: AddInvestmentDrawerProps) {
+  const sheetRef = React.useRef<HTMLDivElement>(null);
+  useRestoreSheetAfterKeyboard(sheetRef, open);
+
+  return (
+    <Drawer open={open} onOpenChange={onOpenChange} repositionInputs>
+      <DrawerContent ref={sheetRef} className="max-h-[96dvh]">
+        {open && (
+          <AddInvestmentContent
+            key={initialData ? `${initialData.kind}-${initialData.name}-${initialData.amount}` : 'fresh'}
+            initialData={initialData}
+            onClose={() => onOpenChange(false)}
+          />
+        )}
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
+function AddInvestmentContent({
+  initialData,
+  onClose,
+}: {
+  initialData?: InitialInvestmentData | null;
+  onClose: () => void;
+}) {
   const t = useTranslations('money');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -32,23 +63,18 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
   const household = useHousehold();
   const allWallets = useWalletBalances() ?? [];
 
-  const currencies = household?.currencies ?? ['EGP'];
-  const hasMultipleCurrencies = currencies.length > 1;
-
-  const [selectedCurrency, setSelectedCurrency] = React.useState<string>(currencies[0] ?? 'EGP');
-  const [kind, setKind] = React.useState<InvestmentKind>('gold');
-  const [customName, setCustomName] = React.useState<string | null>(null);
-  const [amountStr, setAmountStr] = React.useState('');
+  const defaultCurrency = household?.currency ?? household?.currencies?.[0] ?? 'EGP';
+  const selectedCurrency = defaultCurrency;
+  const [kind, setKind] = React.useState<InvestmentKind>(initialData?.kind ?? 'gold');
+  const [customName, setCustomName] = React.useState<string | null>(initialData?.name ?? null);
+  const [amountStr, setAmountStr] = React.useState(initialData?.amount ? String(Math.round(initialData.amount)) : '');
   const [quantityStr, setQuantityStr] = React.useState('');
-  const [activeField, setActiveField] = React.useState<'quantity' | 'amount'>('quantity');
-  const [knowsQuantity, setKnowsQuantity] = React.useState(true);
+  const [activeField, setActiveField] = React.useState<'quantity' | 'amount'>(initialData?.amount ? 'amount' : 'quantity');
+  const [knowsQuantity, setKnowsQuantity] = React.useState(initialData?.amount ? false : true);
   const [karat, setKarat] = React.useState<18 | 21 | 24>(21);
   const [paidFrom, setPaidFrom] = React.useState<string>('alreadyHave');
   const [maturesOn, setMaturesOn] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-
-  const sheetRef = React.useRef<HTMLDivElement>(null);
-  useRestoreSheetAfterKeyboard(sheetRef, open);
 
   const effectiveName = customName !== null ? customName : t(INVESTMENT_KIND_MAP[kind].messageKey);
 
@@ -57,20 +83,6 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
     if (k === 'gold' || k === 'stocks') {
       setActiveField('quantity');
     }
-  };
-
-  const resetForm = () => {
-    setKind('gold');
-    setCustomName(null);
-    setAmountStr('');
-    setQuantityStr('');
-    setActiveField('quantity');
-    setKnowsQuantity(true);
-    setKarat(21);
-    setPaidFrom('alreadyHave');
-    setMaturesOn('');
-    setSelectedCurrency(currencies[0] ?? 'EGP');
-    setIsSubmitting(false);
   };
 
   // Spending wallets matching selected currency
@@ -153,8 +165,7 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
         firstPriceValueId = val.id;
       }
 
-      onOpenChange(false);
-      resetForm();
+      onClose();
 
       toast.success(t('addedTo', { name: cleanName }), {
         action: {
@@ -183,11 +194,9 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
   };
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange} repositionInputs>
-      <DrawerContent ref={sheetRef} className="max-h-[96dvh]">
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[max(env(safe-area-inset-bottom,0px),1rem)] space-y-3">
-          <DrawerHeader className="px-0 pt-3 pb-0">
-            <DrawerTitle className="text-title font-bold text-ink text-start">
+    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[max(env(safe-area-inset-bottom,0px),1rem)] space-y-3">
+      <DrawerHeader className="px-0 pt-3 pb-0">
+        <DrawerTitle className="text-title font-bold text-ink text-start">
               {t('addInvestment')}
             </DrawerTitle>
           </DrawerHeader>
@@ -199,18 +208,7 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
                 <label className="text-caption font-semibold text-ink-muted">
                   {t('kind')}
                 </label>
-                {hasMultipleCurrencies && (
-                  <div className="w-28 shrink-0">
-                    <CurrencySelect
-                      value={selectedCurrency}
-                      onChange={(c) => {
-                        setSelectedCurrency(c);
-                        setPaidFrom('alreadyHave');
-                      }}
-                      className="h-8 w-full rounded-lg bg-surface-2 px-2 text-caption font-semibold"
-                    />
-                  </div>
-                )}
+                
               </div>
               <div className="grid grid-cols-6 gap-1">
                 {INVESTMENT_KINDS.map((k) => {
@@ -476,7 +474,5 @@ export function AddInvestmentDrawer({ open, onOpenChange }: AddInvestmentDrawerP
             </Button>
           </form>
         </div>
-      </DrawerContent>
-    </Drawer>
   );
 }

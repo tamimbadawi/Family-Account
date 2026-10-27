@@ -91,5 +91,7 @@
   "changeTransfer": "Change this transfer",
   "transferUpdated": "Transfer updated",
   "removeTransfer": "Remove this transfer",
-  "transferRemoved": "Transfer removed"
+  "transferRemoved": "Transfer removed",
+  "calculatorTileTitle": "Investment Calculator",
+  "calculatorTileDesc": "Explore certificates, T-bills & fund returns"
 }

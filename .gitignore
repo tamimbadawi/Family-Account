@@ -38,3 +38,10 @@ docs/screenshots/
 
 # ui-check screenshots
 .ui-check/
+
+# local tooling
+.agents/
+.claude/
+__pycache__/
+*.pyc
+.temp/

@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
-import { useRepository, useWallets, useWalletBalances } from '@/lib/data/provider';
+import { useRepository, useWallets, useWalletBalances, useHousehold } from '@/lib/data/provider';
 import { useSaveError } from '@/components/ui/use-save-error';
 import type { Wallet, WalletType } from '@/lib/data/types';
 import { currencySymbol, money, normalizeDigits, pickName } from '@/lib/format';
@@ -41,6 +41,10 @@ export default function WalletManagerPage() {
   const tWallets = useTranslations('wallets');
   const repo = useRepository();
   const saveError = useSaveError();
+  const household = useHousehold();
+  const currencies = React.useMemo(() => {
+    return household?.currencies ?? (household?.currency ? [household.currency] : ['EGP']);
+  }, [household]);
 
   const [showArchived, setShowArchived] = React.useState(false);
 
@@ -73,6 +77,7 @@ export default function WalletManagerPage() {
   const [nameAr, setNameAr] = React.useState('');
   const [nameEn, setNameEn] = React.useState('');
   const [walletType, setWalletType] = React.useState<WalletType>('cash');
+  const [walletCurrency, setWalletCurrency] = React.useState<string>('EGP');
   const [openingBalanceStr, setOpeningBalanceStr] = React.useState('0');
   const [color, setColor] = React.useState('#15803D');
   const [icon, setIcon] = React.useState('wallet');
@@ -82,6 +87,7 @@ export default function WalletManagerPage() {
     setNameAr('');
     setNameEn('');
     setWalletType('cash');
+    setWalletCurrency(currencies[0] ?? 'EGP');
     setOpeningBalanceStr('0');
     setColor('#15803D');
     setIcon('wallet');
@@ -93,6 +99,7 @@ export default function WalletManagerPage() {
     setNameAr(wallet.nameAr || '');
     setNameEn(wallet.nameEn || '');
     setWalletType(wallet.type);
+    setWalletCurrency(wallet.currency || currencies[0] || 'EGP');
     setOpeningBalanceStr(String(wallet.openingBalance || 0));
     setColor(wallet.color || '#15803D');
     setIcon(wallet.icon || 'wallet');
@@ -155,6 +162,7 @@ export default function WalletManagerPage() {
           openingBalance,
           color,
           icon,
+          currency: walletCurrency,
         });
       }
 
@@ -360,7 +368,7 @@ export default function WalletManagerPage() {
             {/* Opening Balance */}
             <div className="space-y-1">
               <label className="text-caption font-semibold text-ink-muted">
-                {t('openingBalance')} ({currencySymbol(editingWallet?.currency, locale)})
+                {t('openingBalance')} ({currencySymbol(household?.currency, locale)})
               </label>
               <input
                 type="text"

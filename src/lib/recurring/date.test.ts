@@ -9,6 +9,10 @@ import {
   getDueMonths,
   monthsBetween,
   nextDueDate,
+  getNextDueDate,
+  getDaysUntil,
+  getMonthlyEquivalent,
+  isSubscriptionRule,
 } from './date';
 
 describe('daysInMonth', () => {
@@ -233,5 +237,34 @@ describe('addDays', () => {
   it('crosses month and year ends', () => {
     expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
     expect(addDays('2026-03-01', -1)).toBe('2026-02-28');
+  });
+});
+
+describe('getNextDueDate and subscriptions', () => {
+  it('calculates next monthly renewal date', () => {
+    const rule = { startDate: '2026-05-15', frequency: 'monthly' as const, interval: 1, dayOfMonth: 15 };
+    expect(getNextDueDate(rule, '2026-10-10')).toBe('2026-10-15');
+    expect(getNextDueDate(rule, '2026-10-15')).toBe('2026-10-15');
+    expect(getNextDueDate(rule, '2026-10-16')).toBe('2026-11-15');
+  });
+
+  it('calculates days until renewal', () => {
+    expect(getDaysUntil('2026-10-15', '2026-10-15')).toBe(0);
+    expect(getDaysUntil('2026-10-16', '2026-10-15')).toBe(1);
+    expect(getDaysUntil('2026-10-22', '2026-10-15')).toBe(7);
+  });
+
+  it('normalizes to monthly cost equivalent', () => {
+    expect(getMonthlyEquivalent(300, 'monthly', 1)).toBe(300);
+    expect(getMonthlyEquivalent(1200, 'yearly', 1)).toBe(100);
+    expect(getMonthlyEquivalent(600, 'monthly', 2)).toBe(300);
+  });
+
+  it('detects subscriptions accurately', () => {
+    expect(isSubscriptionRule({ isSubscription: true })).toBe(true);
+    expect(isSubscriptionRule({ isSubscription: false })).toBe(false);
+    expect(isSubscriptionRule({ itemNameEn: 'Netflix standard' })).toBe(true);
+    expect(isSubscriptionRule({ itemNameAr: 'اشتراك جيم' })).toBe(true);
+    expect(isSubscriptionRule({ itemNameEn: 'Supermarket groceries' })).toBe(false);
   });
 });

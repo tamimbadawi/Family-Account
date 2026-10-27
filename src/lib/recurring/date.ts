@@ -193,3 +193,156 @@ export function getDueDates(rule: RecurrenceParams, currentDate: string): string
 
   return due.slice(-MAX_DUE_DATES);
 }
+
+
+/**
+ * Calculates the next date on or after `fromDate` ('YYYY-MM-DD') that this rule is due.
+ * Returns null if the rule has ended or is archived.
+ */
+export function getNextDueDate(rule: RecurrenceParams, fromDate: string): string | null {
+  if (rule.isArchived) return null;
+  const start = ruleStartDate(rule);
+  if (!start) return null;
+  if (rule.endDate && rule.endDate < fromDate) return null;
+
+  const frequency = rule.frequency ?? 'monthly';
+  const interval = Math.max(1, Math.round(rule.interval ?? 1));
+  const [startYear, startMonth, startDay] = start.split('-').map(Number);
+  const [fromYear, fromMonth] = fromDate.split('-').map(Number);
+
+  if (start >= fromDate) {
+    return rule.endDate && start > rule.endDate ? null : start;
+  }
+
+  if (frequency === 'daily') {
+    const diffDays = Math.ceil((new Date(fromDate).getTime() - new Date(start).getTime()) / (1000 * 60 * 60 * 24));
+    const steps = Math.ceil(diffDays / interval);
+    const next = addDays(start, steps * interval);
+    return rule.endDate && next > rule.endDate ? null : next;
+  }
+
+  if (frequency === 'weekly') {
+    const days = rule.daysOfWeek?.length ? [...new Set(rule.daysOfWeek)].sort((a, b) => a - b) : [dayOfWeek(start)];
+    for (let i = 0; i < 120; i++) {
+      const d = addDays(fromDate, i);
+      if (rule.endDate && d > rule.endDate) return null;
+      if (days.includes(dayOfWeek(d))) {
+        const startSunday = addDays(start, -dayOfWeek(start));
+        const thisSunday = addDays(d, -dayOfWeek(d));
+        const weeksDiff = Math.round(
+          (new Date(thisSunday).getTime() - new Date(startSunday).getTime()) / (1000 * 60 * 60 * 24 * 7)
+        );
+        if (weeksDiff >= 0 && weeksDiff % interval === 0) {
+          return d;
+        }
+      }
+    }
+    return null;
+  }
+
+  if (frequency === 'monthly') {
+    const day = rule.dayOfMonth ?? startDay;
+    const startTotalMonths = startYear * 12 + (startMonth - 1);
+    const fromTotalMonths = fromYear * 12 + (fromMonth - 1);
+
+    const thisMonthCandidate = entryDateForMonth(`${fromYear}-${String(fromMonth).padStart(2, '0')}`, day);
+    let targetTotalMonths = fromTotalMonths;
+    if (thisMonthCandidate < fromDate) {
+      targetTotalMonths++;
+    }
+
+    const diff = targetTotalMonths - startTotalMonths;
+    const rem = diff % interval;
+    if (rem !== 0) {
+      targetTotalMonths += interval - (rem < 0 ? rem + interval : rem);
+    }
+
+    const nextYear = Math.floor(targetTotalMonths / 12);
+    const nextMonth = (targetTotalMonths % 12) + 1;
+    const next = entryDateForMonth(`${nextYear}-${String(nextMonth).padStart(2, '0')}`, day);
+    return rule.endDate && next > rule.endDate ? null : next;
+  }
+
+  // Yearly
+  const day = startDay;
+  const month = startMonth;
+  let targetYear = fromYear;
+  const thisYearCandidate = entryDateForMonth(`${targetYear}-${String(month).padStart(2, '0')}`, day);
+  if (thisYearCandidate < fromDate) {
+    targetYear++;
+  }
+
+  const diffYears = targetYear - startYear;
+  const rem = diffYears % interval;
+  if (rem !== 0) {
+    targetYear += interval - (rem < 0 ? rem + interval : rem);
+  }
+
+  const next = entryDateForMonth(`${targetYear}-${String(month).padStart(2, '0')}`, day);
+  return rule.endDate && next > rule.endDate ? null : next;
+}
+
+/**
+ * Returns number of calendar days from `fromDate` to `targetDate`.
+ * e.g. same day = 0, next day = 1.
+ */
+export function getDaysUntil(targetDate: string, fromDate: string): number {
+  const [y1, m1, d1] = targetDate.split('-').map(Number);
+  const [y2, m2, d2] = fromDate.split('-').map(Number);
+  const t1 = Date.UTC(y1, m1 - 1, d1);
+  const t2 = Date.UTC(y2, m2 - 1, d2);
+  return Math.round((t1 - t2) / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * Normalises any recurrence frequency to its monthly equivalent amount.
+ */
+export function getMonthlyEquivalent(
+  amount: number,
+  frequency: RecurrenceFrequency = 'monthly',
+  interval: number = 1
+): number {
+  const safeInterval = Math.max(1, interval);
+  switch (frequency) {
+    case 'daily':
+      return (amount * 30.4) / safeInterval;
+    case 'weekly':
+      return (amount * 52) / (12 * safeInterval);
+    case 'yearly':
+      return amount / (12 * safeInterval);
+    case 'monthly':
+    default:
+      return amount / safeInterval;
+  }
+}
+
+/**
+ * Determines whether a recurring rule is considered a subscription.
+ * True if explicitly marked, or matches common subscription services.
+ */
+export function isSubscriptionRule(rule: {
+  isSubscription?: boolean | null;
+  itemNameEn?: string | null;
+  itemNameAr?: string | null;
+  categoryNameEn?: string | null;
+  categoryNameAr?: string | null;
+  note?: string | null;
+}): boolean {
+  if (rule.isSubscription === true) return true;
+  if (rule.isSubscription === false) return false;
+
+  const text = [
+    rule.itemNameEn,
+    rule.itemNameAr,
+    rule.categoryNameEn,
+    rule.categoryNameAr,
+    rule.note,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return /subscription|netflix|spotify|anghami|أنغامي|انغامي|شاهد|shahid|osn|disney|apple|icloud|google one|gym|جيم|اشتراك|chatgpt|prime|coursera|playstation|xbox|duolingo|youtube/i.test(
+    text
+  );
+}

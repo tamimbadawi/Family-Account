@@ -6,6 +6,7 @@ import type { EnrichedEntry, EntryType } from '@/lib/data/types';
 
 export interface OpenAddOptions {
   initialRecurring?: boolean;
+  initialSubscription?: boolean;
   /** Open on "Goal" with this savings goal chosen (money moves from a wallet into the goal). */
   goalId?: string;
 }
@@ -16,6 +17,7 @@ interface EntrySheetContextValue {
   editingEntry: EnrichedEntry | null;
   initialType?: EntryType;
   initialRecurring: boolean;
+  initialSubscription: boolean;
   initialGoalId: string | null;
   openAdd: (type?: EntryType, options?: OpenAddOptions) => void;
   openEdit: (entry: EnrichedEntry) => void;
@@ -33,6 +35,7 @@ export function EntrySheetProvider({ children }: { children: React.ReactNode }) 
   const [editingEntry, setEditingEntry] = React.useState<EnrichedEntry | null>(null);
   const [initialType, setInitialType] = React.useState<EntryType | undefined>(undefined);
   const [initialRecurring, setInitialRecurring] = React.useState(false);
+  const [initialSubscription, setInitialSubscription] = React.useState(false);
   const [initialGoalId, setInitialGoalId] = React.useState<string | null>(null);
 
   const openAdd = React.useCallback((type?: EntryType, options?: OpenAddOptions) => {
@@ -40,6 +43,7 @@ export function EntrySheetProvider({ children }: { children: React.ReactNode }) 
     setEditingEntry(null);
     setInitialType(type ?? 'expense');
     setInitialRecurring(options?.initialRecurring ?? false);
+    setInitialSubscription(options?.initialSubscription ?? false);
     setInitialGoalId(options?.goalId ?? null);
     setIsOpen(true);
   }, []);
@@ -49,6 +53,7 @@ export function EntrySheetProvider({ children }: { children: React.ReactNode }) 
     setEditingEntry(entry);
     setInitialType(entry.type);
     setInitialRecurring(false);
+    setInitialSubscription(false);
     setInitialGoalId(null);
     setIsOpen(true);
   }, []);
@@ -64,12 +69,13 @@ export function EntrySheetProvider({ children }: { children: React.ReactNode }) 
       editingEntry,
       initialType,
       initialRecurring,
+      initialSubscription,
       initialGoalId,
       openAdd,
       openEdit,
       close,
     }),
-    [isOpen, mode, editingEntry, initialType, initialRecurring, initialGoalId, openAdd, openEdit, close]
+    [isOpen, mode, editingEntry, initialType, initialRecurring, initialSubscription, initialGoalId, openAdd, openEdit, close]
   );
 
   return (

@@ -27,6 +27,7 @@
   "pickDay": "اختار يوم",
   "allCategories": "الأقسام",
   "change": "تغيير",
+  "changeCurrency": "تغيير العملة",
   "next": "التالي",
   "editAmount": "تعديل المبلغ",
   "keypad": "لوحة الأرقام",
@@ -63,5 +64,6 @@
   "goal": "هدف",
   "toGoal": "إلى الهدف",
   "createGoalFirst": "اعمل هدف ادخار الأول",
-  "fromTo": "{from} ← {to}"
+  "fromTo": "{from} ← {to}",
+  "isSubscription": "اشتراك (خصم دوري من البطاقة)"
 }

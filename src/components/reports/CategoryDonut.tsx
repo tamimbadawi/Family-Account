@@ -23,6 +23,7 @@ export interface CategoryDonutProps {
   height?: number;
   className?: string;
   currency?: string;
+  isLoading?: boolean;
 }
 
 export function CategoryDonut({
@@ -33,6 +34,7 @@ export function CategoryDonut({
   height = 112,
   className = '',
   currency,
+  isLoading,
 }: CategoryDonutProps) {
   const locale = useLocale();
   const t = useTranslations('reports');
@@ -50,7 +52,7 @@ export function CategoryDonut({
     }));
   }, [data, locale]);
 
-  if (!isClient) {
+  if (isLoading || !isClient || (total > 0 && chartData.length === 0)) {
     return (
       <div
         style={{ height }}

@@ -27,6 +27,7 @@
   "pickDay": "Pick a day",
   "allCategories": "Categories",
   "change": "Change",
+  "changeCurrency": "Change currency",
   "next": "Next",
   "editAmount": "Edit amount",
   "keypad": "Number pad",
@@ -63,5 +64,6 @@
   "goal": "Goal",
   "toGoal": "To goal",
   "createGoalFirst": "Create a savings goal first",
-  "fromTo": "{from} → {to}"
+  "fromTo": "{from} → {to}",
+  "isSubscription": "Subscription (recurring card charge)"
 }

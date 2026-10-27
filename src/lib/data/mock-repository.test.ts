@@ -796,6 +796,30 @@ describe('MockRepository with fake-indexeddb', () => {
       expect(months).toEqual(['2026-09-10', '2026-10-10']);
     });
 
+    it('creates and updates recurring rule subscription flag', async () => {
+      const db = new FamilyAccountsDB('test-recurring-sub-1');
+      const repo = new MockRepository(db);
+      await repo.ensureSeeded();
+      const item = (await repo.getItems())[0];
+      const wallet = (await repo.getWallets())[0];
+      const sub = await repo.createRecurringRule({
+        type: 'expense',
+        amount: 250,
+        startDate: '2026-10-01',
+        frequency: 'monthly',
+        accountId: wallet.id,
+        itemId: item.id,
+        isSubscription: true,
+        note: 'Netflix 4K',
+      });
+      expect(sub.isSubscription).toBe(true);
+      const rules = await repo.getRecurringRules();
+      const found = rules.find((r) => r.id === sub.id);
+      expect(found?.isSubscription).toBe(true);
+      const updated = await repo.updateRecurringRule(sub.id, { isSubscription: false });
+      expect(updated.isSubscription).toBe(false);
+    });
+
     it('creates, enriches, archives, and tracks savings goals funded via wallet transfers', async () => {
       const db = new FamilyAccountsDB('test-savings-goals-1');
       const repo = new MockRepository(db);
@@ -913,6 +937,28 @@ describe('MockRepository with fake-indexeddb', () => {
       await expect(repo.setHouseholdCurrencies(['EGP'])).rejects.toThrow(
         'A wallet still uses a currency you removed'
       );
+    });
+
+    it('converts household currency and all balances, transactions, and goals', async () => {
+      const db = new FamilyAccountsDB('test-convert-cur');
+      const testRepo = new MockRepository(db);
+      await testRepo.ensureSeeded();
+
+      // Convert from EGP to USD at rate 0.02 (50 EGP = 1 USD)
+      await testRepo.convertHouseholdCurrency('USD', 0.02);
+
+      const household = await testRepo.getHousehold();
+      expect(household?.currency).toBe('USD');
+      expect(household?.currencies).toEqual(['USD']);
+
+      const wallets = await testRepo.getWallets(true);
+      expect(wallets.every((w) => w.currency === 'USD')).toBe(true);
+
+      const entries = await testRepo.listEntries({ limit: 50 });
+      expect(entries.length).toBeGreaterThan(0);
+      for (const e of entries) {
+        expect(Number.isFinite(e.amount)).toBe(true);
+      }
     });
   });
 

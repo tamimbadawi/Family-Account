@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calculator, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { Link, useRouter } from '@/i18n/navigation';
 import {
@@ -347,6 +347,27 @@ function MoneyContent() {
                   + {t('addInvestment')}
                 </button>
               </div>
+
+              {/* Investment Calculator Banner */}
+              <Link
+                href="/money/calculator"
+                className="flex items-center justify-between gap-3 p-3.5 rounded-card bg-accent-soft text-accent border border-accent/20 hover:bg-accent-soft/80 active:scale-[0.99] transition-transform select-none cursor-pointer"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-accent text-accent-ink">
+                    <Calculator className="size-5" />
+                  </div>
+                  <div className="min-w-0 text-start">
+                    <div className="text-body font-bold text-ink leading-tight truncate">
+                      {t('calculatorTileTitle')}
+                    </div>
+                    <div className="text-caption text-ink-muted leading-tight truncate mt-0.5">
+                      {t('calculatorTileDesc')}
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="size-5 text-accent rtl:rotate-180 shrink-0" />
+              </Link>
 
               {!investments || investments.length === 0 ? (
                 <div className="rounded-card bg-surface p-4 shadow-card text-center space-y-2 border border-line/60">

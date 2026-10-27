@@ -27,7 +27,11 @@ export function SavingsGoalsRow({ className = '' }: { className?: string }) {
     return [...byCurrency.entries()].map(([cur, amount]) => money(amount, locale, { currency: cur || undefined })).join(' + ');
   }, [goals, wallets, locale]);
 
-  if (goals === undefined) return null;
+  if (goals === undefined) {
+    return (
+      <div className={`h-14 rounded-card bg-surface shadow-card animate-pulse ${className}`} />
+    );
+  }
   const hasGoals = goals.length > 0;
 
   return (

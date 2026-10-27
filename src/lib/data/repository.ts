@@ -114,6 +114,7 @@ export interface CreateRecurringRuleInput {
   toAccountId?: string | null;
   itemId?: string | null;
   note?: string | null;
+  isSubscription?: boolean;
   createdBy?: string | null;
 }
 
@@ -234,6 +235,7 @@ export interface Repository {
   // Household & Members
   getHousehold(): Promise<Household | null>;
   setHouseholdCurrencies(currencies: string[]): Promise<void>;
+  convertHouseholdCurrency(targetCurrency: string, exchangeRate: number): Promise<void>;
   getMembers(): Promise<Member[]>;
 
   // Wallets (Accounts)
@@ -284,6 +286,7 @@ export interface Repository {
   getRecurringRule(id: string): Promise<RecurringRule | null>;
   createRecurringRule(input: CreateRecurringRuleInput): Promise<RecurringRule>;
   archiveRecurringRule(id: string, archive?: boolean): Promise<void>;
+  updateRecurringRule(id: string, updates: Partial<CreateRecurringRuleInput>): Promise<RecurringRule>;
   /** Generates any due monthly entries not yet created. Returns count of created entries. */
   processDueRecurringRules(currentDate?: string): Promise<number>;
 

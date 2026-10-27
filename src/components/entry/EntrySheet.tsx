@@ -13,7 +13,7 @@ import type {
   Item,
   Subcategory,
 } from '@/lib/data/types';
-import { useRepository, useSavingsGoals, useWallets } from '@/lib/data/provider';
+import { useHousehold, useRepository, useSavingsGoals, useWallets } from '@/lib/data/provider';
 import { Link } from '@/i18n/navigation';
 import { useSaveError } from '@/components/ui/use-save-error';
 import { validateEntry } from '@/lib/validation/entry';
@@ -55,11 +55,12 @@ interface EntrySheetFormProps {
   editingEntry: EnrichedEntry | null;
   initialType?: EntryType;
   initialRecurring?: boolean;
+  initialSubscription?: boolean;
   initialGoalId?: string | null;
   onClose: () => void;
 }
 
-function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, initialGoalId, onClose }: EntrySheetFormProps) {
+function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, initialSubscription, initialGoalId, onClose }: EntrySheetFormProps) {
   const t = useTranslations('entry');
   const tCommon = useTranslations('common');
   const tBudgets = useTranslations('budgets');
@@ -105,11 +106,15 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
     : null;
 
   // Form State
+  const household = useHousehold();
+  const householdCurrency = household?.currency ?? household?.currencies?.[0] ?? 'EGP';
+
   const [type, setType] = React.useState<EntryType>(defaultType);
   const [amountStr, setAmountStr] = React.useState(defaultAmount);
   const [selectedWalletId, setSelectedWalletId] = React.useState<string | null>(defaultWalletId);
   const [selectedToWalletId, setSelectedToWalletId] = React.useState<string | null>(defaultToWalletId);
   const selectedWallet = wallets?.find((w) => w.id === selectedWalletId);
+  const currentCurrency = selectedWallet?.currency ?? householdCurrency;
 
   // "Goal": a move from a wallet into a savings goal's wallet. Saved as a normal transfer, so the books balance.
   const [isGoal, setIsGoal] = React.useState(Boolean(initialGoalId));
@@ -162,7 +167,8 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
   // Only fills empty slots, so the user's choice and an edited entry's wallets are never replaced.
   if (!editingEntry && wallets && wallets.length > 0) {
     const spending = wallets.filter((w) => !w.isArchived && (w.purpose ?? 'spending') === 'spending');
-    const firstSpendingId = spending[0]?.id ?? null;
+    const preferredSpending = spending.find((w) => w.currency === householdCurrency) ?? spending[0];
+    const firstSpendingId = preferredSpending?.id ?? null;
     const fromId = selectedWalletId ?? firstSpendingId;
     if (selectedWalletId === null && fromId) setSelectedWalletId(fromId);
     if (selectedToWalletId === null) {
@@ -200,7 +206,8 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   // null = does not repeat
-  const [recurrence, setRecurrence] = React.useState<RecurrenceConfig | null>(initialRecurring ? MONTHLY : null);
+  const [isSubscription, setIsSubscription] = React.useState<boolean>(initialSubscription ?? false);
+  const [recurrence, setRecurrence] = React.useState<RecurrenceConfig | null>(initialRecurring || initialSubscription ? MONTHLY : null);
 
   // When type changes, clear incompatible item (expense <-> income or transfer)
   const handleTypeChange = (next: SheetType) => {
@@ -307,6 +314,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
             toAccountId: isTransfer ? toWalletId : null,
             itemId,
             note: note.trim() || null,
+            isSubscription,
           });
           ruleId = rule.id;
         }
@@ -412,7 +420,12 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
 
       {/* Amount, with the chosen main category (and group) beside it */}
       <div className="flex items-center gap-2">
-        <AmountDisplay value={amountStr} type={type} currency={selectedWallet?.currency} className="min-w-0 flex-1" />
+        <AmountDisplay
+          value={amountStr}
+          type={type}
+          currency={currentCurrency}
+          className="min-w-0 flex-1"
+        />
         <div ref={setBreadcrumbSlot} className="flex max-w-[56%] shrink-0 empty:hidden" />
       </div>
 
@@ -494,7 +507,24 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
         </p>
       ) : (
         mode === 'add' &&
-        !isNoteOpen && <RecurrencePicker value={recurrence} onChange={setRecurrence} startDate={occurredOn} />
+        !isNoteOpen && (
+          <div className="flex flex-col gap-2">
+            <RecurrencePicker value={recurrence} onChange={setRecurrence} startDate={occurredOn} />
+            {recurrence !== null && (
+              <label className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-surface-2/60 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isSubscription}
+                  onChange={(e) => setIsSubscription(e.target.checked)}
+                  className="size-4 rounded accent-accent cursor-pointer"
+                />
+                <span className="text-caption font-medium text-ink">
+                  {t('isSubscription')}
+                </span>
+              </label>
+            )}
+          </div>
+        )
       )}
 
       <div data-tour="entry-save" className="flex gap-2 rounded-2xl">
@@ -596,7 +626,7 @@ function keepOpenForToasts(e: { target: EventTarget | null; preventDefault: () =
 
 export function EntrySheet() {
   const t = useTranslations('entry');
-  const { isOpen, mode, editingEntry, initialType, initialRecurring, initialGoalId, close } = useEntrySheet();
+  const { isOpen, mode, editingEntry, initialType, initialRecurring, initialSubscription, initialGoalId, close } = useEntrySheet();
   const sheetRef = React.useRef<HTMLDivElement>(null);
   useRestoreSheetAfterKeyboard(sheetRef, isOpen);
 
@@ -625,6 +655,7 @@ export function EntrySheet() {
               editingEntry={editingEntry}
               initialType={initialType}
               initialRecurring={initialRecurring}
+              initialSubscription={initialSubscription}
               initialGoalId={initialGoalId}
               onClose={close}
             />

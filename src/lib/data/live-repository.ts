@@ -19,6 +19,7 @@ import { OfflineError } from './errors';
 import { toEntry, toHousehold } from './mappers';
 import type { SyncStatus, TransactionRow } from './types';
 import { setDefaultCurrency } from '../format';
+import { convertAmount } from '../currency/converter';
 
 const REQUEST_TIMEOUT_MS = 15_000;
 const RECEIPTS_BUCKET = 'receipts';
@@ -100,11 +101,33 @@ export class LiveRepository extends MockRepository {
    * First open on a device: waits for the whole household to download. Later opens show the
    * copy straight away and refresh it in the background.
    */
+  /**
+   * Safe wrapper around getSession() with a 3-second timeout.
+   * Prevents indefinite lock-ups on iOS WebKit when waking from sleep or background.
+   */
+  private async getSessionWithTimeout(timeoutMs = 3000): Promise<{ data: { session: { user: { id: string } } | null } }> {
+    try {
+      const result = await Promise.race([
+        this.client().auth.getSession(),
+        new Promise<{ data: { session: null } }>((resolve) =>
+          setTimeout(() => {
+            console.warn('[auth] getSession timed out; keeping local copy');
+            resolve({ data: { session: null } });
+          }, timeoutMs)
+        ),
+      ]);
+      return result as { data: { session: { user: { id: string } } | null } };
+    } catch (err) {
+      console.warn('[auth] getSession failed:', err);
+      return { data: { session: null } };
+    }
+  }
+
   override async ensureSeeded(): Promise<void> {
     if (typeof window === 'undefined') return;
     this.watchAuth();
     this.opened ??= (async () => {
-      const { data } = await this.client().auth.getSession();
+      const { data } = await this.getSessionWithTimeout(3000);
       this.currentUserId = data.session?.user.id ?? '';
       const hasCopy = Boolean((await this.db.meta.get('householdId'))?.value);
       if (hasCopy) {
@@ -135,7 +158,7 @@ export class LiveRepository extends MockRepository {
   async refresh(): Promise<void> {
     if (offline()) return;
     this.pulling ??= (async () => {
-      const { data } = await this.client().auth.getSession();
+      const { data } = await this.getSessionWithTimeout(3000);
       const userId = data.session?.user.id;
       if (!userId) {
         console.warn('[sync] no session yet; pull skipped, the copy on the phone is kept');
@@ -332,6 +355,38 @@ export class LiveRepository extends MockRepository {
       currency: clean[0],
     });
     setDefaultCurrency(clean[0]);
+  }
+
+  override async convertHouseholdCurrency(targetCurrency: string, exchangeRate: number): Promise<void> {
+    if (offline()) throw new OfflineError();
+    const hid = await this.householdId();
+    const target = targetCurrency.trim().toUpperCase();
+    await super.convertHouseholdCurrency(target, exchangeRate);
+    try {
+      const client = this.client();
+      await client.from('households').update({ currency: target, currencies: [target] }).eq('id', hid);
+      const { data: accounts } = await client.from('accounts').select('id, opening_balance, currency').eq('household_id', hid);
+      if (accounts) {
+        for (const acc of accounts) {
+          const rate = (acc.currency || 'EGP') === target ? 1 : exchangeRate;
+          await client.from('accounts').update({
+            currency: target,
+            opening_balance: convertAmount(acc.opening_balance ?? 0, rate),
+          }).eq('id', acc.id);
+        }
+      }
+      const { data: txs } = await client.from('transactions').select('id, amount').eq('household_id', hid);
+      if (txs) {
+        for (const tx of txs) {
+          await client.from('transactions').update({
+            amount: convertAmount(tx.amount, exchangeRate),
+          }).eq('id', tx.id);
+        }
+      }
+    } catch (err) {
+      if (isNetworkFailure(err)) throw new OfflineError();
+    }
+    await this.refresh();
   }
 
   // ---------- Status ----------

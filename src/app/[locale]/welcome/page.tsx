@@ -22,9 +22,8 @@ export default function WelcomePage() {
   const [householdName, setHouseholdName] = React.useState('بيت العيلة');
   // The name the app shows for this person everywhere ("Added by Injy"); the email is only for signing in
   const [yourName, setYourName] = React.useState(isAuthConfigured() ? '' : 'Mama');
-  // The family picks its own currencies: a main one and, if they want, a second one
+  // The family picks its single currency
   const [mainCurrency, setMainCurrency] = React.useState(DEFAULT_CURRENCY);
-  const [secondCurrency, setSecondCurrency] = React.useState('');
   const nameIsValid = isEnglishName(yourName);
   const [saving, setSaving] = React.useState(false);
 
@@ -52,7 +51,7 @@ export default function WelcomePage() {
           p_name: householdName.trim() || 'عائلتنا',
           p_display_name: yourName.trim(),
           p_locale: locale,
-          p_currencies: secondCurrency ? [mainCurrency, secondCurrency] : [mainCurrency],
+          p_currencies: [mainCurrency],
         });
         if (error) throw error;
         goAfterAuth(locale, '/');
@@ -143,19 +142,10 @@ export default function WelcomePage() {
 
         <div>
           <p className="mb-1.5 block text-caption font-medium text-ink-muted">{tAuth('currencies')}</p>
-          <div className="space-y-3">
-            <CurrencySelect
-              value={mainCurrency}
-              exclude={secondCurrency}
-              onChange={setMainCurrency}
-            />
-            <CurrencySelect
-              value={secondCurrency}
-              exclude={mainCurrency}
-              noneLabel={tAuth('noSecondCurrency')}
-              onChange={setSecondCurrency}
-            />
-          </div>
+          <CurrencySelect
+            value={mainCurrency}
+            onChange={setMainCurrency}
+          />
           <p className="mt-1.5 text-caption text-ink-muted">{tAuth('currenciesHint')}</p>
         </div>
 

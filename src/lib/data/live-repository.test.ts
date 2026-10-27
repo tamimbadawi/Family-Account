@@ -244,4 +244,30 @@ describe('LiveRepository pull without a session', () => {
 
     unsubscribe();
   });
+
+  it('keeps local copy intact when households query returns empty array on wake/expired token', async () => {
+    const dbName = 'test-live-emptyhouseholds-' + Math.random().toString(36).slice(2, 9);
+    const db = new FamilyAccountsDB(dbName);
+    await db.meta.put({ key: 'householdId', value: HID });
+    await db.households.put({ id: HID, name: 'Family', currency: 'EGP', created_at: serverNow });
+    await db.accounts.put({ id: 'a1', household_id: HID, type: 'cash', name_en: 'Cash', sort_order: 0, is_archived: false, created_at: serverNow, updated_at: serverNow } as never);
+
+    const client = {
+      auth: { getSession: async () => ({ data: { session: { user: { id: 'u1' } } } }) },
+      // Server returns empty array (token expired / anon RLS / network reconnect)
+      from: () => {
+        const chain = { select: () => chain, eq: () => chain, gt: () => chain, order: () => chain, range: () => chain, abortSignal: async () => ({ data: [], error: null }) };
+        return chain;
+      },
+      rpc: () => ({ abortSignal: async () => ({ error: null }) }),
+    };
+
+    const repo = new LiveRepository(db, () => client as never);
+    await repo.refresh();
+
+    // The phone copy MUST NOT be wiped!
+    expect(await db.households.count()).toBe(1);
+    expect(await db.accounts.count()).toBe(1);
+    expect((await db.meta.get('householdId'))?.value).toBe(HID);
+  });
 });

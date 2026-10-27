@@ -91,5 +91,7 @@
   "changeTransfer": "عدّل التحويل ده",
   "transferUpdated": "التحويل اتعدّل",
   "removeTransfer": "شيل التحويل ده",
-  "transferRemoved": "التحويل اتشال"
+  "transferRemoved": "التحويل اتشال",
+  "calculatorTileTitle": "حاسبة الاستثمار",
+  "calculatorTileDesc": "احسب عوائد الشهادات وأذون الخزانة والصناديق"
 }
