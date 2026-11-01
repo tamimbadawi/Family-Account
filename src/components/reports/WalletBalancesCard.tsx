@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { ChevronRight } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
-import { useInvestments, useWalletBalances } from '@/lib/data/provider';
+import { useInvestments, useWalletBalances, useHousehold } from '@/lib/data/provider';
 import { Card } from '@/components/ui/card';
 import { money } from '@/lib/format';
 
@@ -18,6 +18,8 @@ export function WalletBalancesCard({ className = '' }: WalletBalancesCardProps) 
   const tMoney = useTranslations('money');
   const walletBalances = useWalletBalances();
   const investments = useInvestments(false);
+  const household = useHousehold();
+  const householdCurrency = household?.currency ?? 'EGP';
 
   if (!walletBalances || investments === undefined) {
     return (
@@ -40,17 +42,10 @@ export function WalletBalancesCard({ className = '' }: WalletBalancesCardProps) 
     );
   }
 
-  /** Format per-currency subtotal, never crossing currencies. */
+  /** Format subtotal in single household currency. */
   const formatSubtotal = (items: { currency?: string; amount: number }[]) => {
-    const byCurrency = new Map<string, number>();
-    for (const item of items) {
-      const cur = item.currency || 'EGP';
-      byCurrency.set(cur, (byCurrency.get(cur) ?? 0) + item.amount);
-    }
-    if (byCurrency.size === 0) return money(0, locale);
-    return [...byCurrency.entries()]
-      .map(([cur, amount]) => money(amount, locale, { currency: cur || undefined }))
-      .join(' + ');
+    const total = items.reduce((sum, item) => sum + item.amount, 0);
+    return money(total, locale, { currency: householdCurrency });
   };
 
   const spending = walletBalances.filter(

@@ -990,6 +990,10 @@ export type Database = {
         }
         Returns: string
       }
+      convert_household_currency: {
+        Args: { p_target_currency: string; p_rate: number }
+        Returns: undefined
+      }
       set_household_currencies: {
         Args: { p_currencies: string[] }
         Returns: undefined

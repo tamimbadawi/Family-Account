@@ -4,8 +4,7 @@ import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { PiggyBank, Wallet as WalletIcon } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
-import { useInvestments, useWalletBalances } from '@/lib/data/provider';
-import { totalsByCurrency } from '@/lib/money/groups';
+import { useInvestments, useWalletBalances, useHousehold } from '@/lib/data/provider';
 import { money } from '@/lib/format';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -14,30 +13,25 @@ export function MoneyTiles() {
   const t = useTranslations('money');
   const balances = useWalletBalances();
   const investments = useInvestments(false);
+  const household = useHousehold();
+  const householdCurrency = household?.currency ?? 'EGP';
 
   const spendingFormatted = React.useMemo(() => {
     if (!balances) return null;
     const spendingItems = balances
-      .filter((w) => !w.isArchived && (w.purpose ?? 'spending') === 'spending')
-      .map((w) => ({ currency: w.currency, amount: w.balance }));
-    const totals = totalsByCurrency(spendingItems);
-    if (totals.length === 0) return money(0, locale);
-    return totals.map((t) => money(t.amount, locale, { currency: t.currency })).join(' + ');
-  }, [balances, locale]);
+      .filter((w) => !w.isArchived && (w.purpose ?? 'spending') === 'spending');
+    const total = spendingItems.reduce((sum, w) => sum + (w.balance ?? 0), 0);
+    return money(total, locale, { currency: householdCurrency });
+  }, [balances, locale, householdCurrency]);
 
   const savedFormatted = React.useMemo(() => {
     if (!balances || !investments) return null;
-    const goalItems = balances
+    const goalTotal = balances
       .filter((w) => !w.isArchived && w.purpose === 'goal')
-      .map((w) => ({ currency: w.currency, amount: w.balance }));
-    const investmentItems = investments.map((inv) => ({
-      currency: inv.currency,
-      amount: inv.worth,
-    }));
-    const totals = totalsByCurrency([...goalItems, ...investmentItems]);
-    if (totals.length === 0) return money(0, locale);
-    return totals.map((t) => money(t.amount, locale, { currency: t.currency })).join(' + ');
-  }, [balances, investments, locale]);
+      .reduce((sum, w) => sum + (w.balance ?? 0), 0);
+    const investmentTotal = investments.reduce((sum, inv) => sum + (inv.worth ?? 0), 0);
+    return money(goalTotal + investmentTotal, locale, { currency: householdCurrency });
+  }, [balances, investments, locale, householdCurrency]);
 
   if (spendingFormatted === null || savedFormatted === null) {
     return (

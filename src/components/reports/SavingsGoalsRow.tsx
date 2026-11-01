@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { ChevronRight, Target } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
-import { useSavingsGoals, useWallets } from '@/lib/data/provider';
+import { useSavingsGoals, useHousehold } from '@/lib/data/provider';
 import { money } from '@/lib/format';
 
 /** Reports overview: one row that says how much is saved in goals and opens the Savings goals report. */
@@ -12,20 +12,21 @@ export function SavingsGoalsRow({ className = '' }: { className?: string }) {
   const locale = useLocale();
   const t = useTranslations('reports');
   const goals = useSavingsGoals(false);
-  const wallets = useWallets();
 
-  // Goals kept in the same wallet share its money (counted once); currencies are never added together
+  const household = useHousehold();
+  const householdCurrency = household?.currency ?? 'EGP';
+
+  // Goals kept in the same wallet share its money (counted once)
   const saved = React.useMemo(() => {
     const seen = new Set<string>();
-    const byCurrency = new Map<string, number>();
+    let total = 0;
     for (const g of goals ?? []) {
       if (seen.has(g.walletId)) continue;
       seen.add(g.walletId);
-      const cur = wallets?.find((w) => w.id === g.walletId)?.currency ?? '';
-      byCurrency.set(cur, (byCurrency.get(cur) ?? 0) + g.currentAmount);
+      total += g.currentAmount;
     }
-    return [...byCurrency.entries()].map(([cur, amount]) => money(amount, locale, { currency: cur || undefined })).join(' + ');
-  }, [goals, wallets, locale]);
+    return money(total, locale, { currency: householdCurrency });
+  }, [goals, locale, householdCurrency]);
 
   if (goals === undefined) {
     return (

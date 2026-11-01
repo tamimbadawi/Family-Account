@@ -10,8 +10,8 @@ import {
   useSavingsGoals,
   useWalletBalances,
   useWallets,
+  useHousehold,
 } from '@/lib/data/provider';
-import { totalsByCurrency } from '@/lib/money/groups';
 import { money, pickName, quantity } from '@/lib/format';
 import { historyHref } from '@/lib/history/link';
 import { useEntrySheet } from '@/components/entry/EntrySheetContext';
@@ -38,57 +38,43 @@ function MoneyContent() {
   const wallets = useWallets();
   const goals = useSavingsGoals(false);
   const investments = useInvestments(false);
+  const household = useHousehold();
+  const householdCurrency = household?.currency ?? 'EGP';
 
   const isLoading = balances === undefined || goals === undefined || investments === undefined;
   const [isAddInvestmentOpen, setIsAddInvestmentOpen] = React.useState(false);
 
   // Spending totals and groups
-  const { spendingTotals, cashWallets, bankWallets } = React.useMemo(() => {
-    if (!balances) return { spendingTotals: [], cashWallets: [], bankWallets: [] };
+  const { spendingTotalFormatted, cashWallets, bankWallets } = React.useMemo(() => {
+    if (!balances) return { spendingTotalFormatted: money(0, locale), cashWallets: [], bankWallets: [] };
     const spending = balances.filter(
       (w) => !w.isArchived && (w.purpose ?? 'spending') === 'spending'
     );
-    const totals = totalsByCurrency(
-      spending.map((w) => ({ currency: w.currency, amount: w.balance }))
-    );
+    const total = spending.reduce((sum, w) => sum + (w.balance ?? 0), 0);
     const cash = spending.filter((w) => w.type === 'cash');
     const banks = spending.filter((w) => w.type !== 'cash');
-    return { spendingTotals: totals, cashWallets: cash, bankWallets: banks };
-  }, [balances]);
+    return {
+      spendingTotalFormatted: money(total, locale, { currency: householdCurrency }),
+      cashWallets: cash,
+      bankWallets: banks,
+    };
+  }, [balances, locale, householdCurrency]);
 
   // Saving totals
-  const { savedTotals, goalsFormatted, investmentsFormatted } = React.useMemo(() => {
+  const { savedTotalFormatted, goalsFormatted, investmentsFormatted } = React.useMemo(() => {
     if (!balances || !investments) {
-      return { savedTotals: [], goalsFormatted: '', investmentsFormatted: '' };
+      return { savedTotalFormatted: money(0, locale), goalsFormatted: '', investmentsFormatted: '' };
     }
     const goalWallets = balances.filter((w) => !w.isArchived && w.purpose === 'goal');
-    const goalTotals = totalsByCurrency(
-      goalWallets.map((w) => ({ currency: w.currency, amount: w.balance }))
-    );
-    const investmentTotals = totalsByCurrency(
-      investments.map((i) => ({ currency: i.currency, amount: i.worth }))
-    );
-    const combinedTotals = totalsByCurrency([
-      ...goalWallets.map((w) => ({ currency: w.currency, amount: w.balance })),
-      ...investments.map((i) => ({ currency: i.currency, amount: i.worth })),
-    ]);
-
-    const gFormatted =
-      goalTotals.length > 0
-        ? goalTotals.map((t) => money(t.amount, locale, { currency: t.currency })).join(' + ')
-        : money(0, locale);
-
-    const iFormatted =
-      investmentTotals.length > 0
-        ? investmentTotals.map((t) => money(t.amount, locale, { currency: t.currency })).join(' + ')
-        : money(0, locale);
+    const goalTotal = goalWallets.reduce((sum, w) => sum + (w.balance ?? 0), 0);
+    const investmentTotal = investments.reduce((sum, i) => sum + (i.worth ?? 0), 0);
 
     return {
-      savedTotals: combinedTotals,
-      goalsFormatted: gFormatted,
-      investmentsFormatted: iFormatted,
+      savedTotalFormatted: money(goalTotal + investmentTotal, locale, { currency: householdCurrency }),
+      goalsFormatted: money(goalTotal, locale, { currency: householdCurrency }),
+      investmentsFormatted: money(investmentTotal, locale, { currency: householdCurrency }),
     };
-  }, [balances, investments, locale]);
+  }, [balances, investments, locale, householdCurrency]);
 
   const renderWalletRow = (wallet: (typeof cashWallets)[number]) => {
     const name =
@@ -191,18 +177,8 @@ function MoneyContent() {
             {/* Centre block */}
             <div className="text-center py-2">
               <div className="text-hero font-bold tabular-nums text-ink leading-tight">
-                {spendingTotals.length > 0
-                  ? money(spendingTotals[0].amount, locale, { currency: spendingTotals[0].currency })
-                  : money(0, locale)}
+                {spendingTotalFormatted}
               </div>
-              {spendingTotals.length > 1 && (
-                <div className="text-heading font-bold tabular-nums text-ink leading-tight mt-1">
-                  {spendingTotals
-                    .slice(1)
-                    .map((t) => money(t.amount, locale, { currency: t.currency }))
-                    .join(' + ')}
-                </div>
-              )}
               <span className="text-caption text-ink-muted mt-1 block">
                 {t('readyToSpend')}
               </span>
@@ -248,11 +224,7 @@ function MoneyContent() {
             {/* Centre block */}
             <div className="text-center py-2">
               <div className="text-hero font-bold tabular-nums text-ink leading-tight">
-                {savedTotals.length > 0
-                  ? savedTotals
-                      .map((t) => money(t.amount, locale, { currency: t.currency }))
-                      .join(' + ')
-                  : money(0, locale)}
+                {savedTotalFormatted}
               </div>
               <span className="text-caption text-ink-muted mt-1 block">
                 {t('savedSplit', {

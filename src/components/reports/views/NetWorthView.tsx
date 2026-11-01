@@ -4,7 +4,7 @@ import * as React from 'react';
 import { historyHref } from '@/lib/history/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
-import { useEntries, useInvestments, useWalletBalances, useWallets } from '@/lib/data/provider';
+import { useEntries, useInvestments, useWalletBalances, useWallets, useHousehold } from '@/lib/data/provider';
 import { netWorthReport } from '@/lib/reports/wallet-reports';
 import { Card } from '@/components/ui/card';
 import { money, pickName } from '@/lib/format';
@@ -22,6 +22,9 @@ export function NetWorthView() {
   const balances = useWalletBalances();
   const entries = useEntries();
   const investments = useInvestments(false);
+
+  const household = useHousehold();
+  const householdCurrency = household?.currency ?? 'EGP';
 
   const currentMonth = React.useMemo(() => {
     const d = new Date();
@@ -42,18 +45,14 @@ export function NetWorthView() {
   const isNegative = report.spendingChangeVsLastMonth < 0;
 
   const spendingFormatted = React.useMemo(() => {
-    if (report.spendingTotals.length === 0) return money(0, locale);
-    return report.spendingTotals
-      .map((t) => money(t.amount, locale, { currency: t.currency }))
-      .join(' + ');
-  }, [report.spendingTotals, locale]);
+    const total = report.spendingTotals.reduce((sum, t) => sum + t.amount, 0);
+    return money(total, locale, { currency: householdCurrency });
+  }, [report.spendingTotals, locale, householdCurrency]);
 
   const savedFormatted = React.useMemo(() => {
-    if (report.savedTotals.length === 0) return money(0, locale);
-    return report.savedTotals
-      .map((t) => money(t.amount, locale, { currency: t.currency }))
-      .join(' + ');
-  }, [report.savedTotals, locale]);
+    const total = report.savedTotals.reduce((sum, t) => sum + t.amount, 0);
+    return money(total, locale, { currency: householdCurrency });
+  }, [report.savedTotals, locale, householdCurrency]);
 
   const groupHeadingKey = {
     spending: 'groupSpending',
@@ -114,12 +113,11 @@ export function NetWorthView() {
         if (group.wallets.length === 0) return null;
 
         const heading = tMoney(groupHeadingKey[group.purpose]);
-        const subtotal =
-          group.totals.length > 0
-            ? group.totals
-                .map((t) => money(t.amount, locale, { currency: t.currency }))
-                .join(' + ')
-            : money(0, locale);
+        const subtotal = money(
+          group.totals.reduce((sum, t) => sum + t.amount, 0),
+          locale,
+          { currency: householdCurrency }
+        );
 
         return (
           <div key={group.purpose} className="space-y-1">

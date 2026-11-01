@@ -5,6 +5,7 @@ import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { ChevronRight } from 'lucide-react';
 import { money } from '@/lib/format';
+import { useHousehold } from '@/lib/data/provider';
 import type { Period } from '@/lib/history/period';
 import type { CategoryPick } from '@/lib/history/filters';
 import type { HistorySummary } from '@/lib/history/summary';
@@ -24,28 +25,20 @@ export function SummaryCard({
 }) {
   const t = useTranslations('history');
   const locale = useLocale();
-  const { spent, received, count, item, spentTotals, receivedTotals } = summary;
+  const household = useHousehold();
+  const householdCurrency = household?.currency ?? 'EGP';
+  const { spent, received, count, item } = summary;
 
   const spentFormatted = React.useMemo(() => {
-    if (!spentTotals || spentTotals.length === 0) {
-      return money(spent, locale);
-    }
-    return spentTotals
-      .map((t) => money(t.amount, locale, { currency: t.currency }))
-      .join(' + ');
-  }, [spentTotals, spent, locale]);
+    return money(spent, locale, { currency: householdCurrency });
+  }, [spent, locale, householdCurrency]);
 
   const receivedFormatted = React.useMemo(() => {
-    if (!receivedTotals || receivedTotals.length === 0) {
-      return money(received, locale);
-    }
-    return receivedTotals
-      .map((t) => money(t.amount, locale, { currency: t.currency }))
-      .join(' + ');
-  }, [receivedTotals, received, locale]);
+    return money(received, locale, { currency: householdCurrency });
+  }, [received, locale, householdCurrency]);
 
-  const hasSpent = spentTotals ? spentTotals.length > 0 && spentTotals.some((t) => t.amount > 0) : spent > 0;
-  const hasReceived = receivedTotals ? receivedTotals.length > 0 && receivedTotals.some((t) => t.amount > 0) : received > 0;
+  const hasSpent = spent > 0;
+  const hasReceived = received > 0;
 
   return (
     <div className="mx-5 mt-3 rounded-card bg-surface p-4 shadow-card select-none" data-history-summary aria-label={t('summaryLabel')}>

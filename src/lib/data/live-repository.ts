@@ -19,7 +19,6 @@ import { OfflineError } from './errors';
 import { toEntry, toHousehold } from './mappers';
 import type { SyncStatus, TransactionRow } from './types';
 import { setDefaultCurrency } from '../format';
-import { convertAmount } from '../currency/converter';
 
 const REQUEST_TIMEOUT_MS = 15_000;
 const RECEIPTS_BUCKET = 'receipts';
@@ -359,33 +358,23 @@ export class LiveRepository extends MockRepository {
 
   override async convertHouseholdCurrency(targetCurrency: string, exchangeRate: number): Promise<void> {
     if (offline()) throw new OfflineError();
-    const hid = await this.householdId();
     const target = targetCurrency.trim().toUpperCase();
-    await super.convertHouseholdCurrency(target, exchangeRate);
     try {
       const client = this.client();
-      await client.from('households').update({ currency: target, currencies: [target] }).eq('id', hid);
-      const { data: accounts } = await client.from('accounts').select('id, opening_balance, currency').eq('household_id', hid);
-      if (accounts) {
-        for (const acc of accounts) {
-          const rate = (acc.currency || 'EGP') === target ? 1 : exchangeRate;
-          await client.from('accounts').update({
-            currency: target,
-            opening_balance: convertAmount(acc.opening_balance ?? 0, rate),
-          }).eq('id', acc.id);
-        }
-      }
-      const { data: txs } = await client.from('transactions').select('id, amount').eq('household_id', hid);
-      if (txs) {
-        for (const tx of txs) {
-          await client.from('transactions').update({
-            amount: convertAmount(tx.amount, exchangeRate),
-          }).eq('id', tx.id);
-        }
+      const { error } = await client
+        .rpc('convert_household_currency', {
+          p_target_currency: target,
+          p_rate: exchangeRate,
+        })
+        .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
+      if (error) {
+        console.warn('[convertHouseholdCurrency] RPC error:', error);
       }
     } catch (err) {
       if (isNetworkFailure(err)) throw new OfflineError();
+      console.warn('[convertHouseholdCurrency] server call failed:', err);
     }
+    await super.convertHouseholdCurrency(target, exchangeRate);
     await this.refresh();
   }
 

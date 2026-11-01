@@ -21,9 +21,7 @@ import {
   useMembers,
   useSubcategories,
   useWallets,
-  useHousehold,
 } from '@/lib/data/provider';
-import { CurrencyToggle } from '@/components/ui/currency-toggle';
 import type { EnrichedEntry } from '@/lib/data/types';
 import {
   PIVOT_PRESETS,
@@ -74,21 +72,7 @@ export function BreakdownTab() {
   const items = useItems();
   const wallets = useWallets();
   const members = useMembers();
-  const household = useHousehold();
-  const householdCurrencies = React.useMemo(() => {
-    return household?.currencies && household.currencies.length > 0
-      ? household.currencies
-      : [household?.currency ?? 'EGP'];
-  }, [household]);
-  const [selectedCurrency, setSelectedCurrency] = React.useState<string | null>(null);
-  const activeCurrency =
-    selectedCurrency && householdCurrencies.includes(selectedCurrency)
-      ? selectedCurrency
-      : householdCurrencies[0] ?? 'EGP';
-  const filteredEntries = React.useMemo(() => {
-    if (!entries) return [];
-    return entries.filter((e) => (e.accountCurrency ?? 'EGP') === activeCurrency);
-  }, [entries, activeCurrency]);
+  const filteredEntries = React.useMemo(() => entries ?? [], [entries]);
 
   // Maps for quick lookups
   const categoriesMap = React.useMemo(() => {
@@ -374,11 +358,6 @@ export function BreakdownTab() {
 
         {/* Action Buttons: Filter Toggle & Share */}
         <div className="flex items-center gap-1.5 shrink-0">
-          <CurrencyToggle
-            currencies={householdCurrencies}
-            value={activeCurrency}
-            onChange={setSelectedCurrency}
-          />
           <button
             type="button"
             onClick={() => setShowFilters((prev) => !prev)}

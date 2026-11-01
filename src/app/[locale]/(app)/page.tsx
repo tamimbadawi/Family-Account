@@ -22,7 +22,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { CategoryIcon } from '@/components/ui/category-icon';
 import { MoneyTiles } from '@/components/wallets/MoneyTiles';
 import { SampleDataBadge } from '@/components/layout/SampleDataBadge';
-import { CurrencyToggle } from '@/components/ui/currency-toggle';
 import { money, pickName } from '@/lib/format';
 import { useSignedInName } from '@/lib/auth/use-signed-in-name';
 import { historyHref } from '@/lib/history/link';
@@ -55,18 +54,9 @@ export default function HomePage() {
   // Queries
   const members = useMembers();
   const household = useHousehold();
-  const householdCurrencies = React.useMemo(() => {
-    return household?.currencies && household.currencies.length > 0
-      ? household.currencies
-      : [household?.currency ?? 'EGP'];
-  }, [household]);
-  const [selectedCurrency, setSelectedCurrency] = React.useState<string | null>(null);
-  const activeCurrency =
-    selectedCurrency && householdCurrencies.includes(selectedCurrency)
-      ? selectedCurrency
-      : householdCurrencies[0] ?? 'EGP';
-  const summary = useMonthSummary(currentMonth, activeCurrency);
-  const topCategories = useCategoryTotals(currentMonth, 'expense', 'category', undefined, activeCurrency);
+  const householdCurrency = household?.currency ?? household?.currencies?.[0] ?? 'EGP';
+  const summary = useMonthSummary(currentMonth);
+  const topCategories = useCategoryTotals(currentMonth, 'expense', 'category');
   const entries = useEntries({ limit: 3 });
   const budgetProgress = useBudgetProgress(currentMonth);
   const warnings = React.useMemo(() => budgetWarnings(budgetProgress ?? []), [budgetProgress]);
@@ -159,11 +149,6 @@ export default function HomePage() {
           {greeting}
         </span>
         <div className="flex items-center gap-1.5 shrink-0">
-          <CurrencyToggle
-            currencies={householdCurrencies}
-            value={activeCurrency}
-            onChange={setSelectedCurrency}
-          />
           <SampleDataBadge className="-my-3" />
         </div>
       </div>
@@ -175,15 +160,15 @@ export default function HomePage() {
             {tHome('spentThisMonth')}
           </span>
           <div className="mt-0.5 text-display sm:text-hero font-bold tabular-nums text-expense leading-tight">
-            {money(summary?.expense ?? 0, locale, { currency: activeCurrency })}
+            {money(summary?.expense ?? 0, locale, { currency: householdCurrency })}
           </div>
           <div className="mt-1 flex items-center gap-2 text-caption text-ink-muted font-medium">
             <span>
-              {tHome('incomeShort', { amount: money(summary?.income ?? 0, locale, { currency: activeCurrency }) })}
+              {tHome('incomeShort', { amount: money(summary?.income ?? 0, locale, { currency: householdCurrency }) })}
             </span>
             <span>·</span>
             <span>
-              {tHome('leftShort', { amount: money(netAmount, locale, { currency: activeCurrency }) })}
+              {tHome('leftShort', { amount: money(netAmount, locale, { currency: householdCurrency }) })}
             </span>
           </div>
         </Card>
@@ -230,7 +215,7 @@ export default function HomePage() {
                     {name}
                   </span>
                   <span className="text-caption font-bold tabular-nums text-expense">
-                    {money(cat.total, locale, { compact: true, currency: activeCurrency })}
+                    {money(cat.total, locale, { compact: true, currency: householdCurrency })}
                   </span>
                 </Link>
               );

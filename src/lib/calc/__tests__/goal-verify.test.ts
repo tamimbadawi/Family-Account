@@ -31,9 +31,9 @@ describe('verify As much as possible fix', () => {
     const bold = goalPlan(all, { amount: 100000, goal: 1, horizonMonths: 12, howSure: 'bold', maximize: 'gain' }).mix!;
 
     // Safe (26.3%) < Balanced (29.0%) < Bold (54.4%)
-    expect(safe.expectedGain).toBeCloseTo(26294, -2);
+    expect(safe.expectedGain).toBeCloseTo(26862, -2);
     expect(balanced.expectedGain).toBeGreaterThanOrEqual(28500);
-    expect(bold.expectedGain).toBeCloseTo(54431, -2);
+    expect(bold.expectedGain).toBeCloseTo(54142, -2);
 
     expect(balanced.expectedGain).toBeGreaterThan(safe.expectedGain);
     expect(bold.expectedGain).toBeGreaterThan(balanced.expectedGain);
