@@ -2165,7 +2165,7 @@ export class MockRepository implements Repository {
 
     for (const t of txs) {
       const txCurrency = accMap.get(t.account_id) ?? 'EGP';
-      if (txCurrency !== targetCurrency) continue;
+      if (currency && txCurrency !== targetCurrency) continue;
 
       if (t.type === 'income') {
         income += Number(t.amount);
@@ -2228,7 +2228,7 @@ export class MockRepository implements Repository {
     const enrichedList: EnrichedTx[] = [];
     for (const t of txs) {
       const txCurrency = accMap.get(t.account_id) ?? 'EGP';
-      if (txCurrency !== targetCurrency) continue;
+      if (currency && txCurrency !== targetCurrency) continue;
       if (!t.item_id) continue;
       const item = itemMap.get(t.item_id);
       if (!item) continue;

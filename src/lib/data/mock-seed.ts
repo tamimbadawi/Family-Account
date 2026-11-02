@@ -677,22 +677,22 @@ export function generateRealisticEntries(
       });
     }
 
-    // 4. Building fees: Day 3 (500 EGP)
-    if (maxDay >= 3) {
+    // 4. Building fees: Day 1 (500 EGP)
+    if (maxDay >= 1) {
       entries.push({
         id: makeId(),
         household_id: householdId,
         type: 'expense',
         amount: 500,
-        occurred_on: dateStr(3),
+        occurred_on: dateStr(1),
         account_id: WALLET_CASH_ID,
         to_account_id: null,
         item_id: items.buildingFees,
         note: 'مصاريف البواب والأسانسير',
         created_by: USER_BABA_ID,
         updated_by: null,
-        created_at: new Date(targetYear, targetMonth, 3, 14, 0).toISOString(),
-        updated_at: new Date(targetYear, targetMonth, 3, 14, 0).toISOString(),
+        created_at: new Date(targetYear, targetMonth, 1, 14, 0).toISOString(),
+        updated_at: new Date(targetYear, targetMonth, 1, 14, 0).toISOString(),
         deleted_at: null,
       });
     }
@@ -860,7 +860,7 @@ export function generateRealisticEntries(
 
     // Transport (Fuel & Rides)
     const transportItems = [
-      { day: 3, item: items.fuel, amount: 450, wallet: WALLET_CASH_ID, creator: USER_BABA_ID, note: 'بنزين 92' },
+      { day: 1, item: items.fuel, amount: 450, wallet: WALLET_CASH_ID, creator: USER_BABA_ID, note: 'بنزين 92' },
       { day: 10, item: items.fuel, amount: 420, wallet: WALLET_CASH_ID, creator: USER_BABA_ID, note: 'بنزين' },
       { day: 17, item: items.fuel, amount: 480, wallet: WALLET_CASH_ID, creator: USER_BABA_ID, note: 'بنزين' },
       { day: 24, item: items.fuel, amount: 460, wallet: WALLET_CASH_ID, creator: USER_BABA_ID, note: 'بنزين' },

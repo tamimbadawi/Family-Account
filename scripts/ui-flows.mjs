@@ -104,6 +104,7 @@ async function homeNumbers(page) {
 async function openSheet(page, isAr = false) {
   await tap(page, isAr ? 'إضافة' : 'Add entry');
   await page.getByText(isAr ? 'تسجيل جديد' : 'New entry').first().waitFor({ timeout: 8000 });
+  await sleep(400);
 }
 /** One popup: the typed amount is shown and Save is on screen, no Next step, no scrolling. */
 async function assertOnePopup(page, amountText) {
@@ -982,6 +983,7 @@ const FLOWS = {
     await assertUsable(page, rowGroceries, 'the group-level entry in History');
     // Category level: only Transport, then Save
     await openSheet(page);
+    await sleep(400);
     await typeAmount(page, ['3', '5']);
     await tap(page, 'Transport');
     save = await saveButton(page);
@@ -1311,17 +1313,17 @@ const FLOWS = {
 
   currencies: async (page, { locale = 'en' }) => {
     const ar = locale === 'ar';
-    // 1. Navigate to Settings -> Family
+    // 1. Navigate to Settings -> Currencies
     await page.goto(BASE + `/${locale}/settings/currencies`, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(1000);
 
-    // 2. Locate second currency select
-    const secondSelect = page.locator('#second-currency');
-    await secondSelect.evaluate((el) => el.scrollIntoView({ block: 'center' }));
-    await assertUsable(page, secondSelect, 'Second currency select');
+    // 2. Locate currency select
+    const mainSelect = page.locator('#main-currency');
+    await mainSelect.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await assertUsable(page, mainSelect, 'Main currency select');
 
     // 3. Open the picker, search for USD and choose it
-    await secondSelect.click();
+    await mainSelect.click();
     await sleep(600);
     const picker = page.getByRole('dialog');
     await picker.getByRole('textbox').fill('USD');
@@ -1331,8 +1333,8 @@ const FLOWS = {
     await usd.click();
     await sleep(600);
 
-    // 4. Save button appears
-    const saveBtn = page.getByRole('button', { name: ar ? 'حفظ العملات' : 'Save currencies' }).first();
+    // 4. Save / Convert button appears
+    const saveBtn = page.getByRole('button', { name: ar ? /تحويل إلى/ : /Convert to/ }).first();
     await saveBtn.evaluate((el) => el.scrollIntoView({ block: 'center' }));
     await assertUsable(page, saveBtn, 'Save currencies button');
     await saveBtn.click();

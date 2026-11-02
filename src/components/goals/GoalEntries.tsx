@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
-import { useEntries } from '@/lib/data/provider';
+import { useEntries, useHousehold } from '@/lib/data/provider';
 import type { EnrichedEntry, EnrichedSavingsGoal } from '@/lib/data/types';
 import { money, pickName } from '@/lib/format';
 import { formatDmy } from '@/components/entry/DetailsRow';
@@ -18,6 +18,8 @@ export function GoalEntries({
 }) {
   const locale = useLocale();
   const t = useTranslations('goals');
+  const household = useHousehold();
+  const householdCurrency = household?.currency ?? 'EGP';
   const entries = useEntries({ accountId: goal.walletId });
 
   if (entries === undefined) return null;
@@ -70,7 +72,7 @@ export function GoalEntries({
             </div>
             <span className={`shrink-0 text-body font-bold tabular-nums ${isIn ? 'text-income' : 'text-expense'}`}>
               {isIn ? '+' : '−'}
-              {money(amount, locale, { currency: entry.accountCurrency ?? undefined })}
+              {money(amount, locale, { currency: householdCurrency })}
             </span>
           </button>
         );

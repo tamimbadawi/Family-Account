@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { ArrowRight, ChevronLeft, CreditCard, Plus, Repeat, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
-import { useRecurringRules, useRepository } from '@/lib/data/provider';
+import { useHousehold, useRecurringRules, useRepository } from '@/lib/data/provider';
 import { useSaveError } from '@/components/ui/use-save-error';
 import type { EnrichedRecurringRule } from '@/lib/data/types';
 import { money, pickName } from '@/lib/format';
@@ -25,12 +25,14 @@ export default function RecurringSettingsPage() {
   const tCommon = useTranslations('common');
   const repo = useRepository();
   const saveError = useSaveError();
+  const household = useHousehold();
+  const householdCurrency = household?.currency ?? 'EGP';
   const { openAdd } = useEntrySheet();
   const summarize = useRecurrenceSummary();
 
   const rules = useRecurringRules(false);
   const [stoppingId, setStoppingId] = React.useState<string | null>(null);
-  const [activeTab, setActiveTab] = React.useState<'subscriptions' | 'recurring'>('subscriptions');
+  const [activeTab, setActiveTab] = React.useState<'subscriptions' | 'recurring'>('recurring');
 
   // Today in local YYYY-MM-DD
   const today = React.useMemo(() => {
@@ -319,7 +321,7 @@ export default function RecurringSettingsPage() {
                         {/* Amount & Frequency */}
                         <div className="text-end shrink-0">
                           <div className="text-body font-bold text-ink tabular-nums leading-tight">
-                            {money(rule.amount, locale, { currency: rule.accountCurrency ?? undefined })}
+                            {money(rule.amount, locale, { currency: householdCurrency })}
                           </div>
                           <div className="text-caption text-ink-muted mt-0.5 leading-tight">
                             {rule.frequency === 'yearly' ? t('perYear') : t('perMonth')}
@@ -450,7 +452,7 @@ export default function RecurringSettingsPage() {
                             {rule.note ? ` · ${rule.note}` : ''}
                           </div>
                           <div className="text-body font-bold text-ink tabular-nums mt-1 leading-tight">
-                            {money(rule.amount, locale, { currency: rule.accountCurrency ?? undefined })}
+                            {money(rule.amount, locale, { currency: householdCurrency })}
                           </div>
                         </div>
                       </div>

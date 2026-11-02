@@ -9,7 +9,7 @@ import { compressPhoto } from '@/lib/photos/compress';
 import { useAndroidBackToClose } from '@/lib/android-back';
 
 const CHIP =
-  'relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-surface-2 text-accent transition-transform active:scale-95 cursor-pointer';
+  'relative flex size-12 [@media(min-height:740px)]:size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-surface-2 text-accent transition-transform active:scale-95 cursor-pointer';
 
 const VIEWER_BUTTON =
   'relative flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl bg-white/15 text-body font-semibold text-white transition-transform active:scale-95 cursor-pointer';

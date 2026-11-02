@@ -65,5 +65,5 @@
   "toGoal": "To goal",
   "createGoalFirst": "Create a savings goal first",
   "fromTo": "{from} → {to}",
-  "isSubscription": "Subscription (recurring card charge)"
+  "isSubscription": "Subscription"
 }

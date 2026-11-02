@@ -6,7 +6,7 @@ import { ChevronLeft, RotateCcw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
 import { WalletShortcut } from '@/components/layout/WalletShortcut';
-import { useEntries, useRepository } from '@/lib/data/provider';
+import { useEntries, useHousehold, useRepository } from '@/lib/data/provider';
 import { useSaveError } from '@/components/ui/use-save-error';
 import type { EnrichedEntry } from '@/lib/data/types';
 import { formatDay, money, pickName } from '@/lib/format';
@@ -17,6 +17,8 @@ export default function RecentlyDeletedPage() {
   const t = useTranslations('settings');
   const tCommon = useTranslations('common');
   const repo = useRepository();
+  const household = useHousehold();
+  const householdCurrency = household?.currency ?? 'EGP';
   const saveError = useSaveError();
 
   const deletedEntries = useEntries({ onlyDeleted: true });
@@ -145,7 +147,7 @@ export default function RecentlyDeletedPage() {
                         <span>{formatDay(entry.occurredOn, locale)}</span>
                         <span>·</span>
                         <span className="tabular-nums font-medium text-ink">
-                          {money(entry.amount, locale, { currency: entry.accountCurrency ?? undefined })}
+                          {money(entry.amount, locale, { currency: householdCurrency })}
                         </span>
                       </div>
                     </div>

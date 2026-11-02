@@ -412,7 +412,7 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
   };
 
   return (
-    <div className="flex flex-col gap-2 [@media(min-height:740px)]:gap-3 px-5 pb-2 [@media(min-height:740px)]:pb-[max(1rem,env(safe-area-inset-bottom))] select-none">
+    <div className="flex flex-col gap-1.5 [@media(min-height:740px)]:gap-3 px-4 [@media(min-height:740px)]:px-5 pb-1 [@media(min-height:740px)]:pb-[max(1rem,env(safe-area-inset-bottom))] select-none">
       {/* One sheet that fits an iPhone screen: type, amount, category, pad, details, save */}
       <div data-tour="entry-type" className="rounded-2xl">
         <TypeToggle value={isGoal ? 'goal' : type} onChange={handleTypeChange} showGoal={mode === 'add'} />
@@ -508,17 +508,19 @@ function EntrySheetForm({ mode, editingEntry, initialType, initialRecurring, ini
       ) : (
         mode === 'add' &&
         !isNoteOpen && (
-          <div className="flex flex-col gap-2">
-            <RecurrencePicker value={recurrence} onChange={setRecurrence} startDate={occurredOn} />
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <RecurrencePicker value={recurrence} onChange={setRecurrence} startDate={occurredOn} />
+            </div>
             {recurrence !== null && (
-              <label className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-surface-2/60 cursor-pointer select-none">
+              <label className="flex items-center gap-2 px-3 h-12 rounded-2xl bg-surface-2 cursor-pointer select-none shrink-0">
                 <input
                   type="checkbox"
                   checked={isSubscription}
                   onChange={(e) => setIsSubscription(e.target.checked)}
                   className="size-4 rounded accent-accent cursor-pointer"
                 />
-                <span className="text-caption font-medium text-ink">
+                <span className="text-caption font-medium text-ink whitespace-nowrap">
                   {t('isSubscription')}
                 </span>
               </label>

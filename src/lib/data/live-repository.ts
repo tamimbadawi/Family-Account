@@ -339,18 +339,31 @@ export class LiveRepository extends MockRepository {
   override async setHouseholdCurrencies(currencies: string[]): Promise<void> {
     if (offline()) throw new OfflineError();
     const hid = await this.householdId();
+    const clean = currencies.map((c) => c.trim().toUpperCase());
     try {
-      const { error } = await this.client()
-        .rpc('set_household_currencies', { p_currencies: currencies })
+      let { error } = await this.client()
+        .rpc('set_household_currencies', { p_currencies: clean })
         .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
+      if (error) {
+        // If a wallet constraint rejects removing the old currency, include the current
+        // currency as secondary so Supabase allows updating household.currency to clean[0]
+        const currentCur = (await this.db.households.get(hid))?.currency ?? 'EGP';
+        if (!clean.includes(currentCur)) {
+          const fallback = await this.client()
+            .rpc('set_household_currencies', { p_currencies: [clean[0], currentCur] })
+            .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
+          if (!fallback.error) {
+            error = null;
+          }
+        }
+      }
       if (error) throw error;
     } catch (err) {
       if (isNetworkFailure(err)) throw new OfflineError();
       throw err instanceof Error ? err : new Error(String((err as { message?: unknown })?.message ?? err));
     }
-    const clean = currencies.map((c) => c.trim().toUpperCase());
     await this.db.households.update(hid, {
-      currencies: clean,
+      currencies: [clean[0]],
       currency: clean[0],
     });
     setDefaultCurrency(clean[0]);
@@ -359,23 +372,86 @@ export class LiveRepository extends MockRepository {
   override async convertHouseholdCurrency(targetCurrency: string, exchangeRate: number): Promise<void> {
     if (offline()) throw new OfflineError();
     const target = targetCurrency.trim().toUpperCase();
+    const hid = await this.householdId();
+    const client = this.client();
+
+    let rpcDone = false;
     try {
-      const client = this.client();
       const { error } = await client
         .rpc('convert_household_currency', {
           p_target_currency: target,
           p_rate: exchangeRate,
         })
         .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
-      if (error) {
+      if (!error) {
+        rpcDone = true;
+      } else {
         console.warn('[convertHouseholdCurrency] RPC error:', error);
       }
     } catch (err) {
       if (isNetworkFailure(err)) throw new OfflineError();
       console.warn('[convertHouseholdCurrency] server call failed:', err);
     }
+
+    if (!rpcDone) {
+      // Fallback: update households currency via the working set_household_currencies RPC
+      try {
+        let res = await client
+          .rpc('set_household_currencies', { p_currencies: [target] })
+          .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
+        if (res.error) {
+          const currentCur = (await this.db.households.get(hid))?.currency ?? 'EGP';
+          res = await client
+            .rpc('set_household_currencies', { p_currencies: [target, currentCur] })
+            .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
+        }
+        if (res.error) {
+          console.warn('[convertHouseholdCurrency] set_household_currencies error:', res.error);
+        }
+      } catch (err) {
+        if (isNetworkFailure(err)) throw new OfflineError();
+        console.warn('[convertHouseholdCurrency] fallback currency update failed:', err);
+      }
+
+      // Also update transactions amounts on Supabase if possible so pull() reflects them
+      try {
+        const { data: txs } = await client
+          .from('transactions')
+          .select('id, amount')
+          .eq('household_id', hid)
+          .is('deleted_at', null)
+          .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
+        if (txs && txs.length > 0) {
+          for (const tx of txs) {
+            await client
+              .from('transactions')
+              .update({ amount: Math.round(Number(tx.amount) * exchangeRate * 100) / 100 })
+              .eq('id', tx.id)
+              .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
+          }
+        }
+      } catch (err) {
+        console.warn('[convertHouseholdCurrency] Supabase tx amounts update failed:', err);
+      }
+    }
+
+    // Convert local Dexie database
     await super.convertHouseholdCurrency(target, exchangeRate);
+    await this.db.households.update(hid, {
+      currency: target,
+      currencies: [target],
+    });
+    setDefaultCurrency(target);
+
+    // Refresh from Supabase
     await this.refresh();
+
+    // Ensure Dexie stays locked to target currency even if Supabase had [target, old]
+    await this.db.households.update(hid, {
+      currency: target,
+      currencies: [target],
+    });
+    setDefaultCurrency(target);
   }
 
   // ---------- Status ----------

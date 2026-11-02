@@ -8,6 +8,7 @@ import { CategoryIcon } from '@/components/ui/category-icon';
 import { MemberBadge } from '@/components/ui/member-badge';
 import { money, pickName } from '@/lib/format';
 import { formatDmy } from '@/components/entry/DetailsRow';
+import { useHousehold } from '@/lib/data/provider';
 
 export interface EntryRowProps {
   entry: EnrichedEntry;
@@ -19,6 +20,8 @@ export interface EntryRowProps {
 export function EntryRow({ entry, onClick, showDate = false }: EntryRowProps) {
   const locale = useLocale();
   const t = useTranslations('entry');
+  const household = useHousehold();
+  const householdCurrency = household?.currency ?? 'EGP';
 
   const isTransfer = entry.type === 'transfer';
   const isIncome = entry.type === 'income';
@@ -126,7 +129,7 @@ export function EntryRow({ entry, onClick, showDate = false }: EntryRowProps) {
 
       <div className={`shrink-0 text-body font-bold tabular-nums ${amountClass}`}>
         {sign}
-        {money(entry.amount, locale, { currency: entry.accountCurrency ?? undefined })}
+        {money(entry.amount, locale, { currency: householdCurrency })}
       </div>
     </div>
   );

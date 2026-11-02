@@ -138,7 +138,7 @@ export function BiggestExpensesView() {
           )}
         </div>
 
-        {result.entries.length > 4 && (
+        {result.entries.length > 0 && (
           <button
             type="button"
             onClick={() => setShowAllSheet(true)}
