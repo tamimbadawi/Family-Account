@@ -139,7 +139,6 @@ export async function pull(db: FamilyAccountsDB, source: PullSource, now = new D
   );
 
   await db.transaction('rw', [db.households, db.household_members, db.meta, ...SYNCED_TABLES.map((t) => db[t])], async () => {
-    await db.households.clear();
     await db.households.put(household as never);
     await db.household_members.clear();
     await db.household_members.bulkPut(members as never[]);

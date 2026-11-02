@@ -86,6 +86,7 @@ export class LiveRepository extends MockRepository {
   private pulling: Promise<string | null> | null = null;
   private opened: Promise<void> | null = null;
   private watchingAuth = false;
+  private isConverting = false;
 
   constructor(
     customDb: FamilyAccountsDB = defaultDb,
@@ -155,7 +156,7 @@ export class LiveRepository extends MockRepository {
    * left alone and the pull runs again as soon as the session is back (see watchAuth).
    */
   async refresh(): Promise<void> {
-    if (offline()) return;
+    if (offline() || this.isConverting) return;
     this.pulling ??= (async () => {
       const { data } = await this.getSessionWithTimeout(3000);
       const userId = data.session?.user.id;
@@ -371,9 +372,11 @@ export class LiveRepository extends MockRepository {
 
   override async convertHouseholdCurrency(targetCurrency: string, exchangeRate: number): Promise<void> {
     if (offline()) throw new OfflineError();
+    this.isConverting = true;
     const target = targetCurrency.trim().toUpperCase();
     const hid = await this.householdId();
     const client = this.client();
+    const currentCur = (await this.db.households.get(hid))?.currency ?? 'EGP';
 
     let rpcDone = false;
     try {
@@ -400,7 +403,6 @@ export class LiveRepository extends MockRepository {
           .rpc('set_household_currencies', { p_currencies: [target] })
           .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
         if (res.error) {
-          const currentCur = (await this.db.households.get(hid))?.currency ?? 'EGP';
           res = await client
             .rpc('set_household_currencies', { p_currencies: [target, currentCur] })
             .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
@@ -411,6 +413,32 @@ export class LiveRepository extends MockRepository {
       } catch (err) {
         if (isNetworkFailure(err)) throw new OfflineError();
         console.warn('[convertHouseholdCurrency] fallback currency update failed:', err);
+      }
+
+      // Also update accounts opening balances on Supabase so pull() reflects them
+      try {
+        const { data: accounts } = await client
+          .from('accounts')
+          .select('id, opening_balance, currency')
+          .eq('household_id', hid)
+          .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
+        if (accounts && accounts.length > 0) {
+          for (const acc of accounts) {
+            const accCur = acc.currency || currentCur;
+            const rate = accCur === target ? 1 : exchangeRate;
+            const newOpening = Math.round(Number(acc.opening_balance ?? 0) * rate * 100) / 100;
+            await client
+              .from('accounts')
+              .update({
+                currency: target,
+                opening_balance: newOpening,
+              })
+              .eq('id', acc.id)
+              .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
+          }
+        }
+      } catch (err) {
+        console.warn('[convertHouseholdCurrency] Supabase accounts update failed:', err);
       }
 
       // Also update transactions amounts on Supabase if possible so pull() reflects them
@@ -435,15 +463,19 @@ export class LiveRepository extends MockRepository {
       }
     }
 
-    // Convert local Dexie database
-    await super.convertHouseholdCurrency(target, exchangeRate);
-    await this.db.households.update(hid, {
-      currency: target,
-      currencies: [target],
-    });
-    setDefaultCurrency(target);
+    try {
+      // Convert local Dexie database
+      await super.convertHouseholdCurrency(target, exchangeRate);
+      await this.db.households.update(hid, {
+        currency: target,
+        currencies: [target],
+      });
+      setDefaultCurrency(target);
+    } finally {
+      this.isConverting = false;
+    }
 
-    // Refresh from Supabase
+    // Refresh from Supabase cleanly once
     await this.refresh();
 
     // Ensure Dexie stays locked to target currency even if Supabase had [target, old]
