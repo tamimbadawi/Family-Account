@@ -999,6 +999,19 @@ describe('MockRepository with fake-indexeddb', () => {
       for (const e of entries) {
         expect(Number.isFinite(e.amount)).toBe(true);
       }
+
+      const goals = await testRepo.getSavingsGoals(true);
+      expect(goals.length).toBeGreaterThan(0);
+      const carGoal = goals.find((g) => g.nameEn === 'New car');
+      if (carGoal) {
+        expect(carGoal.targetAmount).toBe(5000); // 250,000 * 0.02
+      }
+
+      const investments = await testRepo.getInvestments(true);
+      expect(investments.length).toBeGreaterThan(0);
+      for (const inv of investments) {
+        expect(inv.worth).toBeLessThan(10000); // Converted from EGP to USD
+      }
     });
   });
 

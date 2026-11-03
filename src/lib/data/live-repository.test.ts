@@ -253,7 +253,10 @@ describe('LiveRepository pull without a session', () => {
     await db.accounts.put({ id: 'a1', household_id: HID, type: 'cash', name_en: 'Cash', sort_order: 0, is_archived: false, created_at: serverNow, updated_at: serverNow } as never);
 
     const client = {
-      auth: { getSession: async () => ({ data: { session: { user: { id: 'u1' } } } }) },
+      auth: {
+        getSession: async () => ({ data: { session: { user: { id: 'u1' } } } }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      },
       // Server returns empty array (token expired / anon RLS / network reconnect)
       from: () => {
         const chain = { select: () => chain, eq: () => chain, gt: () => chain, order: () => chain, range: () => chain, abortSignal: async () => ({ data: [], error: null }) };
@@ -269,5 +272,41 @@ describe('LiveRepository pull without a session', () => {
     expect(await db.households.count()).toBe(1);
     expect(await db.accounts.count()).toBe(1);
     expect((await db.meta.get('householdId'))?.value).toBe(HID);
+  });
+
+  it('converts all household data including savings goals and investments in live repo', async () => {
+    const dbName = 'test-live-convert-' + Math.random().toString(36).slice(2, 9);
+    const db = new FamilyAccountsDB(dbName);
+    await db.meta.put({ key: 'householdId', value: HID });
+    await db.households.put({ id: HID, name: 'Family', currency: 'EGP', created_at: serverNow });
+    await db.savings_goals.put({ id: 'g1', household_id: HID, name_en: 'New car', target_amount: 250000, target_date: '2027-01-01', icon: 'car', wallet_id: 'w1', is_archived: false, created_at: serverNow, updated_at: serverNow } as never);
+
+    const client = {
+      auth: {
+        getSession: async () => ({ data: { session: { user: { id: 'u1' } } } }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      },
+      from: () => {
+        const chain = {
+          select: () => chain,
+          eq: () => chain,
+          is: () => chain,
+          update: () => chain,
+          abortSignal: async () => ({ data: [], error: null }),
+        };
+        return chain;
+      },
+      rpc: (name: string) => ({
+        abortSignal: async () => ({ error: name === 'convert_household_currency' ? { message: 'not implemented' } : null }),
+      }),
+    };
+
+    const repo = new LiveRepository(db, () => client as never);
+    await repo.convertHouseholdCurrency('USD', 0.02);
+
+    const goal = await db.savings_goals.get('g1');
+    expect(goal?.target_amount).toBe(5000); // 250,000 * 0.02
+    const h = await db.households.get(HID);
+    expect(h?.currency).toBe('USD');
   });
 });
