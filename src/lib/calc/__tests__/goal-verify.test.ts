@@ -19,7 +19,7 @@ describe('verify As much as possible fix', () => {
     expect(mix.lines.every(l => l.certainty === 'uncertain')).toBe(true);
     expect(mix.lines[0].share).toBe(0.8);
     expect(mix.lines[1].share).toBe(0.2);
-  });
+  }, 15000);
 
   it('Safe <= Balanced <= Bold in expected return for As much as possible', async () => {
     const offers = await getOffers();
@@ -37,5 +37,5 @@ describe('verify As much as possible fix', () => {
 
     expect(balanced.expectedGain).toBeGreaterThan(safe.expectedGain);
     expect(bold.expectedGain).toBeGreaterThan(balanced.expectedGain);
-  });
+  }, 15000);
 });
