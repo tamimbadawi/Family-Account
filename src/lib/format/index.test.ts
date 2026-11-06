@@ -78,7 +78,7 @@ describe('formatCenterTotal', () => {
   });
 
   it('supports custom currency codes', () => {
-    expect(formatCenterTotal(2500, 'en', { currency: 'USD' })).toEqual({ value: '2.5', unit: 'k USD' });
+    expect(formatCenterTotal(2500, 'en', { currency: 'USD' })).toEqual({ value: '2.5', unit: 'k $' });
     expect(formatCenterTotal(2500, 'ar', { currency: 'USD' })).toEqual({ value: '2.5', unit: 'ألف $' });
   });
 });

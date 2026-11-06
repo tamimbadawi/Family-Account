@@ -7,7 +7,11 @@ describe('currency', () => {
     expect(currencySymbol('EGP', 'en')).toBe('EGP');
     expect(currencySymbol('EGP', 'ar')).toBe('ج.م');
     expect(currencySymbol('usd', 'ar')).toBe('$');
-    expect(currencySymbol('JPY', 'ar')).toBe('JPY');
+    expect(currencySymbol('usd', 'en')).toBe('$');
+    expect(currencySymbol('EUR', 'en')).toBe('€');
+    expect(currencySymbol('GBP', 'en')).toBe('£');
+    expect(currencySymbol('JPY', 'ar')).toBe('¥');
+    expect(currencySymbol('JPY', 'en')).toBe('¥');
   });
   it('lists common currencies first, then every other one once', () => {
     const list = currencyChoices('en');
@@ -22,7 +26,7 @@ describe('currency', () => {
   });
   it('money() writes the given currency, EGP by default', () => {
     expect(money(1250, 'en')).toBe('1,250 EGP');
-    expect(money(1250, 'en', { currency: 'USD' })).toBe('1,250 USD');
+    expect(money(1250, 'en', { currency: 'USD' })).toBe('1,250 $');
     expect(money(-5, 'ar', { currency: 'USD' })).toBe('-5 $');
   });
   it('updates default currency with setDefaultCurrency', () => {

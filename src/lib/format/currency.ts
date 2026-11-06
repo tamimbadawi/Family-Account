@@ -8,9 +8,6 @@ export const COMMON_CURRENCIES = ['EGP', 'USD', 'EUR', 'GBP', 'SAR', 'AED', 'KWD
 
 const ARABIC_SYMBOLS: Record<string, string> = {
   EGP: 'ج.م',
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
   SAR: 'ر.س',
   AED: 'د.إ',
   KWD: 'د.ك',
@@ -18,6 +15,45 @@ const ARABIC_SYMBOLS: Record<string, string> = {
   BHD: 'د.ب',
   OMR: 'ر.ع',
   JOD: 'د.أ',
+  LYD: 'د.ل',
+  TND: 'د.ت',
+  DZD: 'د.ج',
+  MAD: 'د.م.',
+  IQD: 'د.ع',
+  SDG: 'ج.س',
+  LBP: 'ل.ل',
+  SYP: 'ل.س',
+  YER: 'ر.ي',
+};
+
+const COMMON_SYMBOLS: Record<string, string> = {
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  JPY: '¥',
+  CNY: '¥',
+  INR: '₹',
+  CAD: '$',
+  AUD: '$',
+  NZD: '$',
+  SGD: '$',
+  HKD: '$',
+  KRW: '₩',
+  TRY: '₺',
+  RUB: '₽',
+  BRL: 'R$',
+  THB: '฿',
+  PLN: 'zł',
+  ILS: '₪',
+  PHP: '₱',
+  VND: '₫',
+  NGN: '₦',
+  ZAR: 'R',
+  CHF: 'CHF',
+  SEK: 'kr',
+  NOK: 'kr',
+  DKK: 'kr',
+  MXN: '$',
 };
 
 export const DEFAULT_CURRENCY = 'EGP';
@@ -37,11 +73,36 @@ export function isCurrencyCode(code: string): boolean {
   return /^[A-Z]{3}$/.test(code);
 }
 
-/** Label written next to an amount: "EGP" / "ج.م", "USD" / "$". */
+/** Label written next to an amount: "EGP" / "ج.م", "$" / "$", "€", "£", etc. */
 export function currencySymbol(code?: string, locale: string = 'en'): string {
   const upper = code ? code.toUpperCase() : '';
   const effective = (upper && isCurrencyCode(upper) ? upper : currentDefaultCurrency);
-  if (locale.startsWith('ar')) return ARABIC_SYMBOLS[effective] ?? effective;
+  const isAr = locale.startsWith('ar');
+
+  if (isAr && ARABIC_SYMBOLS[effective]) {
+    return ARABIC_SYMBOLS[effective];
+  }
+
+  if (!isAr && effective === 'EGP') {
+    return 'EGP';
+  }
+
+  if (COMMON_SYMBOLS[effective]) {
+    return COMMON_SYMBOLS[effective];
+  }
+
+  try {
+    const parts = new Intl.NumberFormat(isAr ? 'ar-EG' : 'en-US', {
+      style: 'currency',
+      currency: effective,
+      currencyDisplay: 'narrowSymbol',
+    }).formatToParts(1);
+    const sym = parts.find((p) => p.type === 'currency')?.value;
+    if (sym) return sym;
+  } catch {
+    // fallback
+  }
+
   return effective;
 }
 
