@@ -18,6 +18,7 @@ Changes that are finished and checked, waiting to go live. Nothing here is live 
 
 | Date | PR | What it changed |
 |---|---|---|
+| 2026-11-06 | — | Atomic single-transaction currency conversion; eliminated 300-call sequential HTTP loop; removed healUnconvertedData double-conversion bug; applied migration 0033 (`0033_convert_household_currency_atomic.sql`) |
 | 2026-10-13 | [#124](https://github.com/tamimbadawi/Family-Account/pull/124) | Investments by quantity: gold in grams (18k/21k/24k) and stocks in shares. Add, buy more and sell by quantity; "Update price" asks the price of one gram or share and updates every gold of the same karat; older gold can switch with "Track by weight". Migrations `0028_investment_units` and `0029_sample_gold_units` applied (sample Gold is now 20 g of 21k) |
 | 2026-10-13 | [#123](https://github.com/tamimbadawi/Family-Account/pull/123) | Investments: tap a "Value updated" line to change or remove that value (with Undo); the help guide says so |
 | 2026-10-13 | [#122](https://github.com/tamimbadawi/Family-Account/pull/122) | Record only: migration file `0027_sample_investments` (applied to the live database earlier on 2026-10-13: sample Gold and Bank certificate for families with sample data and for new families) |
