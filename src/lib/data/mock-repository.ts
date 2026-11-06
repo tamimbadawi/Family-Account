@@ -660,6 +660,7 @@ export class MockRepository implements Repository {
         for (const tx of txs) {
           await this.db.transactions.update(tx.id, {
             amount: convertAmount(tx.amount, exchangeRate),
+            to_amount: null,
           });
         }
 

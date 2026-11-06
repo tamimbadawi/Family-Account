@@ -131,15 +131,10 @@ export class LiveRepository extends MockRepository {
       this.currentUserId = data.session?.user.id ?? '';
       const hasCopy = Boolean((await this.db.meta.get('householdId'))?.value);
       if (hasCopy) {
-        void this.refresh()
-          .catch((err) => console.warn('[sync] background pull failed', err))
-          .finally(() => {
-            void this.healUnconvertedData().catch((err) => console.warn('[sync] heal failed', err));
-          });
+        void this.refresh().catch((err) => console.warn('[sync] background pull failed', err));
         return;
       }
       await this.refresh().catch((err) => console.warn('[sync] first pull failed', err));
-      void this.healUnconvertedData().catch((err) => console.warn('[sync] heal failed', err));
       // Nothing downloaded yet (no connection, or the family is still being created): try again next open
       if (!(await this.db.meta.get('householdId'))?.value) this.opened = null;
     })();
@@ -375,43 +370,13 @@ export class LiveRepository extends MockRepository {
     setDefaultCurrency(clean[0]);
   }
 
-  private async healUnconvertedData(): Promise<void> {
-    if (offline() || this.isConverting) return;
-    const hid = (await this.db.meta.get('householdId'))?.value as string | undefined;
-    if (!hid) return;
-    const household = await this.db.households.get(hid);
-    const cur = household?.currency ?? 'EGP';
-    if (cur === 'EGP') return;
-
-    // Detect if sample data is unconverted in non-EGP currency (e.g. USD)
-    const goals = await this.db.savings_goals.where('household_id').equals(hid).toArray();
-    const hasUnconvertedGoal = goals.some((g) => g.target_amount === 250000 || g.target_amount === 45000);
-    const invs = await this.db.investment_values.where('household_id').equals(hid).toArray();
-    const hasUnconvertedInv = invs.some((iv) => iv.value === 96000 || iv.value === 154000);
-    const accounts = await this.db.accounts.where('household_id').equals(hid).toArray();
-    const hasUnconvertedAccount = accounts.some((a) => a.opening_balance === 45000 || a.opening_balance === 25000);
-
-    if (!hasUnconvertedGoal && !hasUnconvertedInv && !hasUnconvertedAccount) {
-      return;
-    }
-
-    console.info('[healUnconvertedData] Detected unconverted starter data under ' + cur + '; auto-healing amounts...');
-    // EGP to USD rate: 1 USD = ~56.27 EGP => rate ≈ 0.017772
-    const rate = cur === 'USD' ? 0.017772 : 1;
-    if (rate === 1) return;
-
-    await this.convertHouseholdCurrency(cur, rate);
-  }
-
   override async convertHouseholdCurrency(targetCurrency: string, exchangeRate: number): Promise<void> {
     if (offline()) throw new OfflineError();
     this.isConverting = true;
     const target = targetCurrency.trim().toUpperCase();
     const hid = await this.householdId();
     const client = this.client();
-    const currentCur = (await this.db.households.get(hid))?.currency ?? 'EGP';
 
-    let rpcDone = false;
     try {
       const { error } = await client
         .rpc('convert_household_currency', {
@@ -419,174 +384,11 @@ export class LiveRepository extends MockRepository {
           p_rate: exchangeRate,
         })
         .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
-      if (!error) {
-        rpcDone = true;
-      } else {
-        console.warn('[convertHouseholdCurrency] RPC error:', error);
-      }
-    } catch (err) {
-      if (isNetworkFailure(err)) throw new OfflineError();
-      console.warn('[convertHouseholdCurrency] server call failed:', err);
-    }
 
-    if (!rpcDone) {
-      // Fallback: update households currency via set_household_currencies RPC
-      try {
-        let res = await client
-          .rpc('set_household_currencies', { p_currencies: [target] })
-          .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
-        if (res.error) {
-          res = await client
-            .rpc('set_household_currencies', { p_currencies: [target, currentCur] })
-            .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
-        }
-        if (res.error) {
-          console.warn('[convertHouseholdCurrency] set_household_currencies error:', res.error);
-        }
-      } catch (err) {
-        if (isNetworkFailure(err)) throw new OfflineError();
-        console.warn('[convertHouseholdCurrency] fallback currency update failed:', err);
+      if (error) {
+        throw new Error(error.message || 'Currency conversion failed on server');
       }
 
-      // Update accounts opening balances on Supabase
-      try {
-        const { data: accounts } = await client
-          .from('accounts')
-          .select('id, opening_balance, currency')
-          .eq('household_id', hid)
-          .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
-        if (accounts && accounts.length > 0) {
-          for (const acc of accounts) {
-            const accCur = acc.currency || currentCur;
-            const rate = accCur === target ? 1 : exchangeRate;
-            const newOpening = Math.round(Number(acc.opening_balance ?? 0) * rate * 100) / 100;
-            const res = await client
-              .from('accounts')
-              .update({
-                currency: target,
-                opening_balance: newOpening,
-              })
-              .eq('id', acc.id)
-              .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
-            if (res.error) {
-              await client
-                .from('accounts')
-                .update({ opening_balance: newOpening })
-                .eq('id', acc.id)
-                .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('[convertHouseholdCurrency] Supabase accounts update failed:', err);
-      }
-
-      // Update savings_goals target amounts on Supabase
-      try {
-        const { data: goals } = await client
-          .from('savings_goals')
-          .select('id, target_amount')
-          .eq('household_id', hid)
-          .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
-        if (goals && goals.length > 0) {
-          for (const g of goals) {
-            await client
-              .from('savings_goals')
-              .update({ target_amount: Math.round(Number(g.target_amount) * exchangeRate * 100) / 100 })
-              .eq('id', g.id)
-              .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
-          }
-        }
-      } catch (err) {
-        console.warn('[convertHouseholdCurrency] Supabase savings_goals update failed:', err);
-      }
-
-      // Update investment_values on Supabase
-      try {
-        const { data: invs } = await client
-          .from('investment_values')
-          .select('id, value, unit_price')
-          .eq('household_id', hid)
-          .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
-        if (invs && invs.length > 0) {
-          for (const iv of invs) {
-            await client
-              .from('investment_values')
-              .update({
-                value: Math.round(Number(iv.value) * exchangeRate * 100) / 100,
-                unit_price: iv.unit_price != null ? Math.round(Number(iv.unit_price) * exchangeRate * 100) / 100 : null,
-              })
-              .eq('id', iv.id)
-              .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
-          }
-        }
-      } catch (err) {
-        console.warn('[convertHouseholdCurrency] Supabase investment_values update failed:', err);
-      }
-
-      // Update budgets on Supabase
-      try {
-        const { data: budgets } = await client
-          .from('budgets')
-          .select('id, amount')
-          .eq('household_id', hid)
-          .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
-        if (budgets && budgets.length > 0) {
-          for (const b of budgets) {
-            await client
-              .from('budgets')
-              .update({ amount: Math.round(Number(b.amount) * exchangeRate * 100) / 100 })
-              .eq('id', b.id)
-              .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
-          }
-        }
-      } catch (err) {
-        console.warn('[convertHouseholdCurrency] Supabase budgets update failed:', err);
-      }
-
-      // Update recurring_rules on Supabase
-      try {
-        const { data: rules } = await client
-          .from('recurring_rules')
-          .select('id, amount')
-          .eq('household_id', hid)
-          .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
-        if (rules && rules.length > 0) {
-          for (const r of rules) {
-            await client
-              .from('recurring_rules')
-              .update({ amount: Math.round(Number(r.amount) * exchangeRate * 100) / 100 })
-              .eq('id', r.id)
-              .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
-          }
-        }
-      } catch (err) {
-        console.warn('[convertHouseholdCurrency] Supabase recurring_rules update failed:', err);
-      }
-
-      // Update transactions amounts on Supabase
-      try {
-        const { data: txs } = await client
-          .from('transactions')
-          .select('id, amount')
-          .eq('household_id', hid)
-          .is('deleted_at', null)
-          .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
-        if (txs && txs.length > 0) {
-          for (const tx of txs) {
-            await client
-              .from('transactions')
-              .update({ amount: Math.round(Number(tx.amount) * exchangeRate * 100) / 100 })
-              .eq('id', tx.id)
-              .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
-          }
-        }
-      } catch (err) {
-        console.warn('[convertHouseholdCurrency] Supabase tx amounts update failed:', err);
-      }
-    }
-
-    try {
       // Convert local Dexie database
       await super.convertHouseholdCurrency(target, exchangeRate);
       await this.db.households.update(hid, {
@@ -598,27 +400,30 @@ export class LiveRepository extends MockRepository {
         await this.db.accounts.update(a.id, { currency: target });
       }
       setDefaultCurrency(target);
+
+      // Reset cursors to guarantee a clean full pull from Supabase
+      await this.db.meta.where('key').startsWith('cursor:').delete();
+      await this.db.meta.delete('lastFullPullAt');
+
+      // Refresh from Supabase cleanly once
+      await this.refresh();
+
+      // Ensure Dexie stays strictly locked to target currency
+      await this.db.households.update(hid, {
+        currency: target,
+        currencies: [target],
+      });
+      const postAccs = await this.db.accounts.where('household_id').equals(hid).toArray();
+      for (const a of postAccs) {
+        await this.db.accounts.update(a.id, { currency: target });
+      }
+      setDefaultCurrency(target);
+    } catch (err) {
+      if (isNetworkFailure(err)) throw new OfflineError();
+      throw err instanceof Error ? err : new Error(String((err as { message?: unknown })?.message ?? err));
     } finally {
       this.isConverting = false;
     }
-
-    // Reset cursors to guarantee a clean full pull from Supabase
-    await this.db.meta.where('key').startsWith('cursor:').delete();
-    await this.db.meta.delete('lastFullPullAt');
-
-    // Refresh from Supabase cleanly once
-    await this.refresh();
-
-    // Ensure Dexie stays strictly locked to target currency and converted values
-    await this.db.households.update(hid, {
-      currency: target,
-      currencies: [target],
-    });
-    const postAccs = await this.db.accounts.where('household_id').equals(hid).toArray();
-    for (const a of postAccs) {
-      await this.db.accounts.update(a.id, { currency: target });
-    }
-    setDefaultCurrency(target);
   }
 
   // ---------- Status ----------

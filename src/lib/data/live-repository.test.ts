@@ -296,8 +296,8 @@ describe('LiveRepository pull without a session', () => {
         };
         return chain;
       },
-      rpc: (name: string) => ({
-        abortSignal: async () => ({ error: name === 'convert_household_currency' ? { message: 'not implemented' } : null }),
+      rpc: () => ({
+        abortSignal: async () => ({ error: null }),
       }),
     };
 
@@ -308,5 +308,35 @@ describe('LiveRepository pull without a session', () => {
     expect(goal?.target_amount).toBe(5000); // 250,000 * 0.02
     const h = await db.households.get(HID);
     expect(h?.currency).toBe('USD');
+  });
+
+  it('rejects and preserves state when convert_household_currency RPC fails', async () => {
+    const dbName = 'test-live-convert-fail-' + Math.random().toString(36).slice(2, 9);
+    const db = new FamilyAccountsDB(dbName);
+    await db.meta.put({ key: 'householdId', value: HID });
+    await db.households.put({ id: HID, name: 'Family', currency: 'EGP', created_at: serverNow });
+    await db.savings_goals.put({ id: 'g1', household_id: HID, name_en: 'New car', target_amount: 250000, target_date: '2027-01-01', icon: 'car', wallet_id: 'w1', is_archived: false, created_at: serverNow, updated_at: serverNow } as never);
+
+    const client = {
+      auth: {
+        getSession: async () => ({ data: { session: { user: { id: 'u1' } } } }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      },
+      from: () => ({
+        select: () => ({ eq: () => ({ is: () => ({ abortSignal: async () => ({ data: [], error: null }) }) }) }),
+      }),
+      rpc: () => ({
+        abortSignal: async () => ({ error: { message: 'Database error' } }),
+      }),
+    };
+
+    const repo = new LiveRepository(db, () => client as never);
+    await expect(repo.convertHouseholdCurrency('USD', 0.02)).rejects.toThrow('Database error');
+
+    // Local data was NOT converted
+    const goal = await db.savings_goals.get('g1');
+    expect(goal?.target_amount).toBe(250000);
+    const h = await db.households.get(HID);
+    expect(h?.currency).toBe('EGP');
   });
 });
